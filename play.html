@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!-- vim:set nowrap: -->
+<html>
+<head>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+<meta charset="UTF-8">
+<title>ALGERIA</title>
+<link rel="icon" href="favicon.png">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/common/play.css">
+<script defer src="/common/play.js"></script>
+<script defer src="play.js"></script>
+<style>
+
+main { background-color: dimgray }
+
+#role_Red .role_name { background-color: salmon; }
+#role_Blue .role_name { background-color: skyblue; }
+
+#mapwrap {
+	width: 1100px;
+	height: 850px;
+	box-shadow: 0px 1px 10px #0008;
+}
+
+#map {
+	width: 1100px;
+	height: 850px;
+	background-image: url(map100.png);
+}
+
+#map div {
+	position: absolute;
+	transition-property: top, left;
+	transition-duration: 1s;
+	transition-timing-function: ease;
+}
+
+.token {
+	width: 58px;
+	height: 64px;
+	background-size: 58px 64px;
+	filter: drop-shadow(0px 2px 4px #0008);
+}
+
+.tile {
+	width: 75px;
+	height: 75px;
+	background-repeat: no-repeat;
+	background-size: 50px 50px;
+	background-position: center;
+	border-width: 2px;
+	border-style: solid;
+	box-shadow: 0 0 0 1px #222, 1px 2px 4px #0008;
+}
+
+.token.white { background-image: url(images/token_white.svg) }
+.token.red { background-image: url(images/token_red.svg) }
+.token.blue { background-image: url(images/token_blue.svg) }
+
+.tile.white { background-image: url(images/tile_white.png) }
+.tile.red { background-image: url(images/tile_red.png) }
+.tile.blue { background-image: url(images/tile_blue.png) }
+.tile.gold { background-image: url(images/tile_gold.png) }
+.tile.green { background-image: url(images/tile_green.png) }
+
+.tile.red { background-color: hsl(0,90%,49%); border-color: hsl(0,90%,59%) hsl(0,90%,39%) hsl(0,90%,39%) hsl(0,90%,59%); }
+.tile.white { background-color: hsl(0,0%,94%); border-color: hsl(0,0%,100%) hsl(0,0%,84%) hsl(0,0%,84%) hsl(0,0%,100%); }
+.tile.blue { background-color: hsl(201,80%,47%); border-color: hsl(201,80%,57%) hsl(201,80%,37%) hsl(201,80%,37%) hsl(201,80%,57%); }
+.tile.gold { background-color: hsl(50,81%,59%); border-color: hsl(50,81%,69%) hsl(50,81%,49%) hsl(50,81%,49%) hsl(50,81%,69%); }
+.tile.green { background-color: hsl(125,21%,33%); border-color: hsl(125,21%,43%) hsl(125,21%,23%) hsl(125,21%,23%) hsl(125,21%,43%); }
+
+.panel {
+	max-width: 1100px;
+	margin: 36px auto;
+	background-color: #555;
+}
+
+.panel_header {
+	background-color: #444;
+	color: white;
+	user-select: none;
+	font-weight: bold;
+	text-align: center;
+	padding: 3px 1em;
+}
+
+.panel_body {
+	display: flex;
+	justify-content: start;
+	flex-wrap: wrap;
+	padding: 20px;
+	gap: 20px;
+}
+
+</style>
+</head>
+<body>
+
+<header>
+	<div id="toolbar">
+	<div class="menu">
+		<div class="menu_title"><img src="/images/cog.svg"></div>
+		<div class="menu_popup">
+			<a class="menu_item" href="info/rules.html" target="_blank">Rules</a>
+			<a class="menu_item" href="info/charts.html" target="_blank">Charts</a>
+			<div class="resign menu_separator"></div>
+			<div class="resign menu_item" onclick="confirm_resign()">Resign</div>
+		</div>
+	</div>
+	<div class="icon_button" onclick="toggle_zoom()"><img src="/images/magnifying-glass.svg"></div>
+	</div>
+	<div id="prompt"></div>
+	<div id="actions"></div>
+</header>
+
+<aside>
+	<div id="roles">
+		<div class="role" id="role_Red">
+			<div class="role_name">
+				Red &#x2013;
+				<span class="role_user"></span>
+			</div>
+		</div>
+		<div class="role" id="role_Blue">
+			<div class="role_name">
+				Blue &#x2013;
+				<span class="role_user"></span>
+			</div>
+		</div>
+	</div>
+	<div id="log"></div>
+</aside>
+
+<main>
+
+<div id="mapwrap" class="">
+<div id="map">
+
+<div id="token_white" class="token white" style="left:90px;top:135px;"></div>
+<div id="token_red1" class="token red" style="left:200px"></div>
+<div id="token_red2" class="token red" style="left:300px"></div>
+<div id="token_red3" class="token red" style="left:400px"></div>
+<div id="token_blue1" class="token blue" style="left:500px"></div>
+<div id="token_blue2" class="token blue" style="left:600px"></div>
+<div id="token_blue3" class="token blue" style="left:700px"></div>
+
+</div>
+</div>
+
+<div id="hand_panel" class="panel">
+<div id="hand_header" class="panel_header">Hand</div>
+<div id="hand" class="panel_body">
+
+<div class="tile red" style="left:198px;top:300px"></div>
+<div class="tile blue" style="left:338px;top:300px"></div>
+<div class="tile green" style="left:478px;top:300px"></div>
+<div class="tile white" style="left:618px;top:300px"></div>
+<div class="tile gold" style="left:758px;top:300px"></div>
+
+</div>
+</div>
+
+</main>
+
+<footer id="status"></footer>
+
+</body>
