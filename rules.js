@@ -2,6 +2,7 @@
 
 const FLN = "FLN"
 const FRA = "FRA"
+const BOTH = "Both"
 
 var states = {}
 var game = null
@@ -43,7 +44,7 @@ exports.view = function(state, player) {
 
 	if (game.state === "game_over") {
 		view.prompt = game.victory
-	} else if (player !== game.active) {
+	} else if (player !== game.active && game.active !== BOTH) {
 		let inactive = states[game.state].inactive || game.state
 		view.prompt = `Waiting for ${game.active} \u2014 ${inactive}...`
 	} else {
@@ -95,7 +96,7 @@ exports.setup = function (seed, scenario, options) {
 		undo: [],
 	}
 
-	game.active =  RED
+	game.active =  FLN
 	goto_random_event()
 
 	return game
@@ -104,25 +105,124 @@ exports.setup = function (seed, scenario, options) {
 // === FLOW OF PLAY ===
 
 function goto_random_event() {
+	game.active = BOTH
 	game.state = "random_event"
 }
 
 states.random_event = {
-	inactive: "to roll for a random event",
 	prompt() {
 		view.prompt = "Roll for a random event."
 		gen_action("roll")
+		gen_action("restart")
 	},
 	roll() {
 		clear_undo()
 		let rnd = 10 * roll_d6() + roll_d6()
 		log("Random event roll " + rnd)
 		// goto_reinforcement_phase()
+		if (rnd <= 26) {
+			goto_no_event()
+		} else if (rnd <= 36) {
+			goto_fln_foreign_arms_shipment()
+		} else if (rnd <= 42) {
+			goto_elections_in_france()
+		} else if (rnd <= 44) {
+			goto_un_debate()
+		} else if (rnd <= 46) {
+			goto_fln_factional_purge()
+		} else if (rnd <= 52) {
+			goto_morocco_independence()
+		} else if (rnd <= 54) {
+			goto_tunisia_independence()
+		} else if (rnd <= 56) {
+			goto_nato_pressure()
+		} else if (rnd <= 62) {
+			goto_suez_crisis()
+		} else if (rnd <= 64) {
+			goto_amnesty()
+		} else if (rnd <= 66) {
+			goto_jean_paul_sartre()
+		} else {
+			log("Invalid random value, out of range (11-66)")
+		}
 	},
+	restart() {
+		// XXX debug
+		log("Restarting...")
+		goto_random_event()
+	}
+}
+
+function goto_no_event() {
+	log("No Event. Lucky you")
+	goto_reinforcement_phase()
+}
+
+function goto_fln_foreign_arms_shipment() {
+	log("FLN Foreign arms shipment. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_elections_in_france() {
+	log("Elections in France. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_un_debate() {
+	log("UN debates Algerian Independence. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_fln_factional_purge() {
+	log("FLN Factional Purge. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_morocco_independence() {
+	log("Morocco Gains Independence. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_tunisia_independence() {
+	log("Tunisia Gains Independence. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_nato_pressure() {
+	log("NATO pressures France to boost European defense. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_suez_crisis() {
+	log("Suez Crisis. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_amnesty() {
+	log("Amnesty. TODO")
+	goto_reinforcement_phase()
+}
+
+function goto_jean_paul_sartre() {
+	log("Jean-Paul Sartre writes article condemning the war. TODO")
+	goto_reinforcement_phase()
 }
 
 function goto_reinforcement_phase() {
 	game.state = "reinforcement"
+}
+
+states.reinforcement = {
+	inactive: "to do reinforcement",
+	prompt() {
+		view.prompt = "Do reinforcement."
+		gen_action("restart")
+	},
+	restart() {
+		// XXX debug
+		log("Restarting...")
+		goto_random_event()
+	}
 }
 
 // === COMMON LIBRARY ===

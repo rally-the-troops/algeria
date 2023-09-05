@@ -59,6 +59,7 @@ function on_update() {
 	action_button("roll", "Roll")
 	action_button("done", "Done")
 	action_button("undo", "Undo")
+    action_button("restart", "Restart")
 }
 
 
