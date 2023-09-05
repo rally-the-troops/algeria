@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 <meta charset="UTF-8">
 <title>ALGERIA</title>
-<link rel="icon" href="favicon.png">
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/common/play.css">
 <script defer src="/common/play.js"></script>
@@ -14,19 +13,21 @@
 
 main { background-color: dimgray }
 
-#role_Red .role_name { background-color: salmon; }
-#role_Blue .role_name { background-color: skyblue; }
+#role_FLN .role_name { background-color: #006633; color: white;}
+#role_FRA .role_name { background-color: #002654; color: white; }
 
 #mapwrap {
-	width: 1100px;
-	height: 850px;
+	width: 1400px;
+	height: 824px;
 	box-shadow: 0px 1px 10px #0008;
 }
 
 #map {
-	width: 1100px;
-	height: 850px;
-	background-image: url(map100.png);
+	width: 1400px;
+	height: 824px;
+	background-size: 1400px 824px;
+	background-position: center;
+	background-image: url(map.jpg);
 }
 
 #map div {
@@ -36,42 +37,96 @@ main { background-color: dimgray }
 	transition-timing-function: ease;
 }
 
-.token {
-	width: 58px;
-	height: 64px;
-	background-size: 58px 64px;
-	filter: drop-shadow(0px 2px 4px #0008);
-}
-
-.tile {
-	width: 75px;
-	height: 75px;
+.counter {
+	width: 68px;
+	height: 68px;
 	background-repeat: no-repeat;
-	background-size: 50px 50px;
+	background-size: 68px 68px;
 	background-position: center;
 	border-width: 2px;
 	border-style: solid;
 	box-shadow: 0 0 0 1px #222, 1px 2px 4px #0008;
 }
 
-.token.white { background-image: url(images/token_white.svg) }
-.token.red { background-image: url(images/token_red.svg) }
-.token.blue { background-image: url(images/token_blue.svg) }
+.counter-map {
+	width: 48px;
+	height: 48px;
+	background-size: 48px 48px;
+	border-width: 1px;
+}
 
-.tile.white { background-image: url(images/tile_white.png) }
-.tile.red { background-image: url(images/tile_red.png) }
-.tile.blue { background-image: url(images/tile_blue.png) }
-.tile.gold { background-image: url(images/tile_gold.png) }
-.tile.green { background-image: url(images/tile_green.png) }
+.counter-med {
+	width: 35px;
+	height: 35px;
+	background-size: 35px 35px;
+	border-width: 1px;
+}
 
-.tile.red { background-color: hsl(0,90%,49%); border-color: hsl(0,90%,59%) hsl(0,90%,39%) hsl(0,90%,39%) hsl(0,90%,59%); }
-.tile.white { background-color: hsl(0,0%,94%); border-color: hsl(0,0%,100%) hsl(0,0%,84%) hsl(0,0%,84%) hsl(0,0%,100%); }
-.tile.blue { background-color: hsl(201,80%,47%); border-color: hsl(201,80%,57%) hsl(201,80%,37%) hsl(201,80%,37%) hsl(201,80%,57%); }
-.tile.gold { background-color: hsl(50,81%,59%); border-color: hsl(50,81%,69%) hsl(50,81%,49%) hsl(50,81%,49%) hsl(50,81%,69%); }
-.tile.green { background-color: hsl(125,21%,33%); border-color: hsl(125,21%,43%) hsl(125,21%,23%) hsl(125,21%,23%) hsl(125,21%,43%); }
+.counter-mini {
+	width: 24px;
+	height: 24px;
+	background-size: 24px 24px;
+	border-width: 1px;
+}
+
+.selected {
+	border-color: yellow;
+}
+
+.counter.fr_al_5_mob_inf { background-image: url(counters/fr_al_5_mob_inf.png) }
+.counter.fr_al_7_mob_arm { background-image: url(counters/fr_al_7_mob_arm.png) }
+.counter.fr_al_static { background-image: url(counters/fr_al_static.png) }
+.counter.fr_div_7_inf { background-image: url(counters/fr_div_7_inf.png) }
+.counter.fr_div_25 { background-image: url(counters/fr_div_25.png) }
+.counter.fr_elite_9_inf { background-image: url(counters/fr_elite_9_inf.png) }
+.counter.fr_elite_9_mar { background-image: url(counters/fr_elite_9_mar.png) }
+.counter.fr_elite_9_para { background-image: url(counters/fr_elite_9_para.png) }
+.counter.fr_elite_10 { background-image: url(counters/fr_elite_10.png) }
+.counter.fr_reg_6_inf { background-image: url(counters/fr_reg_6_inf.png) }
+
+.counter.fr_al_5_mob_inf.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_al_5_mob_inf.png) }
+.counter.fr_al_7_mob_arm.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_al_7_mob_arm.png) }
+.counter.fr_al_static.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_al_static.png) }
+.counter.fr_div_7_inf.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_div_7_inf.png) }
+.counter.fr_div_25.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_div_25.png) }
+.counter.fr_elite_9_inf.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_elite_9_inf.png) }
+.counter.fr_elite_9_mar.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_elite_9_mar.png) }
+.counter.fr_elite_9_para.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_elite_9_para.png) }
+.counter.fr_elite_10.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_elite_10.png) }
+.counter.fr_reg_6_inf.neutralized { background-image: url(counters/neutralized.png), url(counters/fr_reg_6_inf.png) }
+
+.counter.front { background-image: url(counters/front.png) }
+.counter.cadre { background-image: url(counters/cadre.png) }
+.counter.company { background-image: url(counters/company.png) }
+
+.counter.front.neutralized { background-image: url(counters/neutralized.png), url(counters/front.png) }
+.counter.cadre.neutralized { background-image: url(counters/neutralized.png), url(counters/cadre.png) }
+.counter.company.neutralized { background-image: url(counters/neutralized.png), url(counters/company.png) }
+
+.counter.psl-fln { background-image: url(counters/psl.png) }
+.counter.psl-fra { background-image: url(counters/psl_fr.png) }
+.counter.ap { background-image: url(counters/ap.png) }
+
+.counter.naval-pts { background-image: url(counters/naval.png) }
+.counter.helo-pts-max { background-image: url(counters/helo_max.png) }
+.counter.helo-pts-avail { background-image: url(counters/helo_avail.png) }
+.counter.air-pts-max { background-image: url(counters/air_max.png) }
+.counter.air-pts-avail { background-image: url(counters/air_avail.png) }
+
+.counter.border_zone { background-image: url(counters/border.png)}
+.counter.remote { background-image: url(counters/remote.png)}
+.counter.terror { background-image: url(counters/terror.png)}
+
+.counter.control_fln { background-image: url(counters/control.png)}
+.counter.control_fra { background-image: url(counters/control_fr.png)}
+.counter.control_neut { background-image: url(counters/neut.png)}
+
+.counter.oas_fln { background-image: url(counters/oas_fln.png)}
+.counter.oas_fra { background-image: url(counters/oas_fr.png)}
+.counter.oas { background-image: url(counters/oas.png)}
 
 .panel {
-	max-width: 1100px;
+	max-width: 900px;
 	margin: 36px auto;
 	background-color: #555;
 }
@@ -90,7 +145,29 @@ main { background-color: dimgray }
 	justify-content: start;
 	flex-wrap: wrap;
 	padding: 20px;
-	gap: 20px;
+	gap: 14px;
+}
+
+.track {
+	position: relative;
+}
+
+.track div {
+	position: absolute;
+}
+
+#psl_track {
+	width: 868px;
+	height: 821px;
+	background-size: 868px 821px;
+	background-image: url(psl_track.png);
+}
+
+#air_naval_track {
+	width: 813px;
+	height: 112px;
+	background-size: 813px 112px;
+	background-image: url(air-helo_track.png);
 }
 
 </style>
@@ -102,8 +179,10 @@ main { background-color: dimgray }
 	<div class="menu">
 		<div class="menu_title"><img src="/images/cog.svg"></div>
 		<div class="menu_popup">
-			<a class="menu_item" href="info/rules.html" target="_blank">Rules</a>
+			<a class="menu_item" href="info/algeria_en_v1.2.pdf" target="_blank">Rules</a>
+			<a class="menu_item" href="info/legend.html" target="_blank">Legend</a>
 			<a class="menu_item" href="info/charts.html" target="_blank">Charts</a>
+
 			<div class="resign menu_separator"></div>
 			<div class="resign menu_item" onclick="confirm_resign()">Resign</div>
 		</div>
@@ -116,15 +195,15 @@ main { background-color: dimgray }
 
 <aside>
 	<div id="roles">
-		<div class="role" id="role_Red">
+		<div class="role" id="role_FLN">
 			<div class="role_name">
-				Red &#x2013;
+				FLN &#x2013;
 				<span class="role_user"></span>
 			</div>
 		</div>
-		<div class="role" id="role_Blue">
+		<div class="role" id="role_FRA">
 			<div class="role_name">
-				Blue &#x2013;
+				FRA &#x2013;
 				<span class="role_user"></span>
 			</div>
 		</div>
@@ -137,27 +216,82 @@ main { background-color: dimgray }
 <div id="mapwrap" class="">
 <div id="map">
 
-<div id="token_white" class="token white" style="left:90px;top:135px;"></div>
-<div id="token_red1" class="token red" style="left:200px"></div>
-<div id="token_red2" class="token red" style="left:300px"></div>
-<div id="token_red3" class="token red" style="left:400px"></div>
-<div id="token_blue1" class="token blue" style="left:500px"></div>
-<div id="token_blue2" class="token blue" style="left:600px"></div>
-<div id="token_blue3" class="token blue" style="left:700px"></div>
+<div class="counter counter-map fr_div_7_inf selected" style="left:125px;top:187px;"></div>
+<div class="counter counter-map fr_div_7_inf neutralized" style="left:184px;top:187px;"></div>
+
+<div class="counter counter-map oas" style="left:680px;top:85px;"></div>
+<div class="counter counter-map oas_fln" style="left:740px;top:85px;"></div>
+<div class="counter counter-map oas_fra" style="left:800px;top:85px;"></div>
+
+<div class="counter counter-mini control_fln" style="left:200px"></div>
+<div class="counter counter-mini control_fra" style="left:240px"></div>
+<div class="counter counter-mini control_neut" style="left:280px"></div>
+<div class="counter counter-mini terror" style="left:1000px;top:10px;"></div>
+<div class="counter counter-mini remote" style="left:1000px;top:60px;"></div>
+
+<div class="counter counter-med border_zone" style="left:20px;top:530px;"></div>
+<div class="counter counter-med border_zone" style="left:1350px;top:250px;"></div>
 
 </div>
 </div>
 
-<div id="hand_panel" class="panel">
-<div id="hand_header" class="panel_header">Hand</div>
-<div id="hand" class="panel_body">
+<div id="fra_supply_panel" class="panel">
+<div id="fra_supply_header" class="panel_header">French Supply</div>
+<div id="fra_supply" class="panel_body">
 
-<div class="tile red" style="left:198px;top:300px"></div>
-<div class="tile blue" style="left:338px;top:300px"></div>
-<div class="tile green" style="left:478px;top:300px"></div>
-<div class="tile white" style="left:618px;top:300px"></div>
-<div class="tile gold" style="left:758px;top:300px"></div>
+<div class="counter fr_div_7_inf"></div>
+<div class="counter fr_div_25"></div>
+<div class="counter fr_reg_6_inf"></div>
 
+<div class="counter fr_elite_9_inf"></div>
+<div class="counter fr_elite_9_mar"></div>
+<div class="counter fr_elite_9_para"></div>
+
+<div class="counter fr_elite_10"></div>
+
+<div class="counter fr_al_5_mob_inf"></div>
+<div class="counter fr_al_7_mob_arm"></div>
+<div class="counter fr_al_static"></div>
+
+</div>
+</div>
+
+<div id="fln_supply_panel" class="panel">
+<div id="fln_supply_header" class="panel_header">FLN Supply</div>
+<div id="fln_supply" class="panel_body">
+
+<div class="counter front"></div>
+<div class="counter cadre"></div>
+<div class="counter company"></div>
+
+</div>
+</div>
+
+<div id="psl_panel" class="panel">
+<div id="psl_header" class="panel_header">PSL Track</div>
+<div id="psl" class="panel_body">
+<div id="psl_track" class="track">
+
+<div class="counter ap" style="left:20px;top:15px"></div>
+<div class="counter psl-fln" style="left:20px;top:414px"></div>
+<div class="counter psl-fra" style="left:441px;top:494px"></div>
+
+</div>
+</div>
+</div>
+
+<div id="air_naval_panel" class="panel">
+<div id="air_naval_header" class="panel_header">Air / Naval Track</div>
+<div id="air_naval" class="panel_body">
+<div id="air_naval_track" class="track">
+
+<div class="counter naval-pts" style="left:171px;top:29px"></div>
+<div class="counter helo-pts-max" style="left:338px;top:10px"></div>
+<div class="counter helo-pts-avail" style="left:478px;top:10px"></div>
+<div class="counter air-pts-max" style="left:618px;top:10px"></div>
+<div class="counter air-pts-avail" style="left:758px;top:10px"></div>
+
+</div>
 </div>
 </div>
 
