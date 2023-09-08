@@ -32,7 +32,7 @@
 	}
 
 	ul {
-		padding-left: 36px;
+		padding-left: 18px;
 	}
 
 	h1 {
@@ -72,8 +72,20 @@
 		border-bottom: 2px solid green;
 	}
 
+	dl {
+		margin: 0;
+		display: grid;
+		grid-template-columns: max-content auto;
+	}
+
 	dt {
+		grid-column-start: 1;
 		font-weight: bold;
+	}
+
+	dd {
+		margin-left: 6px;
+		grid-column-start: 2;
 	}
 
 	img.big {
@@ -140,11 +152,31 @@
 	td {
 		border: 1px solid black;
 		padding: 0 5px;
+		margin: 0;
+		vertical-align: top;
 	}
 
 	th {
 		background-color: gainsboro;
 	}
+
+	th, td, td li {
+		font-size: 10pt;
+		line-height: normal;
+	}
+
+	td ul, td li {
+		margin: 0;
+	}
+
+	ul.drm {
+		list-style-type: none;
+		padding: 0;
+	}
+
+	.center { text-align: center }
+
+	.nowrap { white-space: nowrap; }
 </style>
 </head>
 
@@ -189,58 +221,147 @@
 
 	<h3><a href="#fln-reinforcement" id="fln-reinforcement">Reinforcement Phase Actions</a></h3>
 
-	<h3><a href="#fln-missions" id="missions">Operations Phase Missions</a></h3>
+	<table>
+		<tr>
+			<th>Activity
+			<th>AP
+			<th>Notes
+			<th>Result
+		<tr>
+			<td class="nowrap">Build Cadre or Band
+			<td class="nowrap">3 (2)
+			<td><ul>
+				<li>Non-neutralized Front
+				<li>Only 2 AP to build in Morocco / Tunisia
+			</ul>
+			<td>Place in UG box of same area or country as Front
+		<tr>
+			<td class="nowrap">Convert Cadre to Front
+			<td>3
+			<td><ul>
+				<li>Non-neutralized Cadre
+				<li>Only 1 Front per area
+				<li>Not in Remote areas
+			</ul>
+			<td>Exchange counters
+		<tr>
+			<td class="nowrap">Convert Cadre to Band
+			<td>1
+			<td><ul>
+				<li>Non-neutralized Cadre
+				<li>Does not require presence of a Front
+			</ul>
+			<td>Exchange counters
+		<tr>
+			<td class="nowrap">Convert Band to Failek
+			<td>2
+			<td><ul>
+				<li>Only possible in Morocco / Tunisia
+			</ul>
+			<td>Exchange counters
+	</table>
+
+	<h3><a href="#fln-missions" id="fln-missions">Operations Phase Missions</a></h3>
 
 	<table>
 		<tr>
 			<th>Activity
-			<th style="width: 50px;">APs
-			<th>Units
-			<th>Comments
-		<tr>
-			<td>Build
-			<td>3 (2)
-			<td>0
-			<td>non-neutralized Front needed; only Cadres or Companies may be build. Only 2 AP to build in Morocco or
-				Tunisia
-		<tr>
-			<td>Augment
-			<td>3
-			<td>1 Cadre
-			<td>Cadre augments to Front; only one Front per area and not in Remote
-		<tr>
-			<td>Harass
-			<td>0
-			<td>1 Company
-			<td>roll on Combat Results Table; French fire back at half firepower. May do any number in area per turn but
-				Companies attack singly.
+			<th>AP
+			<th>Notes
+			<th>Result
+			<th>DRM
 		<tr>
 			<td>Propaganda
 			<td>1
-			<td>1 (any unit will do)
-			<td>any FLN unit will do; one per area, not in Remote
+			<td><ul>
+				<li>Front or Cadre may do
+				<li>Only 1 mission/area/turn
+				<li>Not in Remote areas
+			</ul>
+			<td>
+				<dl class="result">
+				<dt># =</dt><dd>PSP added to FLN or subtracted from Govt PSL (any combo, FLN chooses; x2 if Urban area)</dd>
+				<dt>+ =</dt><dd>unit eliminated or reduced</dd>
+				</dl>
+			<td>
+				<ul class="drm">
+				<li>-1 x # units on Patrol
+				<li>-1 area is Terrorized
+				</ul>
 		<tr>
-			<td>Strike (urban only)
-			<td>5
-			<td>1 Front + Cadres
-			<td>non-neutralized Front needed; each Cadre assisting gives +1 DRM
-		<tr>
-			<td>Intimidate
+			<td>Strike
 			<td>3
-			<td>1 (any mobile unit)
-			<td>only one area per turn
+			<td><ul>
+				<li>Uses Front, Cadres may assist for DRM
+				<li>Urban area only; only 1 mission/area/turn
+				<li>Penality if Government player does not React
+			</ul>
+			<td>
+				<dl class="result">
+				<dt># =</dt><dd>#d6 added to FLN or subtracted from Govt PSL (any combo; FLN chooses)</dd>
+				<dt>+ =</dt><dd>all FLN units conducting mission eliminated / reduced</dd>
+				<dt>@ =</dt><dd>all Police units in area neutralized</dd>
+				<dt>-1d6</dt><dd>Gov PSL if no React</dd>
+				</dl>
+			<td>
+				<ul class="drm">
+				<li>-1 x # units on Patrol
+				<li>-1 area is Terrorized
+				<li>+1 x # Cadre assisting
+				</ul>
 		<tr>
-			<td>Movement
+			<td>Move
 			<td>0
-			<td>1 (any mobile unit)
-			<td>units attempt movement one at a time
+			<td><ul>
+				<li>1 mobile unit attempt at a time; any distance within current
+				<i>wilaya</i>, if crossing <i>wilaya</i> or int'l border may move
+				only to area sharing border with current <i>wilaya</i> or country
+			</ul>
+			<td>
+				<dl class="result">
+				<dt>+ =</dt><dd>unit eliminated</dd>
+				</dl>
+			<td>
+				<ul class="drm">
+				<li>-1 x # units on Patrol in area moved to
+				<li>-? = Border Zone DRM, if crossed international border
+				</ul>
+		<tr>
+			<td>Raid
+			<td>1
+			<td><ul>
+				<li>Band/Failek may do (extra units give + DRM)
+				<li>Only 1 mission/area/turn
+				<li>Not in Remote area
+			</ul>
+			<td>
+				<dl class="result">
+				<dt># =</dt><dd>AP gained (x2 if Urban area)</dd>
+				<dt>+ =</dt><dd>1 Band/Failek neutralized, area is Terrorized</dd>
+				<dt>@ =</dt><dd>1 Police unit neutralized, area is Terrorized</dd>
+				</dl>
+			<td>
+				<ul class="drm">
+				<li>+1 x (# units-1)
+				<li>-1 x # units on Patrol
+				</ul>
+		<tr>
+			<td>Harass
+			<td>0
+			<td><ul>
+				<li>Band/Failek may do (units attack singly unless Failek present, they may combine)
+				<li>Choose one Govt unit for target
+			</ul>
+			<td>
+				Roll on Combat Results Table; Govt unit fires back at HALF firepower (round up).
+			<td>
 	</table>
 
 	<h3><a href="#fln-mst" id="fln-mst">Mission Success Table</a></h3>
 
 	<table>
 		<tr>
-			<th>Die Roll
+			<th>Roll (1d6)
 			<td>-1
 			<td>0
 			<td>1
@@ -270,45 +391,186 @@
 	<table>
 		<tr>
 			<th>Source
-			<th colspan="3">APs Received
+			<th>Urban
+			<th>Rural
+			<th>Remote
 		<tr>
-			<td>Areas under FLN Control (-1 AP if area is terrorized)
-			<td><strong>Urban:</strong>
-				<ul>
-					<li>5 if controlled
-					<li>2 if contested but non-neutralized FLN units are present
-				</ul>
-			<td><strong>Rural:</strong>
-				<ul>
-					<li>2 if controlled
-					<li>1 if contested but non-neutralized FLN units are present
-				</ul>
-			<td><strong>Remote:</strong>
-				<ul>
-					<li>0
-				</ul>
-		<tr>
-			<td>Foreign Governments
-			<td colspan="3">per random event: AP arrive by sea and some may be intercepted by French Navy (11.7)
+			<td>Areas under FLN Control<br/>(-1 AP if area is terrorized)
+			<td>5 if controlled, 2 if contested but non-neutralized FLN units are present
+			<td>2 if controlled, 1 if contested but non-neutralized FLN units are present
+			<td>0
 		<tr>
 			<td>FLN PSL
-			<td colspan="3">AP = 10% of current FLN PSL (round fractions down)
-			</td>
-		</tr>
-	</table>
+			<td colspan="3">AP = FLN PSL x 10% (round fractions up) MINUS # of Govt Naval Points
+		<tr>
+			<td>Raid missions
+			<td colspan="3">As determined by Mission Success Table rolls
+		<tr>
+			<td>Random Events
+			<td colspan="3">As determined by random event rolled
+</table>
 
 	<h2>
 		<a href="#gov" id="gov">Government Player Charts and Tables</a>
 	</h2>
 
 	<h3><a href="#gov-reinforcement" id="gov-reinforcement">Government Mobilization and Activation Table</a></h3>
+
+	<table>
+		<tr>
+			<th>Item
+			<th>PSP to Mobilize
+			<th>PSP to Activate (unit moves to OC if not Activated)
+		<tr>
+			<td>French division
+			<td class="center">5
+			<td class="center">1
+		<tr>
+			<td>French brigade
+			<td class="center">2
+			<td class="center">1/2
+		<tr>
+			<td>French Elite brigade
+			<td class="center">3
+			<td class="center">1/2
+		<tr>
+			<td>Algerian brigade
+			<td class="center">2
+			<td class="center">0
+		<tr>
+			<td>Police unit
+			<td class="center">1 (place in PTL box)
+			<td class="center">0
+		<tr>
+			<td>1 Air Point
+			<td class="center">2
+			<td class="center">0
+		<tr>
+			<td>1 Naval / Helo Point
+			<td class="center">3
+			<td class="center">0
+		<tr>
+			<td>Border Zone
+			<td class="center">6 (per DRM, including initial "0")
+			<td class="center">1 (flip Status marker to "inactive" if not Activated)
+	</table>
+
 	<h3><a href="#gov-coup" id="gov-coup">Coup Table</a></h3>
+
+	<small>(use if Government PSL &lt;= 30; coup attempt if roll 6 on a 1d6; DRM +1 = if OAS is deployed in France)</small>
+
+	<table>
+		<tr>
+			<th>Die Roll (2d6)
+			<th>Result (DRM +1 = if OAS is deployed in France)
+		<tr>
+			<td>2
+			<td>wild success: +3d6 PSP, mobilize 2d6 PSP of units for free
+		<tr>
+			<td>3-4
+			<td>big success: +2d6 PSP, mobilize 1d6 PSP of units for free
+		<tr>
+			<td>5-6
+			<td>success: +1d6 PSP
+		<tr>
+			<td>7
+			<td>fizzle: -1d6 PSP
+		<tr>
+			<td>8-9
+			<td>failure: -2d6 PSP, remove 1 elite unit from the game
+		<tr>
+			<td>10-12
+			<td>abject failure: -3d6 PSP, remove 1d6 eelite units from the game
+	</table>
+
 	<h3><a href="#gov-operations" id="gov-operations">Operations Phase Missions</a></h3>
+
+	<table>
+		<tr>
+			<th>Mission
+			<th>PSP
+			<th>Notes
+			<th>Result
+			<th>DRM
+		<tr>
+			<td>Patrol
+			<td>0
+			<td><ul>
+				<li>Place in Deployment Phase
+				<li>Only mission Police units can do
+			</ul>
+			<td>Patrolling mobile units may React or join a Flush in their area
+			<td>
+		<tr>
+			<td>Flush
+			<td>0
+			<td><ul>
+				<li>Uses mobile units in OPS/PTL box in <b>same</b> area (airmobile units may travel any distance)
+				<li>Only versus units in OPS or OC box
+				<li>Units may combine only if all Elite, or Division is in Area
+			</ul>
+			<td>Roll d6 per FLN unit: &lt;= total Contact rating: unit Contacted. Contacted FLN units, then Government, fire on CRT. Place surviving FLN units and Government units in OC box
+			<td><ul class="drm">
+				<li>+1 Evasion rating of unit is higher than total Contact rating
+				<li>+1 in Remote area
+				<li>+1 area is Terrorized
+				<li>-1 in Urban area
+			</ul>
+		<tr>
+			<td>React
+			<td>0
+			<td><ul>
+				<li>Use Mobile units in OPS/PTL box in <b>same</b> area (airmobile units may travel any distance)
+				<li>Only vs. units that just performed mission
+				<li>Units may combine only if all Elite, or Division is in Area
+			</ul>
+			<td>Contact automatic. Roll d6 per FLN unit: &lt;= Evasion rating: unit moves to UG box. Remaining FLN units, then Government, fire on CRT. Place surviving FLN units and Government units in OC box.
+			<td>
+		<tr>
+			<td>Intelligence
+			<td>1
+			<td><ul>
+				<li>Need non-neutralized Police unit or units in area
+				<li>Only vs. units in UG box
+			</ul>
+			<td>Roll d6 per FLN unit: &lt;= total Contact rating of non-neutralized Police units: unit moves to OC box
+			<td><ul class="drm">
+				<li>+1 Evasion rating of unit is higher than total Contact ratings
+				<li>+1 in Remote area
+				<li>+1 area is Terrorized
+				<li>-1 in Urban area
+			</ul>
+		<tr>
+			<td>Civil Affairs
+			<td>1
+			<td><ul>
+				<li>
+			</ul>
+			<td>
+			<td>
+		<tr>
+			<td>Suppression
+			<td>1
+			<td><ul>
+				<li>
+			</ul>
+			<td>
+			<td>
+		<tr>
+			<td>Population Resettlement
+			<td>1
+			<td><ul>
+				<li>
+			</ul>
+			<td>
+			<td>
+	</table>
+
 	<h3><a href="#gov-mst" id="gov-mst">Mission Success Table</a></h3>
 
 	<table>
 		<tr>
-			<th>Die Roll
+			<th>Roll (1d6)
 			<td>-1
 			<td>0
 			<td>1
