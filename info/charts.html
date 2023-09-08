@@ -696,73 +696,117 @@
 			<th>5-8
 			<th>9-15
 			<th>16-24
-			<th>25-36
-			<th>37-50
-			<th>51+
+			<th>25-36+
 		<tr>
 			<td>1
 			<td>-
 			<td>-
-			<td>-
-			<td>-
-			<td>1
 			<td>1
 			<td>1
 			<td>2
+			<td>3
 		<tr>
 			<td>2
 			<td>-
 			<td>-
-			<td>-
-			<td>1
-			<td>1
 			<td>1
 			<td>2
-			<td>2
+			<td>4
+			<td>5
 		<tr>
 			<td>3
 			<td>-
 			<td>-
-			<td>1
-			<td>1
-			<td>2
-			<td>2
 			<td>2
 			<td>3
+			<td>5
+			<td>7
 		<tr>
 			<td>4
 			<td>-
 			<td>1
-			<td>1
-			<td>2
-			<td>2
 			<td>2
 			<td>3
-			<td>4
+			<td>5
+			<td>8
 		<tr>
 			<td>5
+			<td>-
 			<td>1
-			<td>1
 			<td>2
-			<td>2
-			<td>2
-			<td>3
 			<td>4
-			<td>4
+			<td>6
+			<td>10
 		<tr>
 			<td>6
 			<td>1
 			<td>2
-			<td>2
-			<td>2
 			<td>3
-			<td>4
-			<td>4
 			<td>5
+			<td>8
+			<td>12
 	</table>
 
-	<h3><a href="#depreciation" id="depreciation">Depreciation Table</a></h3>
-	<h3><a href="#recovery" id="recovery">Recovery Table</a></h3>
+	<p class="small">
+		Total Firepower Ratings involved (+1d6 for each Air Point used: no Air Points in Urban areas) read across to correct
+		column, and roll 1d6. Result is the number of 'hits' on enemy units. Each 'hit' on Government units is -1 PSP to the
+		Government PSL or +1 to the FLN PSL: each 'hit' on FLN units eliminates one Cadre or Band, or reduces a Front to a
+		Cadre, or reduces a Failek to a Band (FLN player chooses how to distribute his losses). Excess "hits" on FLN units
+		are not implemented. Remaining involved units of the side that received the largest number of 'hits' (according to
+		the table, whether implemented or not) are Neutralized (no one is neutralized if equal results). When units fire at
+		half Firepower Rating, round fractions up.
+	</p>
+
+	<h3><a href="#depreciation" id="depreciation">Depreciation Table (10.11)</a></h3>
+
+	<p class="small">Roll 1d6. DRM: -1 for PSL &lt;= 30, +1 for PSL =&gt; 70.<br>
+	If (roll) &lt;= Loss Number; then deduct the indicated numer of Points</p>
+
+	<table>
+		<tr>
+			<th>Points
+			<td>1-5
+			<td>6-10
+			<td>11-15
+			<td>16-20
+			<td>21-24
+			<td>&ge; 25</td>
+		<tr>
+			<th>Loss Number
+			<td>-1
+			<td>-2
+			<td>-3
+			<td>-4
+			<td>-5
+			<td>-6
+		</tr>
+	</table>
+
+	<h3><a href="#recovery" id="recovery">Recovery Table (10.2)</a></h3>
+
+	<table>
+		<tr>
+			<td>
+			<th>Neutralized Unit
+			<th>Terrorized Area
+		<tr>
+			<td>Die roll
+			<td>DRM:<br>
+				+1 elite unit or PSL =&gt; 70<br>
+				-1 PSL &lt;= 30
+			<td>DRM:<br>
+				+1 no non-neutralized FLN units in area
+		<tr>
+			<td>&lt;1-4
+			<td>--
+			<td>--
+		<tr>
+			<td>5-6+
+			<td>Recovers
+			<td>Recovers
+	</table>
+
+
 	<h3><a href="#psl-adjustment" id="psl-adjustment">PSL Adjustments Summary</a></h3>
 	<h3><a href="#units" id="units">Unit Identification Chart</a></h3>
 	<h3><a href="#scenarios" id="scenarios">Scenarios</a></h3>
