@@ -174,6 +174,8 @@
 		padding: 0;
 	}
 
+	.small { font-size: small;}
+
 	.center { text-align: center }
 
 	.nowrap { white-space: nowrap; }
@@ -457,7 +459,7 @@
 
 	<h3><a href="#gov-coup" id="gov-coup">Coup Table</a></h3>
 
-	<small>(use if Government PSL &lt;= 30; coup attempt if roll 6 on a 1d6; DRM +1 = if OAS is deployed in France)</small>
+	<p class="small">(use if Government PSL &lt;= 30; coup attempt if roll 6 on a 1d6; DRM +1 = if OAS is deployed in France)</p>
 
 	<table>
 		<tr>
@@ -544,25 +546,36 @@
 			<td>Civil Affairs
 			<td>1
 			<td><ul>
-				<li>
+				<li>Need non-neutralized Police unit in area
+				<li>Only 1 Mission/Area/turn
+				<li>Roll on Mission Success Table
+				<li>Not in Remote areas
 			</ul>
-			<td>
-			<td>
+			<td># = PSP subtracted from FLN PSL<br>+ @ = remote Terror marker in area, if present
+			<td>+1 if Amnesty random even in effect
 		<tr>
 			<td>Suppression
 			<td>1
 			<td><ul>
-				<li>
+				<li>Need non-neutralized Police unit in area
+				<li>Only 1 Mission/Area/turn
+				<li>Roll on Mission Success Table
+				<li>Elite units may assist for DRM
 			</ul>
-			<td>
-			<td>
+			<td># = number of FLN Bands/Faileks neutralized<br>@ = area Terrorized; all Cadres and Fronts are neutralized<br>+ = area Terrorized; -1d6 Government PSP
+			<td><ul class="drm">
+				<li>+1 x # Elite units assisting
+				<li>+1 if Amnesty random event in effect
+			</ul>
 		<tr>
 			<td>Population Resettlement
 			<td>1
 			<td><ul>
-				<li>
+				<li>Need non-neutralized Police unit in area
+				<li>Rural area only
+				<li>Govt must afterwards "pay" 1 PSP per turn per area resetled
 			</ul>
-			<td>
+			<td>Area automatically and permanently becomes Remote and Terrorized (Fronts convert to Cadres); FLN +3d6 PSP
 			<td>
 	</table>
 
@@ -600,7 +613,79 @@
 	</h2>
 
 	<h3><a href="#phases" id="phases">Sequence of Play</a></h3>
+
+	<table>
+		<tr>
+			<th class="nowrap">Random Events Phase
+			<td>one player rolls on Random Events Table, implement result, see who controls OAS (1-3=FLN)
+		<tr>
+			<th>Reinforcement Phase
+			<td>Both sides accrue and spend AP or PSL to build, convert, mobilize, activate units/ Border Zone. Government player goes first. OAS activates if Government PSL =&lt; 30.
+		<tr>
+			<th>Deployment Phase
+			<td>Government changes Division modes, puts mobile units in PTL box of same area, or in OPS box of any area in Algeria. FLN moves units from UG to OPS box of same area (may deploy 1 Cadre to France).
+		<tr>
+			<th>Operations Phase
+			<td>FLN chooses whether to act, or let Government act. Either player may pass. Consecutive Passes end the phase. Players' PSLs may be adjusted during this Phase, depending on events.
+		<tr>
+			<th>Turn Interphase
+			<td>
+		<tr>
+			<td colspan="2">
+			<ul><li>Control/Depreciation Segment: Determine Controlled and Contested areas. Roll for Depreciation of unspent AP and against maximum Air Points and Helo Points. Reset Air/Helo Available markers to maximum points.
+				<li>Recovery Segment: Neutralized units and Terrorized areas roll to recover.
+				<li>Redeployment Segment: Government mobile units replaced in OPS box of same area; FLN units replaced in UG box.
+				<li>Final PSL Adjustment Segment: Check for Coup d'etat; adjust Political Support Levels as required.
+			</ul>
+			<h4>Control</h4>
+			<ul>
+				<li>both sides sum up Control Points in each area. 3 Control Poitns for each FLN Front or Dispersed mode Division, 1 for each other unit. Neutralized units don't count.
+				<li>If one side has 2x or more Points than the other, then it gets Control: place Control marker.
+				<li>If more but less than 2x as many, take the difference and both sides try to score less than or equal to this # on 1d6. If one player makes it he gets Control. If nether or both do, area is Contested.
+			</ul>
+		</table>
+
 	<h3><a href="#events" id="events">Random Events Table</a></h3>
+
+	<p class="small">(roll 1d6 twice in succession)</p>
+
+	<table>
+		<tr>
+			<td class="nowrap">11-26
+			<td><b>No event.</b> Lucky you.
+		<tr>
+			<td>31-33
+			<td><b>FLN Foreign Arms shipment.</b> The FLN player adds 2d6 AP, minus the current number of Naval Points.
+		<tr>
+			<td>34-36
+			<td><b>Jealousy and Paranoia.</b> FLN units may not Move across <i>wilaya</i> borders this turn only (they may move across international borders).
+		<tr>
+			<td>41-42
+			<td><b>Elections in France.</b> Government player rolls on the Coup Table (no DRM) and adds or subtracts the number of PSP indicated: no units are mobilized or removed.
+		<tr>
+			<td>43-44
+			<td><b>UN Debates Algerian Independence.</b> Player with higher PSL raises FLN or lowers Government PSL by 1d6.
+		<tr>
+			<td>45-46
+			<td><b>FLN Fractional Purge.</b> The Government player chooses one <i>wilaya</i> and rolls 1d6, neutralizing that number of FLN units there (the FLN player's choice which ones).
+		<tr>
+			<td>51-54
+			<td><b>Morocco and Tunisia Gain Independence.</b> Raise both FLN and Government PSL by 2d6; FLN player may now Build/Convert units in these two countries as if a Front were there and Government may begin to mobilize the Border Zone. See 11.22.<br>
+				If this event is rolled again, or if playing the 1958 or 1960 scenarios, FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP (represents infiltration of small numbers of weapons and troops through the borders).
+		<tr>
+			<td>55-56
+			<td><b>NATO pressures France to boost European defense.</b> The Government player rolls 1d6 and must remove that number of French Army brigades (a division counts as three brigades) from the map. The units may be re-mobilized at least one turn later.
+		<tr>
+			<td>61-62
+			<td><b>Suez Crisis.</b> The Government player must remove 1d6 elite units from the map, up to the number actually available: they will return in the Reinforcement Phase of the next turn automatically - they do not need to be mobilized agani but do need to be activated. Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
+		<tr>
+			<td>63-64
+			<td><b>Amnesty.</b> The French government offers "the peace of the brave" to FLN rebels. All Government Civil Affairs or Suppression missions get a +1 DRM this turn.
+		<tr>
+			<td>65-66
+			<td><b>Jean-Paul Sartre writes article condemning the war.</b> Reduce Government PSl by 1 PSP.
+	</table>
+
 	<h3><a href="#crt" id="crt">Combat Results Table</a></h3>
 
 	<table>
