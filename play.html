@@ -17,17 +17,19 @@ main { background-color: dimgray }
 #role_FRA .role_name { background-color: #002654; color: white; }
 
 #mapwrap {
-	width: 1400px;
-	height: 824px;
+	width: 1500px;
+	height: 1101px;
+	/* width: 2705px;
+	height: 1985px; */
 	box-shadow: 0px 1px 10px #0008;
 }
 
 #map {
-	width: 1400px;
-	height: 824px;
-	background-size: 1400px 824px;
+	width: 1500px;
+	height: 1101px;
+	background-size: 1500px 1101px;
 	background-position: center;
-	background-image: url(map.jpg);
+	background-image: url(map.svg);
 }
 
 #map div {
@@ -72,6 +74,243 @@ main { background-color: dimgray }
 .selected {
 	border-color: yellow;
 }
+
+/* UNITS */
+
+#map .unit {
+	position: absolute;
+}
+
+.unit {
+	background-size: 1000%;
+	background-repeat: no-repeat;
+	border-style: solid;
+	transition: top 200ms, left 200ms, transform 200ms;
+}
+
+.unit {
+	width: 39px;
+	height: 39px;
+	border-width: 3px;
+	border-radius: 8px;
+}
+
+.unit.m {
+	width: 42px;
+	height: 42px;
+	border-width: 4px;
+}
+
+.unit.revealed {
+	background-image: url(counters.svg);
+}
+
+/* #mapwrap.fit .unit.revealed {
+	background-image: url(units-simple.svg);
+} */
+
+.unit.axis {
+	background-color: hsl(80, 20%, 60%);
+	border-color: hsl(80, 20%, 50%);
+	box-shadow: 0 0 2px 1px hsl(80, 20%, 20%);
+}
+
+.unit.axis.eliminated,
+.unit.axis.fired,
+.unit.axis.moved:not(.disrupted):not(.unsupplied) {
+	border-color: hsl(80, 20%, 40%);
+}
+
+.unit.axis.eliminated:not(.revealed),
+.unit.axis.fired:not(.revealed),
+.unit.axis.moved:not(.revealed) {
+	background-color: hsl(80, 20%, 50%);
+}
+
+.unit.allied {
+	background-color: hsl(35, 40%, 60%);
+	border-color: hsl(35, 40%, 50%);
+	box-shadow: 0 0 2px 1px hsl(30, 40%, 20%);
+}
+
+.unit.allied.eliminated,
+.unit.allied.fired,
+.unit.allied.moved:not(.disrupted):not(.unsupplied) {
+	border-color: hsl(35, 40%, 40%);
+}
+
+.unit.allied.eliminated:not(.revealed),
+.unit.allied.fired:not(.revealed),
+.unit.allied.moved:not(.revealed) {
+	background-color: hsl(35, 40%, 50%);
+}
+
+.unit.moved:not(.revealed) {
+	background-image: url(moved.svg);
+	background-size: 75%;
+	background-position: center bottom;
+}
+
+.unit.eliminated:not(.revealed) {
+	background-image: url(eliminated.svg);
+	background-size: 60%;
+	background-position: center;
+}
+
+.unit.axis.revealed {
+	background-color: #abba8e;
+}
+
+.unit.axis.italian.revealed {
+	background-color: #f9e3b3;
+}
+
+.unit.allied.revealed {
+	background-color: #e4d1ab;
+}
+
+.unit.disrupted {
+	border-color: #222;
+	box-shadow: 0 0 2px 1px black;
+}
+
+.unit.disrupted:not(.revealed) {
+	background-image: url(disrupted.svg);
+	background-size: 75%;
+	background-position: center;
+}
+
+.unit.unsupplied {
+	border-color: #c00;
+	box-shadow: 0 0 2px 1px darkred;
+}
+
+.unit.unsupplied:not(.revealed) {
+	background-image: url(unsupplied.svg);
+	background-size: 75%;
+	background-position: center;
+}
+
+.unit.disrupted.unsupplied {
+	border-color: #222 #c00;
+}
+
+.unit.disrupted.unsupplied.r1, .unit.disrupted.unsupplied.r3 {
+	border-color: #c00 #222;
+}
+
+.unit.disrupted.unsupplied:not(.revealed) {
+	background-image: url(unsupplied.svg), url(disrupted.svg);
+	background-size: 50%, 50%;
+	background-position: 0% 90%, 90% 10%;
+}
+
+.unit.action {
+	box-shadow: 0 0 0 2px white;
+}
+
+.unit.action.hit {
+	box-shadow: 0 0 0 2px white, 0 0 0 4px black;
+}
+
+.unit.selected {
+	box-shadow: 0 0 0 2px yellow;
+}
+
+.unit.u0{background-position:0% 0%}
+.unit.u1{background-position:11.11111111111111% 0%}
+.unit.u2{background-position:22.22222222222222% 0%}
+.unit.u3{background-position:33.33333333333333% 0%}
+.unit.u4{background-position:44.44444444444444% 0%}
+.unit.u5{background-position:55.55555555555556% 0%}
+.unit.u6{background-position:66.66666666666666% 0%}
+.unit.u7{background-position:77.77777777777777% 0%}
+.unit.u8{background-position:88.88888888888889% 0%}
+.unit.u9{background-position:100% 0%}
+.unit.u10{background-position:0% 11.11111111111111%}
+.unit.u11{background-position:11.11111111111111% 11.11111111111111%}
+.unit.u12{background-position:22.22222222222222% 11.11111111111111%}
+.unit.u13{background-position:33.33333333333333% 11.11111111111111%}
+.unit.u14{background-position:44.44444444444444% 11.11111111111111%}
+.unit.u15{background-position:55.55555555555556% 11.11111111111111%}
+.unit.u16{background-position:66.66666666666666% 11.11111111111111%}
+.unit.u17{background-position:77.77777777777777% 11.11111111111111%}
+.unit.u18{background-position:88.88888888888889% 11.11111111111111%}
+.unit.u19{background-position:100% 11.11111111111111%}
+.unit.u20{background-position:0% 22.22222222222222%}
+.unit.u21{background-position:11.11111111111111% 22.22222222222222%}
+.unit.u22{background-position:22.22222222222222% 22.22222222222222%}
+.unit.u23{background-position:33.33333333333333% 22.22222222222222%}
+.unit.u24{background-position:44.44444444444444% 22.22222222222222%}
+.unit.u25{background-position:55.55555555555556% 22.22222222222222%}
+.unit.u26{background-position:66.66666666666666% 22.22222222222222%}
+.unit.u27{background-position:77.77777777777777% 22.22222222222222%}
+.unit.u28{background-position:88.88888888888889% 22.22222222222222%}
+.unit.u29{background-position:100% 22.22222222222222%}
+.unit.u30{background-position:0% 33.33333333333333%}
+.unit.u31{background-position:11.11111111111111% 33.33333333333333%}
+.unit.u32{background-position:22.22222222222222% 33.33333333333333%}
+.unit.u33{background-position:33.33333333333333% 33.33333333333333%}
+.unit.u34{background-position:44.44444444444444% 33.33333333333333%}
+.unit.u35{background-position:55.55555555555556% 33.33333333333333%}
+.unit.u36{background-position:66.66666666666666% 33.33333333333333%}
+.unit.u37{background-position:77.77777777777777% 33.33333333333333%}
+.unit.u38{background-position:88.88888888888889% 33.33333333333333%}
+.unit.u39{background-position:100% 33.33333333333333%}
+.unit.u40{background-position:0% 44.44444444444444%}
+.unit.u41{background-position:11.11111111111111% 44.44444444444444%}
+.unit.u42{background-position:22.22222222222222% 44.44444444444444%}
+.unit.u43{background-position:33.33333333333333% 44.44444444444444%}
+.unit.u44{background-position:44.44444444444444% 44.44444444444444%}
+.unit.u45{background-position:55.55555555555556% 44.44444444444444%}
+.unit.u46{background-position:66.66666666666666% 44.44444444444444%}
+.unit.u47{background-position:77.77777777777777% 44.44444444444444%}
+.unit.u48{background-position:88.88888888888889% 44.44444444444444%}
+.unit.u49{background-position:100% 44.44444444444444%}
+.unit.u50{background-position:0% 55.55555555555556%}
+.unit.u51{background-position:11.11111111111111% 55.55555555555556%}
+.unit.u52{background-position:22.22222222222222% 55.55555555555556%}
+.unit.u53{background-position:33.33333333333333% 55.55555555555556%}
+.unit.u54{background-position:44.44444444444444% 55.55555555555556%}
+.unit.u55{background-position:55.55555555555556% 55.55555555555556%}
+.unit.u56{background-position:66.66666666666666% 55.55555555555556%}
+.unit.u57{background-position:77.77777777777777% 55.55555555555556%}
+.unit.u58{background-position:88.88888888888889% 55.55555555555556%}
+.unit.u59{background-position:100% 55.55555555555556%}
+.unit.u60{background-position:0% 66.66666666666666%}
+.unit.u61{background-position:11.11111111111111% 66.66666666666666%}
+.unit.u62{background-position:22.22222222222222% 66.66666666666666%}
+.unit.u63{background-position:33.33333333333333% 66.66666666666666%}
+.unit.u64{background-position:44.44444444444444% 66.66666666666666%}
+.unit.u65{background-position:55.55555555555556% 66.66666666666666%}
+.unit.u66{background-position:66.66666666666666% 66.66666666666666%}
+.unit.u67{background-position:77.77777777777777% 66.66666666666666%}
+.unit.u68{background-position:88.88888888888889% 66.66666666666666%}
+.unit.u69{background-position:100% 66.66666666666666%}
+.unit.u70{background-position:0% 77.77777777777777%}
+.unit.u71{background-position:11.11111111111111% 77.77777777777777%}
+.unit.u72{background-position:22.22222222222222% 77.77777777777777%}
+.unit.u73{background-position:33.33333333333333% 77.77777777777777%}
+.unit.u74{background-position:44.44444444444444% 77.77777777777777%}
+.unit.u75{background-position:55.55555555555556% 77.77777777777777%}
+.unit.u76{background-position:66.66666666666666% 77.77777777777777%}
+.unit.u77{background-position:77.77777777777777% 77.77777777777777%}
+.unit.u78{background-position:88.88888888888889% 77.77777777777777%}
+.unit.u79{background-position:100% 77.77777777777777%}
+.unit.u80{background-position:0% 88.88888888888889%}
+.unit.u81{background-position:11.11111111111111% 88.88888888888889%}
+.unit.u82{background-position:22.22222222222222% 88.88888888888889%}
+.unit.u83{background-position:33.33333333333333% 88.88888888888889%}
+.unit.u84{background-position:44.44444444444444% 88.88888888888889%}
+.unit.u85{background-position:55.55555555555556% 88.88888888888889%}
+.unit.u86{background-position:66.66666666666666% 88.88888888888889%}
+.unit.u87{background-position:77.77777777777777% 88.88888888888889%}
+.unit.u88{background-position:88.88888888888889% 88.88888888888889%}
+.unit.u89{background-position:100% 88.88888888888889%}
+.unit.u90{background-position:0% 100%}
+.unit.u91{background-position:11.11111111111111% 100%}
+.unit.u92{background-position:22.22222222222222% 100%}
+.unit.u93{background-position:33.33333333333333% 100%}
 
 .counter.fr_al_5_mob_inf { background-image: url(counters/fr_al_5_mob_inf.png) }
 .counter.fr_al_7_mob_arm { background-image: url(counters/fr_al_7_mob_arm.png) }
@@ -217,6 +456,30 @@ main { background-color: dimgray }
 <div id="mapwrap" class="">
 <div id="map">
 
+<div class="unit u0 revealed" style="left:3px;top:4px;"></div>
+<div class="unit u1 revealed unsupplied" style="left:53px;top:4px;"></div>
+<div class="unit u2 revealed selected" style="left:103px;top:4px;"></div>
+<div class="unit u3 revealed action hit" style="left:153px;top:4px;"></div>
+<div class="unit u4 revealed" style="left:203px;top:4px;"></div>
+<div class="unit u5 revealed" style="left:253px;top:4px;"></div>
+<div class="unit u6 revealed" style="left:303px;top:4px;"></div>
+<div class="unit u7 revealed" style="left:353px;top:4px;"></div>
+<div class="unit u8 revealed" style="left:403px;top:4px;"></div>
+
+<!-- top right -->
+<div class="unit u0 revealed" style="left:1450px;top:4px;"></div>
+
+<!-- bottom right -->
+<div class="unit u0 revealed" style="left:1450px;top:1051px;"></div>
+
+<!-- bottom left -->
+<div class="unit u0 revealed" style="left:3px;top:1051px;"></div>
+
+
+<div class="unit u1 revealed unsupplied" style="left:242px;top:330px;"></div>
+
+
+<!-- 
 <div class="counter counter-map fr_div_7_inf selected" style="left:125px;top:187px;"></div>
 <div class="counter counter-map fr_div_7_inf neutralized" style="left:184px;top:187px;"></div>
 
@@ -232,6 +495,12 @@ main { background-color: dimgray }
 
 <div class="counter counter-med border_zone" style="left:20px;top:530px;"></div>
 <div class="counter counter-med border_zone" style="left:1350px;top:250px;"></div>
+
+<div class="counter naval-pts" style="left:171px;top:29px"></div>
+<div class="counter helo-pts-max" style="left:338px;top:10px"></div>
+<div class="counter helo-pts-avail" style="left:478px;top:10px"></div>
+<div class="counter air-pts-max" style="left:618px;top:10px"></div>
+<div class="counter air-pts-avail" style="left:758px;top:10px"></div> -->
 
 </div>
 </div>
@@ -265,34 +534,6 @@ main { background-color: dimgray }
 <div class="counter cadre"></div>
 <div class="counter company"></div>
 
-</div>
-</div>
-
-<div id="psl_panel" class="panel">
-<div id="psl_header" class="panel_header">PSL Track</div>
-<div id="psl" class="panel_body">
-<div id="psl_track" class="track">
-
-<div class="counter ap" style="left:20px;top:15px"></div>
-<div class="counter psl-fln" style="left:20px;top:414px"></div>
-<div class="counter psl-fra" style="left:441px;top:494px"></div>
-
-</div>
-</div>
-</div>
-
-<div id="air_naval_panel" class="panel">
-<div id="air_naval_header" class="panel_header">Air / Naval Track</div>
-<div id="air_naval" class="panel_body">
-<div id="air_naval_track" class="track">
-
-<div class="counter naval-pts" style="left:171px;top:29px"></div>
-<div class="counter helo-pts-max" style="left:338px;top:10px"></div>
-<div class="counter helo-pts-avail" style="left:478px;top:10px"></div>
-<div class="counter air-pts-max" style="left:618px;top:10px"></div>
-<div class="counter air-pts-avail" style="left:758px;top:10px"></div>
-
-</div>
 </div>
 </div>
 
