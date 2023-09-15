@@ -2,6 +2,13 @@
 
 /* global view, player, send_action, action_button, scroll_with_middle_mouse */
 
+const SCALE = 1.80333333333333333333 
+
+const RURAL = 0
+const URBAN = 1
+const REMOTE = 2
+const COUNTRY = 3
+
 let ui = {
 	board: document.getElementById("map"),
 }
@@ -48,6 +55,23 @@ function on_init() {
 	if (on_init_once)
 		return
 	on_init_once = true
+
+	for (let i = 0; i < data.areas.length; ++i) {
+		let name = data.areas[i].name
+		let type = data.areas[i].type
+		let e = document.createElement("div")
+		e.className = "box"
+		e.style.left = data.areas[i].x / SCALE + "px"
+		e.style.top = data.areas[i].y / SCALE + "px"
+		if (type !== COUNTRY) {
+			e.style.width = 193 / SCALE + "px"
+			e.style.height = 193 / SCALE+ "px"
+		} else {
+			e.style.width = data.areas[i].w / SCALE + "px"
+			e.style.height = data.areas[i].h / SCALE + "px"
+		}
+		document.getElementById("boxes").appendChild(e)
+	}
 }
 
 function on_update() {
