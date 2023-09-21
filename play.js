@@ -9,6 +9,13 @@ const URBAN = 1
 const REMOTE = 2
 const COUNTRY = 3
 
+const UG = 0
+const OPS = 1
+const PTL = 2
+const OC = 3
+// const BOXES = [UG, OPS, PTL, OC]
+const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
+
 let ui = {
 	board: document.getElementById("map"),
 }
@@ -56,21 +63,74 @@ function on_init() {
 		return
 	on_init_once = true
 
+	// Tracker
+	let x = 5
+	let y = 5
+	for (let i = 0; i < 100; ++i) {
+		let e = document.createElement("div")
+		e.id = `tracker-${i}`
+		e.className = "box"
+		e.style.left = x / SCALE + "px"
+		e.style.top = y / SCALE + "px"
+		e.style.width = 85 / SCALE + "px"
+		e.style.height = 85 / SCALE + "px"
+		document.getElementById("boxes").appendChild(e)
+
+		if (i < 29) {
+			x += 90
+		} else if (i < 50) {
+			y += 90
+		} else if (i < 79) {
+			x -= 90
+		} else {
+			y -= 90
+		}
+	}
+
+	// DRM
+	for (let i = 0; i < 4; ++i) {
+		let e = document.createElement("div")
+		e.id = `drm-${i}`
+		e.className = "box"
+		e.style.left = (288.2 + (i * 99)) / SCALE + "px"
+		e.style.top = 396 / SCALE + "px"
+		e.style.width = 94 / SCALE + "px"
+		e.style.height = 94 / SCALE + "px"
+		document.getElementById("boxes").appendChild(e)
+	}
+
+
+	// Areas
 	for (let i = 0; i < data.areas.length; ++i) {
 		let name = data.areas[i].name
 		let type = data.areas[i].type
 		let e = document.createElement("div")
+		e.id = `area-${name}`
 		e.className = "box"
 		e.style.left = data.areas[i].x / SCALE + "px"
 		e.style.top = data.areas[i].y / SCALE + "px"
 		if (type !== COUNTRY) {
 			e.style.width = 193 / SCALE + "px"
-			e.style.height = 193 / SCALE+ "px"
+			e.style.height = 193 / SCALE + "px"
 		} else {
 			e.style.width = data.areas[i].w / SCALE + "px"
 			e.style.height = data.areas[i].h / SCALE + "px"
 		}
 		document.getElementById("boxes").appendChild(e)
+
+		if (type !== COUNTRY) {
+			for (let j = 0; j < 4; ++j) {
+				let e = document.createElement("div")
+				let box_name = BOX_NAMES[j]
+				e.id = `ops-${name}-${box_name}`
+				e.className = "box"
+				e.style.left = (data.areas[i].x + (j % 2) * 99) / SCALE + "px"
+				e.style.top = (data.areas[i].y + Math.floor(j / 2) * 99) / SCALE + "px"
+				e.style.width = 94 / SCALE + "px"
+				e.style.height = 94 / SCALE + "px"
+				document.getElementById("boxes").appendChild(e)
+			}
+		}
 	}
 }
 

@@ -56,6 +56,9 @@ def_area("Mascara", REMOTE, "V", 785, 1302.9)
 def_area("Ain Sefra", REMOTE, "V", 752, 1670.9)
 def_area("Laghouat", REMOTE, "V", 1191, 1615.6)
 
+def_area("Sidi Aissa", REMOTE, "VI", 1385, 1186)
+def_area("Ain Qussera", RURAL, "VI", 1070.6, 1235.6)
+
 
 data.areas = areas
 data.zones = zones
