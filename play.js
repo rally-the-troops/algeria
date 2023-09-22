@@ -149,17 +149,17 @@ function on_update() {
 
 function on_log(text) {
 	let p = document.createElement("div")
-	if (text.match(/^\.r /)) {
-		text = text.substring(3)
-		p.className = 'h1 r'
+	if (text.match(/^\.h1/)) {
+		text = text.substring(4)
+		p.className = 'h1'
 	}
-	else if (text.match(/^\.b /)) {
-		text = text.substring(3)
-		p.className = 'h1 b'
+	else if (text.match(/^\.h2/)) {
+		text = text.substring(4)
+		p.className = 'h2'
 	}
-	else if (text.match(/^\.x /)) {
-		text = text.substring(3)
-		p.className = 'h1 x'
+	else if (text.match(/^\.h3/)) {
+		text = text.substring(4)
+		p.className = 'h3'
 	}
 
 	p.innerHTML = text
