@@ -1,16 +1,16 @@
 "use strict"
 
 const FLN = "FLN"
-const FRA = "FRA"
+const GOV = "Government"
 const BOTH = "Both"
 
 var states = {}
 var game = null
 var view = null
 
-exports.scenarios = [ "Standard" ]
+exports.scenarios = [ "1954", "1958", "1960" ]
 
-exports.roles = [ FLN, FRA ]
+exports.roles = [ FLN, GOV ]
 
 function gen_action(action, argument) {
 	if (!(action in view.actions))
@@ -63,15 +63,16 @@ exports.resign = function (state, player) {
 	game = state
 	if (game.state !== 'game_over') {
 		if (player === FLN)
-			goto_game_over(FRA, "FLN resigned.")
-		if (player === FRA)
-			goto_game_over(FLN, "France resigned.")
+			goto_game_over(GOV, "FLN resigned.")
+		if (player === GOV)
+			goto_game_over(FLN, "Government resigned.")
 	}
 	return game
 }
 
 function goto_game_over(result, victory) {
 	game.state = "game_over"
+	game.current = -1
 	game.active = "None"
 	game.result = result
 	game.victory = victory
@@ -86,20 +87,109 @@ states.game_over = {
 	},
 }
 
-// === PREPARATION ===
+// === SETUP ===
 
 exports.setup = function (seed, scenario, options) {
 	game = {
 		seed: seed,
-		state: null,
 		log: [],
 		undo: [],
+		active: null,
+		selected: -1,
+
+		current: 0,
+		state: null,
+		scenario: null,
+		turn: 0,
+
+		// game board state
+		fln_ap: 0,
+		fln_psl: 0,
+		gov_psl: 0,
+		gov_air: 0,
+		gov_helo: 0,
+		gov_naval: 0,
+
+		is_morocco_tunisia_independent: false,
+		border_zone: 0,
+
+		// event related effects
+		had_suez_crisis: false,
+		is_amnesty: false,
+		is_fln_move_restricted: false,
+
+		// logging
+		summary: null,
 	}
 
-	game.active =  FLN
-	goto_random_event()
+	game.scenario = scenario
+	log_h1("Scenario: " + scenario)
+	load_scenario(game)
+
+	goto_scenario_setup()
 
 	return game
+}
+
+function load_scenario(game) {
+	switch (game.scenario) {
+	case "1954":
+		game.gov_psl = 65
+		game.gov_air = 0
+		game.gov_helo = 0
+		game.gov_naval = 0
+		game.fln_psl = 50
+		game.fln_ap = roll_2d6()
+		game.is_morocco_tunisia_independent = false
+		break
+	case "1958":
+		game.gov_psl = 50
+		game.gov_air = 6
+		game.gov_helo = 4
+		game.gov_naval = 2
+		game.fln_psl = 60
+		game.fln_ap = roll_2d6()
+		game.is_morocco_tunisia_independent = true
+		game.border_zone = -2
+		break
+	case "1960":
+		game.gov_psl = 45
+		game.gov_air = 7
+		game.gov_helo = 5
+		game.gov_naval = 3
+		game.fln_psl = 45
+		game.fln_ap = roll_2d6()
+		game.is_morocco_tunisia_independent = true
+		game.border_zone = -3
+		break
+	}
+}
+
+function goto_scenario_setup() {
+	game.active = GOV
+	game.state = "scenario_setup"
+}
+
+states.scenario_setup = {
+	inactive: "setup",
+	prompt() {
+		view.prompt = `Setup: ${game.active} Deployment.`
+		gen_action("end_deployment")
+	},
+	end_deployment() {
+		log(`Deployed`)
+		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
+		for (let x of keys)
+			log(`>${game.summary[x]} at #${x}`)
+		game.summary = null
+
+		end_scenario_setup()
+	}
+}
+
+function end_scenario_setup() {
+	game.turn = 1
+	goto_random_event()
 }
 
 // === FLOW OF PLAY ===
@@ -120,20 +210,21 @@ states.random_event = {
 		let rnd = 10 * roll_d6() + roll_d6()
 		log("Random event roll " + rnd)
 		// goto_reinforcement_phase()
+
 		if (rnd <= 26) {
 			goto_no_event()
-		} else if (rnd <= 36) {
+		} else if (rnd <= 33) {
 			goto_fln_foreign_arms_shipment()
+		} else if (rnd <= 36) {
+			goto_jealousy_and_paranoia()
 		} else if (rnd <= 42) {
 			goto_elections_in_france()
 		} else if (rnd <= 44) {
 			goto_un_debate()
 		} else if (rnd <= 46) {
 			goto_fln_factional_purge()
-		} else if (rnd <= 52) {
-			goto_morocco_independence()
 		} else if (rnd <= 54) {
-			goto_tunisia_independence()
+			goto_morocco_tunisia_independence()
 		} else if (rnd <= 56) {
 			goto_nato_pressure()
 		} else if (rnd <= 62) {
@@ -149,62 +240,125 @@ states.random_event = {
 	restart() {
 		// XXX debug
 		log("Restarting...")
-		goto_random_event()
+		goto_restart()
 	}
 }
 
+function goto_restart() {
+	// XXX debug only
+	exports.setup(game.seed, game.scenario)
+}
+
 function goto_no_event() {
-	log("No Event. Lucky you")
-	goto_reinforcement_phase()
+	log(".h2 No Event. Lucky you.")
+	end_random_event()
 }
 
 function goto_fln_foreign_arms_shipment() {
-	log("FLN Foreign arms shipment. TODO")
-	goto_reinforcement_phase()
+	log(".h2 FLN Foreign arms shipment.")
+	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
+	let roll = roll_2d6()
+	let delta_ap = Math.max(roll - game.gov_naval, 0)
+	log(`FLN adds ${roll} AP, minus ${game.gov_naval} Naval Points = ${delta_ap} AP`)
+	game.fln_ap += delta_ap
+	end_random_event()
+}
+
+function goto_jealousy_and_paranoia() {
+	log(".h2 Jealousy and Paranoia. TODO")
+	// TODO FLN units may not Move across wilaya borders this turn only (they may move across international borders)
+	game.is_fln_move_restricted = true
+	end_random_event()
 }
 
 function goto_elections_in_france() {
-	log("Elections in France. TODO")
-	goto_reinforcement_phase()
+	log(".h2 Elections in France. TODO")
+	// Government player rolls on the Coup Table (no DRM) and adds or subtracts
+	// the number of PSP indicated: no units are mobilized or removed.
+	end_random_event()
 }
 
 function goto_un_debate() {
-	log("UN debates Algerian Independence. TODO")
-	goto_reinforcement_phase()
+	log(".h2 UN debates Algerian Independence. TODO")
+	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
+	end_random_event()
 }
 
 function goto_fln_factional_purge() {
-	log("FLN Factional Purge. TODO")
-	goto_reinforcement_phase()
+	log(".h2 FLN Factional Purge. TODO")
+	// The Government player chooses one wilaya and rolls 1d6, neutralizing
+	// that number of FLN units there (the FLN player's choice which ones).
+	end_random_event()
 }
 
-function goto_morocco_independence() {
-	log("Morocco Gains Independence. TODO")
-	goto_reinforcement_phase()
-}
+function goto_morocco_tunisia_independence() {
+	log(".h2 Morocco & Tunisia Gains Independence. TODO")
 
-function goto_tunisia_independence() {
-	log("Tunisia Gains Independence. TODO")
-	goto_reinforcement_phase()
+	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
+		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
+		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
+		// (represents infiltration of small numbers of weapons and troops through the borders).
+
+		// TODO
+
+		end_random_event()
+	}
+
+	// Raise both FLN and Government PSL by 2d6;
+	let fln_roll = roll_2d6()
+	log(`Raising FLN PSL by ${fln_roll}`)
+	game.fln_psl += fln_roll
+
+	let gov_roll = roll_2d6()
+	log(`Raising Government PSL by ${gov_roll}`)
+	game.gov_psl += gov_roll
+
+	// FLN player may now Build/Convert units in these two countries as if a Front were there
+	// and Government may begin to mobilize the Border Zone. See 11.22.
+	game.is_morocco_tunisia_independent = true
+	end_random_event()
 }
 
 function goto_nato_pressure() {
-	log("NATO pressures France to boost European defense. TODO")
-	goto_reinforcement_phase()
+	log(".h2 NATO pressures France to boost European defense. TODO")
+	// The Government player rolls 1d6 and must remove that number of French Army brigades
+	// (a division counts as three brigades) from the map.
+	// The units may be re-mobilized at least one turn later.
+	end_random_event()
 }
 
 function goto_suez_crisis() {
-	log("Suez Crisis. TODO")
-	goto_reinforcement_phase()
+	log(".h2 Suez Crisis. TODO")
+	if (game.had_suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
+		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
+		log("Re-roll. No Event.")
+		end_random_event()
+		return
+	}
+	// The Government player must remove 1d6 elite units from the map, up to the number actually available:
+	// they will return in the Reinforcement Phase of the next turn automatically
+	// - they do not need to be mobilized again but do need to be activated.
+
+	game.had_suez_crisis = true
+	end_random_event()
 }
 
 function goto_amnesty() {
-	log("Amnesty. TODO")
-	goto_reinforcement_phase()
+	log(".h2 Amnesty. TODO")
+	// The French government offers "the peace of the brave" to FLN rebels.
+	// TODO All Government Civil Affairs or Suppression missions get a +1 DRM this turn.
+	game.is_amnesty = true
+	end_random_event()
 }
 
 function goto_jean_paul_sartre() {
-	log("Jean-Paul Sartre writes article condemning the war. TODO")
+	log(".h2 Jean-Paul Sartre writes article condemning the war.")
+	// Reduce Government PSL by 1 PSP.
+	game.gov_psl -= 1
+	end_random_event()
+}
+
+function end_random_event() {
 	goto_reinforcement_phase()
 }
 
@@ -216,13 +370,59 @@ states.reinforcement = {
 	inactive: "to do reinforcement",
 	prompt() {
 		view.prompt = "Do reinforcement."
-		gen_action("restart")
+		gen_action("done")
 	},
-	restart() {
+	done() {
 		// XXX debug
-		log("Restarting...")
-		goto_random_event()
+		log("End of turn...")
+		goto_next_turn()
 	}
+}
+
+function goto_next_turn() {
+	game.turn += 1
+
+	// make sure single-turn effects are disabled
+	game.is_amnesty = false
+	game.is_fln_move_restricted = false
+
+	goto_random_event()
+}
+
+// === LOGGING ===
+
+function log(msg) {
+	game.log.push(msg)
+}
+
+function log_br() {
+	if (game.log.length > 0 && game.log[game.log.length - 1] !== "")
+		game.log.push("")
+}
+
+function logi(msg) {
+	game.log.push(">" + msg)
+}
+
+function log_h1(msg) {
+	log_br()
+	log(".h1 " + msg)
+	log_br()
+}
+
+function log_h2(msg) {
+	log_br()
+	log(".h2 " + msg)
+	log_br()
+}
+
+function log_h3(msg) {
+	log_br()
+	log(".h3 " + msg)
+}
+
+function log_sep() {
+	log(".hr")
 }
 
 // === COMMON LIBRARY ===
@@ -278,6 +478,10 @@ function shuffle(list) {
 
 function roll_d6() {
 	return random(6) + 1;
+}
+
+function roll_2d6() {
+	return roll_d6() + roll_d6()
 }
 
 // Fast deep copy for objects without cycles
