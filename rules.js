@@ -4,9 +4,199 @@ const FLN = "FLN"
 const GOV = "Government"
 const BOTH = "Both"
 
+const unit_count = 120
+
+const FR_XX = 0
+const FR_X = 1
+const EL_X = 2
+const AL_X = 3
+const POL = 4
+const FAILEK = 5
+const BAND = 6
+const CADRE = 7
+const FRONT = 8
+
+// Free deployment holding box
+const DEPLOY = 1
+const ELIMINATED = 2
+
 var states = {}
 var game = null
 var view = null
+
+const {
+	areas, zones, locations, units
+} = require("./data.js")
+
+// === UNIT STATE ===
+
+// location (8 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
+
+function apply_select(u) {
+	if (game.selected === u)
+		game.selected = -1
+	else
+		game.selected = u
+}
+
+function pop_selected() {
+	let u = game.selected
+	game.selected = -1
+	return u
+}
+
+const UNIT_NEUTRALIZED_SHIFT = 0
+const UNIT_NEUTRALIZED_MASK = 1 << UNIT_NEUTRALIZED_SHIFT
+
+const UNIT_AIRMOBILE_SHIFT = 1
+const UNIT_AIRMOBILE_MASK = 1 << UNIT_AIRMOBILE_SHIFT
+
+const UNIT_DISPERSED_SHIFT = 2
+const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
+
+const UNIT_LOC_SHIFT = 3
+const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
+
+// neutralized
+
+function is_unit_neutralized(u) {
+	return (game.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
+}
+
+function is_unit_not_neutralized(u) {
+	return (game.units[u] & UNIT_NEUTRALIZED_MASK) !== UNIT_NEUTRALIZED_MASK
+}
+
+function set_unit_neutralized(u) {
+	game.units[u] |= UNIT_NEUTRALIZED_MASK
+}
+
+function clear_unit_neutralized(u) {
+	game.units[u] &= ~UNIT_NEUTRALIZED_MASK
+}
+
+// location
+
+function unit_loc(u) {
+	return (game.units[u] & UNIT_LOC_MASK) >> UNIT_LOC_SHIFT
+}
+
+function set_unit_loc(u, x) {
+	game.units[u] = (game.units[u] & ~UNIT_LOC_MASK) | (x << UNIT_LOC_SHIFT)
+}
+
+// airmobile
+
+function is_unit_airmobile(u) {
+	return (game.units[u] & UNIT_AIRMOBILE_MASK) === UNIT_AIRMOBILE_MASK
+}
+
+function is_unit_not_airmobile(u) {
+	return (game.units[u] & UNIT_AIRMOBILE_MASK) !== UNIT_AIRMOBILE_MASK
+}
+
+function set_unit_airmobile(u) {
+	game.units[u] |= UNIT_AIRMOBILE_MASK
+}
+
+function clear_unit_airmobile(u) {
+	game.units[u] &= ~UNIT_AIRMOBILE_MASK
+}
+
+// dispersed
+
+function is_unit_dispersed(u) {
+	return (game.units[u] & UNIT_DISPERSED_MASK) === UNIT_DISPERSED_MASK
+}
+
+function is_unit_not_dispersed(u) {
+	return (game.units[u] & UNIT_DISPERSED_MASK) !== UNIT_DISPERSED_MASK
+}
+
+function set_unit_dispersed(u) {
+	game.units[u] |= UNIT_DISPERSED_MASK
+}
+
+function clear_unit_dispersed(u) {
+	game.units[u] &= ~UNIT_DISPERSED_MASK
+}
+
+// moved
+
+function is_unit_moved(u) {
+	return set_has(game.moved, u)
+}
+
+function set_unit_moved(u) {
+	set_add(game.moved, u)
+}
+
+// fired
+
+function is_unit_fired(u) {
+	return set_has(game.fired, u)
+}
+
+function set_unit_fired(u) {
+	set_add(game.fired, u)
+}
+
+function eliminate_unit(u) {
+	game.units[u] = 0
+	set_unit_loc(u, ELIMINATED)
+}
+
+function is_unit_eliminated(u) {
+	return unit_loc(u) === ELIMINATED
+}
+
+// === UNIT DATA ===
+
+function find_free_unit_by_type(type) {
+	for (let u = 0; u < unit_count; ++u)
+		if (!game.units[u] && units[u].type === type)
+			return u
+	throw new Error("cannot find free unit of type: " + type)
+}
+
+// function find_unit(name) {
+// 	for (let u = 0; u < unit_count; ++u)
+// 		if (unit_name[u] === name)
+// 			return u
+// 	throw new Error("cannot find named block: " + name + unit_name)
+// }
+
+// function is_axis_unit(u) {
+// 	return u >= first_axis_unit && u <= last_axis_unit
+// }
+
+// function is_german_unit(u) {
+// 	return (u >= 14 && u <= 33)
+// }
+
+// function is_elite_unit(u) {
+// 	return unit_elite[u]
+// }
+
+// function is_artillery_unit(u) {
+// 	return unit_class[u] === ARTILLERY
+// }
+
+// function unit_cv(u) {
+// 	if (is_elite_unit(u))
+// 		return unit_steps(u) * 2
+// 	return unit_steps(u)
+// }
+
+// function unit_hp_per_step(u) {
+// 	return is_elite_unit(u) ? 2 : 1
+// }
+
+// function unit_hp(u) {
+// 	return unit_steps(u) * unit_hp_per_step(u)
+// }
+
+// === PUBLIC FUNCTIONS ===
 
 exports.scenarios = [ "1954", "1958", "1960" ]
 
@@ -16,10 +206,6 @@ function gen_action(action, argument) {
 	if (!(action in view.actions))
 		view.actions[action] = []
 	view.actions[action].push(argument)
-}
-
-function gen_action_token(token) {
-	gen_action("token", token)
 }
 
 exports.action = function (state, player, action, arg) {
@@ -40,6 +226,19 @@ exports.view = function(state, player) {
 	view = {
 		log: game.log,
 		prompt: null,
+		scenario: game.scenario,
+		current: game.current,
+
+		turn: game.turn,
+		fln_ap: game.fln_ap,
+		fln_psl: game.fln_psl,
+		gov_psl: game.gov_psl,
+		gov_air: game.gov_air,
+		gov_helo: game.gov_helo,
+		gov_naval: game.gov_naval,
+
+		is_morocco_tunisia_independent: game.is_morocco_tunisia_independent,
+		border_zone: game.border_zone,
 	}
 
 	if (game.state === "game_over") {
@@ -62,10 +261,10 @@ exports.view = function(state, player) {
 exports.resign = function (state, player) {
 	game = state
 	if (game.state !== 'game_over') {
-		if (player === FLN)
+		if (player === FLN_NAME)
 			goto_game_over(GOV, "FLN resigned.")
 		if (player === GOV)
-			goto_game_over(FLN, "Government resigned.")
+			goto_game_over(FLN_NAME, "Government resigned.")
 	}
 	return game
 }
@@ -110,6 +309,10 @@ exports.setup = function (seed, scenario, options) {
 		gov_helo: 0,
 		gov_naval: 0,
 
+		units: new Array(unit_count).fill(0),
+		moved: [],
+		fired: [],
+
 		is_morocco_tunisia_independent: false,
 		border_zone: 0,
 
@@ -123,46 +326,100 @@ exports.setup = function (seed, scenario, options) {
 	}
 
 	game.scenario = scenario
-	log_h1("Scenario: " + scenario)
-	load_scenario(game)
+	setup_scenario(scenario)
 
 	goto_scenario_setup()
 
 	return game
 }
 
-function load_scenario(game) {
-	switch (game.scenario) {
-	case "1954":
-		game.gov_psl = 65
-		game.gov_air = 0
-		game.gov_helo = 0
-		game.gov_naval = 0
-		game.fln_psl = 50
-		game.fln_ap = roll_2d6()
-		game.is_morocco_tunisia_independent = false
-		break
-	case "1958":
-		game.gov_psl = 50
-		game.gov_air = 6
-		game.gov_helo = 4
-		game.gov_naval = 2
-		game.fln_psl = 60
-		game.fln_ap = roll_2d6()
-		game.is_morocco_tunisia_independent = true
-		game.border_zone = -2
-		break
-	case "1960":
-		game.gov_psl = 45
-		game.gov_air = 7
-		game.gov_helo = 5
-		game.gov_naval = 3
-		game.fln_psl = 45
-		game.fln_ap = roll_2d6()
-		game.is_morocco_tunisia_independent = true
-		game.border_zone = -3
-		break
+const SCENARIOS = {
+	"1954": {
+		gov_psl: 65,
+		gov_air: 0,
+		gov_helo: 0,
+		gov_naval: 0,
+		fln_psl: 50,
+		is_morocco_tunisia_independent: false
+	},
+	"1958": {
+		gov_psl: 50,
+		gov_air: 6,
+		gov_helo: 4,
+		gov_naval: 2,
+		fln_psl: 60,
+		is_morocco_tunisia_independent: true,
+		border_zone: -2
+	},
+	"1960": {
+		gov_psl: 45,
+		gov_air: 7,
+		gov_helo: 5,
+		gov_naval: 3,
+		fln_psl: 45,
+		is_morocco_tunisia_independent: true,
+		border_zone: -3
 	}
+}
+
+function setup_units(where, list) {
+	let loc = locations[where]
+	for (let u of list) {
+		u = find_free_unit_by_type(u)
+		set_unit_loc(u, loc)
+	}
+}
+
+const SETUP = {
+	"1954" () {
+		setup_units("I", [FRONT, CADRE])
+		setup_units("II", [FR_X, AL_X, POL])
+		setup_units("II", [FRONT, CADRE, CADRE])
+		setup_units("III", [FRONT, CADRE])
+		setup_units("IV", [FR_X, AL_X, POL])
+		setup_units("IV", [CADRE])
+		setup_units("V", [FR_X, EL_X, AL_X, POL])
+		setup_units("V", [FRONT, CADRE, CADRE])
+	},
+	"1958" () {
+		setup_units("I", [FR_XX, FR_XX, FR_X])
+		setup_units("I", [FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("II", [FR_XX, FR_XX, FR_X, EL_X, EL_X, EL_X, AL_X, POL, POL])
+		setup_units("II", [FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("III", [FR_XX, FR_XX, AL_X, POL, POL])
+		setup_units("III", [FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("IV", [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
+		setup_units("IV", [FRONT, FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("V", [FR_XX, FR_XX, FR_XX, FR_X, EL_X, AL_X, POL, POL])
+		setup_units("V", [FRONT, CADRE, BAND])
+		setup_units("VI", [FRONT, CADRE, BAND])
+		setup_units("Morocco", [BAND])
+		setup_units("Tunisia", [BAND, BAND, BAND, BAND, FAILEK])
+	},
+	"1960" () {
+		setup_units("I", [FR_XX, FR_XX, AL_X])
+		setup_units("I", [CADRE, CADRE, BAND, BAND])
+		setup_units("II", [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
+		setup_units("II", [FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("III", [FR_XX, FR_XX, FR_X, AL_X])
+		setup_units("III", [FRONT, FRONT, CADRE, CADRE, BAND, BAND])
+		setup_units("IV", [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
+		setup_units("IV", [FRONT, CADRE, BAND])
+		setup_units("V", [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL])
+		setup_units("V", [CADRE, BAND])
+		setup_units("Morocco", [BAND, BAND, BAND, BAND])
+		setup_units("Tunisia", [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK])
+	}
+}
+
+function setup_scenario(scenario_name) {
+	log_h1("Scenario: " + scenario_name)
+
+	let scenario = SCENARIOS[scenario_name]
+	Object.assign(game, scenario)
+	game.fln_ap = roll_2d6()
+
+	SETUP[scenario_name]()
 }
 
 function goto_scenario_setup() {
@@ -178,10 +435,10 @@ states.scenario_setup = {
 	},
 	end_deployment() {
 		log(`Deployed`)
-		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
-		for (let x of keys)
-			log(`>${game.summary[x]} at #${x}`)
-		game.summary = null
+		// let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
+		// for (let x of keys)
+		// 	log(`>${game.summary[x]} at #${x}`)
+		// game.summary = null
 
 		end_scenario_setup()
 	}

@@ -140,6 +140,7 @@ function on_update() {
 	for (let e of action_register)
 		e.classList.toggle("action", is_action(e.my_action, e.my_id))
 
+	action_button("end_deployment", "End deployment")
 	action_button("roll", "Roll")
 	action_button("done", "Done")
 	action_button("undo", "Undo")
