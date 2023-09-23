@@ -83,9 +83,16 @@ def_area("Laghouat", REMOTE, "V", 1191, 1615.6)
 def_area("Sidi Aissa", REMOTE, "VI", 1385, 1186)
 def_area("Ain Qussera", RURAL, "VI", 1070.6, 1235.6)
 
+
+let free_deploy_locations = []
+for (let l of ["I", "II", "III", "IV", "V", "VI"]) {
+    free_deploy_locations.push(locations[l])
+}
+
 data.areas = areas
 data.zones = zones
 data.locations = locations
+data.free_deploy_locations = free_deploy_locations
 
 let units = []
 
@@ -130,6 +137,7 @@ def_unit(GOV, EL_X, "fr_elite_x_marine", 3)
 
 def_unit(GOV, AL_X, "alg_x", 6)
 def_unit(GOV, POL, "alg_police", 10)
+console.log("last_gov_unit =", units.length)
 
 def_unit(FLN, FAILEK, "fln_failek", 10)
 def_unit(FLN, BAND, "fln_band", 24)

@@ -21,6 +21,27 @@ const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
 
 const unit_count = 120
 
+function is_gov_unit(u) { return (u >= 0 && u <= 39) }
+function is_fln_unit(u) { return (u >= 40 && u <= 119) }
+
+function set_has(set, item) {
+	if (!set)
+		return false
+	let a = 0
+	let b = set.length - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = set[m]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else
+			return true
+	}
+	return false
+}
+
 let ui = {
 	board: document.getElementById("map"),
 	map: document.getElementById("map"),
@@ -73,7 +94,7 @@ const UNIT_LOC_SHIFT = 3
 const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
 
 function is_unit_neutralized(u) {
-	return (game.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
+	return (view.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
 }
 
 function unit_loc(u) {
@@ -94,6 +115,24 @@ function is_unit_dispersed(u) {
 
 function is_unit_not_dispersed(u) {
 	return (view.units[u] & UNIT_DISPERSED_MASK) !== UNIT_DISPERSED_MASK
+}
+
+function is_unit_moved(u) {
+	return set_has(view.moved, u)
+}
+
+function is_unit_action(unit) {
+	return !!(view.actions && view.actions.unit && view.actions.unit.includes(unit))
+}
+
+function is_unit_selected(unit) {
+	if (Array.isArray(view.selected))
+		return view.selected.includes(unit)
+	return view.selected === unit
+}
+
+function is_loc_action(x) {
+	return !!(view.actions && view.actions.loc && view.actions.loc.includes(x))
 }
 
 let action_register = []
@@ -136,9 +175,10 @@ let on_init_once = false
 
 function build_units() {
 	function build_unit(u) {
+		let side = is_gov_unit(u) ? "gov" : "fln"
 		let elt = ui.units[u] = document.createElement("div")
 		let klass = data.units[u].class
-		elt.className = `counter unit u${u} ${klass}`
+		elt.className = `counter unit ${side} u${u} ${klass}`
 		elt.addEventListener("mousedown", on_click_unit)
 		// elt.addEventListener("mouseenter", on_focus_unit)
 		// elt.addEventListener("mouseleave", on_blur)
@@ -207,10 +247,12 @@ function on_init() {
 
 	// Areas
 	for (let i = 0; i < data.areas.length; ++i) {
+		let id = data.areas[i].id
 		let name = data.areas[i].name
 		let type = data.areas[i].type
 		let e = document.createElement("div")
 		e.id = `area-${name}`
+		e.my_id = id
 		e.className = "box"
 		e.style.left = data.areas[i].x / SCALE + "px"
 		e.style.top = data.areas[i].y / SCALE + "px"
@@ -225,12 +267,12 @@ function on_init() {
 
 		if (type !== COUNTRY) {
 			for (let j = 0; j < 4; ++j) {
-				let e = ui.locations[i * 4 + j] = document.createElement("div")
+				let e = ui.locations[id * 4 + j] = document.createElement("div")
 				let box_name = BOX_NAMES[j]
 				e.id = `ops-${name}-${box_name}`
 				e.className = "box stack loc"
 				e.addEventListener("mousedown", on_click_loc)
-				e.loc = i * 4 + j
+				e.dataset.loc = i * 4 + j
 				e.style.left = (data.areas[i].x + (j % 2) * 99) / SCALE + "px"
 				e.style.top = (data.areas[i].y + Math.floor(j / 2) * 99) / SCALE + "px"
 				e.style.width = 94 / SCALE + "px"
@@ -243,8 +285,17 @@ function on_init() {
 	build_units()
 }
 
-function update_map() {
+function update_unit(e, u) {
+	e.classList.toggle("disrupted", is_unit_neutralized(u))
+	e.classList.toggle("airmobile", is_unit_airmobile(u))
+	e.classList.toggle("dispersed", is_unit_dispersed(u))
+	e.classList.toggle("action", !view.battle && is_unit_action(u))
+	e.classList.toggle("selected", !view.battle && is_unit_selected(u))
+	e.classList.toggle("moved", is_unit_moved(u))
+	e.classList.toggle("eliminated", unit_loc(u) === ELIMINATED)
+}
 
+function update_map() {
 	ui.tracker[view.turn].appendChild(ui.markers.turn)
 	ui.tracker[view.fln_ap].appendChild(ui.markers.fln_ap)
 	ui.tracker[view.fln_psl].appendChild(ui.markers.fln_psl)
@@ -262,8 +313,10 @@ function update_map() {
 
 		if (loc) {
 			e.loc = loc
-			if (loc === DEPLOY) {
-				if (!ui.fln_supply.contains(e))
+			if (data.free_deploy_locations.includes(loc) || loc === DEPLOY) {
+				if (is_gov_unit(u) && !ui.gov_supply.contains(e))
+					ui.gov_supply.appendChild(e)
+				if (is_fln_unit(u) && !ui.fln_supply.contains(e))
 					ui.fln_supply.appendChild(e)
 
 			} else if (loc === ELIMINATED) {
@@ -273,8 +326,16 @@ function update_map() {
 				if (!ui.locations[loc].contains(e))
 					ui.locations[loc].appendChild(e)
 			}
+			update_unit(e, u)
 		} else {
 			e.remove()
+		}
+	}
+
+	for (let i = 0; i < ui.locations.length; ++i) {
+		let e = ui.locations[i]
+		if (e) {
+			e.classList.toggle("action", is_loc_action(ui.locations[i].loc))
 		}
 	}
 }

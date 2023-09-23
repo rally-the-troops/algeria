@@ -5,6 +5,10 @@ const GOV = "Government"
 const BOTH = "Both"
 
 const unit_count = 120
+const first_gov_unit = 0
+const last_gov_unit = 39
+const first_fln_unit = 40
+const last_fln_unit = 119
 
 const FR_XX = 0
 const FR_X = 1
@@ -25,8 +29,72 @@ var game = null
 var view = null
 
 const {
-	areas, zones, locations, units
+	areas, zones, locations, units, free_deploy_locations
 } = require("./data.js")
+
+var first_friendly_unit, last_friendly_unit
+var first_enemy_unit, last_enemy_unit
+
+function set_active_player() {
+	clear_undo()
+	if (game.active !== game.phasing) {
+		game.active = game.phasing
+		update_aliases()
+	}
+}
+
+function set_passive_player() {
+	clear_undo()
+	let nonphasing = (game.phasing === GOV ? FLN : GOV)
+	if (game.active !== nonphasing) {
+		game.active = nonphasing
+		update_aliases()
+	}
+}
+
+function set_enemy_player() {
+	if (is_active_player())
+		set_passive_player()
+	else
+		set_active_player()
+}
+
+function is_active_player() {
+	return game.active === game.phasing
+}
+
+function is_passive_player() {
+	return game.active !== game.phasing
+}
+
+function is_gov_player() {
+	return game.active === GOV
+}
+
+function is_fln_player() {
+	return game.active === FLN
+}
+
+function update_aliases() {
+	if (game.active === GOV) {
+		first_friendly_unit = first_gov_unit
+		last_friendly_unit = last_gov_unit
+		first_enemy_unit = first_fln_unit
+		last_enemy_unit = last_fln_unit
+	} else {
+		first_friendly_unit = first_fln_unit
+		last_friendly_unit = last_fln_unit
+		first_enemy_unit = first_gov_unit
+		last_enemy_unit = last_gov_unit
+	}
+}
+
+function load_state(state) {
+	if (game !== state) {
+		game = state
+		update_aliases()
+	}
+}
 
 // === UNIT STATE ===
 
@@ -159,42 +227,28 @@ function find_free_unit_by_type(type) {
 	throw new Error("cannot find free unit of type: " + type)
 }
 
-// function find_unit(name) {
-// 	for (let u = 0; u < unit_count; ++u)
-// 		if (unit_name[u] === name)
-// 			return u
-// 	throw new Error("cannot find named block: " + name + unit_name)
-// }
+// === ITERATORS ===
 
-// function is_axis_unit(u) {
-// 	return u >= first_axis_unit && u <= last_axis_unit
-// }
+function for_each_friendly_unit_in_loc(x, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x)
+			fn(u)
+}
 
-// function is_german_unit(u) {
-// 	return (u >= 14 && u <= 33)
-// }
+function for_each_friendly_unit_in_locs(xs, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		for (let x of xs)
+			if (unit_loc(u) === x)
+				fn(u)
+}
 
-// function is_elite_unit(u) {
-// 	return unit_elite[u]
-// }
-
-// function is_artillery_unit(u) {
-// 	return unit_class[u] === ARTILLERY
-// }
-
-// function unit_cv(u) {
-// 	if (is_elite_unit(u))
-// 		return unit_steps(u) * 2
-// 	return unit_steps(u)
-// }
-
-// function unit_hp_per_step(u) {
-// 	return is_elite_unit(u) ? 2 : 1
-// }
-
-// function unit_hp(u) {
-// 	return unit_steps(u) * unit_hp_per_step(u)
-// }
+function has_friendly_unit_in_locs(xs) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		for (let x of xs)
+			if (unit_loc(u) === x)
+				return true
+	return false
+}
 
 // === PUBLIC FUNCTIONS ===
 
@@ -208,8 +262,16 @@ function gen_action(action, argument) {
 	view.actions[action].push(argument)
 }
 
+function gen_action_unit(u) {
+	gen_action('unit', u)
+}
+
+function gen_action_loc(x) {
+	gen_action('loc', x)
+}
+
 exports.action = function (state, player, action, arg) {
-	game = state
+	load_state(state)
 	let S = states[game.state]
 	if (action in S)
 		S[action](arg, player)
@@ -221,13 +283,13 @@ exports.action = function (state, player, action, arg) {
 }
 
 exports.view = function(state, player) {
-	game = state
+	load_state(state)
 
 	view = {
 		log: game.log,
 		prompt: null,
 		scenario: game.scenario,
-		current: game.current,
+		phasing: game.phasing,
 
 		turn: game.turn,
 		fln_ap: game.fln_ap,
@@ -244,6 +306,9 @@ exports.view = function(state, player) {
 
 		units: game.units,
 	}
+
+	if (player === game.active)
+		view.selected = game.selected
 
 	if (game.state === "game_over") {
 		view.prompt = game.victory
@@ -263,7 +328,7 @@ exports.view = function(state, player) {
 }
 
 exports.resign = function (state, player) {
-	game = state
+	load_state(state)
 	if (game.state !== 'game_over') {
 		if (player === FLN_NAME)
 			goto_game_over(GOV, "FLN resigned.")
@@ -275,7 +340,6 @@ exports.resign = function (state, player) {
 
 function goto_game_over(result, victory) {
 	game.state = "game_over"
-	game.current = -1
 	game.active = "None"
 	game.result = result
 	game.victory = victory
@@ -293,15 +357,16 @@ states.game_over = {
 // === SETUP ===
 
 exports.setup = function (seed, scenario, options) {
-	game = {
+	load_state({
 		seed: seed,
 		log: [],
 		undo: [],
-		active: null,
-		selected: -1,
-
-		current: 0,
+		
 		state: null,
+		selected: -1,
+		phasing: GOV,
+		active: GOV,
+
 		scenario: null,
 		turn: 0,
 
@@ -329,7 +394,7 @@ exports.setup = function (seed, scenario, options) {
 
 		// logging
 		summary: null,
-	}
+	})
 
 	game.scenario = scenario
 	setup_scenario(scenario)
@@ -429,37 +494,84 @@ function setup_scenario(scenario_name) {
 	log(`Government PSL=${game.gov_psl}`)
 
 	SETUP[scenario_name]()
+	game.phasing = GOV
 }
 
 function goto_scenario_setup() {
-	game.active = GOV
+	set_active_player()
 	game.state = "scenario_setup"
-	log_h1("Deployment")
+	log_h2(`${game.active} Deployment`)
+	game.selected = []
+	game.summary = {}
 }
 
 states.scenario_setup = {
 	inactive: "setup",
 	prompt() {
 		view.prompt = `Setup: ${game.active} Deployment.`
-		gen_action("end_deployment")
+		let done = true
+		for_each_friendly_unit_in_locs(free_deploy_locations, u => {
+			gen_action_unit(u)
+			done = false
+		})
+		if (done)
+			gen_action('end_deployment')
+		if (game.selected.length > 0) {
+			for (let i = 0; i < areas.length; ++i) {
+				let loc = areas[i].id
+				for (let j = 0; j < 4; ++j) {
+					gen_action_loc(loc * 4 + j)
+				}
+			}
+		}
+		// XXX
+		gen_action("restart")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		console.log("loc", to)
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		game.summary[to] = (game.summary[to] | 0) + list.length
+		for (let who of list)
+			set_unit_loc(who, to)
 	},
 	end_deployment() {
 		log(`Deployed`)
-		// let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
-		// for (let x of keys)
-		// 	log(`>${game.summary[x]} at #${x}`)
-		// game.summary = null
+		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
+		for (let x of keys)
+			log(`>${game.summary[x]} at #${x}`)
+		game.summary = null
 
 		end_scenario_setup()
+	},
+	restart() {
+		// XXX debug
+		log("Restarting...")
+		goto_restart()
 	}
 }
 
 function end_scenario_setup() {
-	game.turn = 1
-	goto_random_event()
+	set_enemy_player()
+	if (has_friendly_unit_in_locs(free_deploy_locations)) {
+		goto_scenario_setup()
+	} else {
+		game.selected = -1
+		game.summary = null
+		begin_game()
+	}
 }
 
 // === FLOW OF PLAY ===
+
+function begin_game() {
+	game.turn = 1
+	goto_random_event()
+}
 
 function goto_random_event() {
 	game.active = BOTH
@@ -751,6 +863,98 @@ function roll_2d6() {
 	return roll_d6() + roll_d6()
 }
 
+// Array remove and insert (faster than splice)
+
+function array_remove(array, index) {
+	let n = array.length
+	for (let i = index + 1; i < n; ++i)
+		array[i - 1] = array[i]
+	array.length = n - 1
+}
+
+function array_remove_item(array, item) {
+	let n = array.length
+	for (let i = 0; i < n; ++i)
+		if (array[i] === item)
+			return array_remove(array, i)
+}
+
+// insert item at index (faster than splice)
+function array_insert(array, index, item) {
+	for (let i = array.length; i > index; --i)
+		array[i] = array[i - 1]
+	array[index] = item
+	return array
+}
+
+function set_clear(set) {
+	set.length = 0
+}
+
+function set_has(set, item) {
+	let a = 0
+	let b = set.length - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = set[m]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else
+			return true
+	}
+	return false
+}
+
+function set_add(set, item) {
+	let a = 0
+	let b = set.length - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = set[m]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else
+			return set
+	}
+	return array_insert(set, a, item)
+}
+
+function set_delete(set, item) {
+	let a = 0
+	let b = set.length - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = set[m]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else
+			return array_remove(set, m)
+	}
+	return set
+}
+
+function set_toggle(set, item) {
+	let a = 0
+	let b = set.length - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = set[m]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else
+			return array_remove(set, m)
+	}
+	return array_insert(set, a, item)
+}
+
 // Fast deep copy for objects without cycles
 function object_copy(original) {
 	if (Array.isArray(original)) {
@@ -777,18 +981,3 @@ function object_copy(original) {
 	}
 }
 
-// Array remove and insert (faster than splice)
-
-function array_remove(array, index) {
-	let n = array.length
-	for (let i = index + 1; i < n; ++i)
-		array[i - 1] = array[i]
-	array.length = n - 1
-}
-
-function array_remove_item(array, item) {
-	let n = array.length
-	for (let i = 0; i < n; ++i)
-		if (array[i] === item)
-			return array_remove(array, i)
-}
