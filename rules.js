@@ -233,12 +233,16 @@ exports.view = function(state, player) {
 		fln_ap: game.fln_ap,
 		fln_psl: game.fln_psl,
 		gov_psl: game.gov_psl,
-		gov_air: game.gov_air,
-		gov_helo: game.gov_helo,
-		gov_naval: game.gov_naval,
+		air_avail: game.air_avail,
+		air_max: game.air_max,
+		helo_avail: game.helo_avail,
+		helo_max: game.helo_max,
+		naval: game.naval,
 
 		is_morocco_tunisia_independent: game.is_morocco_tunisia_independent,
 		border_zone: game.border_zone,
+
+		units: game.units,
 	}
 
 	if (game.state === "game_over") {
@@ -305,9 +309,11 @@ exports.setup = function (seed, scenario, options) {
 		fln_ap: 0,
 		fln_psl: 0,
 		gov_psl: 0,
-		gov_air: 0,
-		gov_helo: 0,
-		gov_naval: 0,
+		air_avail: 0,
+		air_max: 0,
+		helo_avail: 0,
+		helo_max: 0,
+		naval: 0,
 
 		units: new Array(unit_count).fill(0),
 		moved: [],
@@ -336,26 +342,26 @@ exports.setup = function (seed, scenario, options) {
 const SCENARIOS = {
 	"1954": {
 		gov_psl: 65,
-		gov_air: 0,
-		gov_helo: 0,
-		gov_naval: 0,
+		air_max: 0,
+		helo_max: 0,
+		naval: 0,
 		fln_psl: 50,
 		is_morocco_tunisia_independent: false
 	},
 	"1958": {
 		gov_psl: 50,
-		gov_air: 6,
-		gov_helo: 4,
-		gov_naval: 2,
+		air_avail: 6,
+		helo_avail: 4,
+		naval: 2,
 		fln_psl: 60,
 		is_morocco_tunisia_independent: true,
 		border_zone: -2
 	},
 	"1960": {
 		gov_psl: 45,
-		gov_air: 7,
-		gov_helo: 5,
-		gov_naval: 3,
+		air_avail: 7,
+		helo_avail: 5,
+		naval: 3,
 		fln_psl: 45,
 		is_morocco_tunisia_independent: true,
 		border_zone: -3

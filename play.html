@@ -37,46 +37,58 @@ main { background-color: dimgray }
 	background-image: url(map.svg);
 }
 
-#map div {
+/* #map div {
 	position: absolute;
 	transition-property: top, left;
 	transition-duration: 1s;
 	transition-timing-function: ease;
-}
-
-#boxes { position: absolute; }
-#cities { position: absolute; }
-#units { position: absolute; }
+} */
 
 /* SPACES */
 
 .box{position:absolute;box-sizing:border-box;border:4px solid transparent}
-.box.city{border-radius:50%}
 .box.loc{border-radius:50%}
 .box.action{border-color:lemonchiffon;}
-.box.city.action{background-color:#6495ed55;border-color:deepskyblue;}
 .box.loc.action{background-color:#fff5;border-color:white;}
 .box.selected{border-color:yellow;}
 .box.tip { border-color: white; }
 
+.stack {
+  display:  grid;
+  grid-gap: 0.1rem;
+  grid-template-columns: repeat(8, 2px);
+  transition: grid-template-columns 0.5s;
+}
+
+.stack:hover {
+  grid-template-columns: repeat(8, 36px);
+}
+
+.stack:hover div {
+	z-index: 100;
+}
+
+#tracker div {
+  box-sizing: border-box;
+}
 
 /* COUNTERS */
 
-#map .counter {
+/* #map .counter {
 	position: absolute;
-}
+} */
 
 .counter {
 	background-size: 1000%;
 	background-repeat: no-repeat;
 	border-style: solid;
-	transition: top 200ms, left 200ms, transform 200ms;
+	/* transition: top 200ms, left 200ms, transform 200ms; */
 }
 
 .counter {
 	width: 39px;
 	height: 39px;
-	border-width: 3px;
+	border-width: 2px;
 	border-radius: 8px;
 	background-image: url(counters.svg);
 }
@@ -226,47 +238,23 @@ main { background-color: dimgray }
 
 <!-- scale 1.80333333333333333333 -->
 
-<!-- <div id="cities">
-<div id="Bogota" class="box city" style="top:1266px;left:684px;width:141px;height:140px"></div>
-<div id="Cali" class="box city" style="top:1434px;left:328px;width:126px;height:126px"></div>
-<div id="Medellin" class="box city" style="top:1003px;left:450px;width:126px;height:125px"></div>
-<div id="Bucaramanga" class="box city" style="top:920px;left:779px;width:120px;height:120px"></div>
-<div id="Cartagena" class="box city" style="top:457px;left:445px;width:110px;height:110px"></div>
-<div id="Cucuta" class="box city" style="top:809px;left:896px;width:110px;height:110px"></div>
-<div id="Ibague" class="box city" style="top:1219px;left:447px;width:120px;height:119px"></div>
-<div id="Neiva" class="box city" style="top:1488px;left:534px;width:110px;height:109px"></div>
-<div id="Pasto" class="box city" style="top:1728px;left:219px;width:110px;height:110px"></div>
-<div id="Santa Marta" class="box city" style="top:376px;left:622px;width:120px;height:119px"></div>
-<div id="Sincelejo" class="box city" style="top:653px;left:459px;width:110px;height:110px"></div>
-</div> -->
+<div id="tracker">
+</div>
 
 <div id="boxes">
 </div>
 
 <div id="markers">
-	<div class="counter turn_now" style="left:3px;top:4px;"></div>
-	<div class="counter fln_psl" style="left:53px;top:4px;"></div>
-	<div class="counter fln_ap" style="left:103px;top:4px;"></div>
-	<div class="counter gov_psl" style="left:153px;top:4px;"></div>
-	<div class="counter fln_control" style="left:203px;top:4px;"></div>
-	<div class="counter gov_control" style="left:253px;top:4px;"></div>
-	<div class="counter oas_active" style="left:303px;top:4px;"></div>
-	<div class="counter remote" style="left:353px;top:4px;"></div>
-	<div class="counter terror" style="left:403px;top:4px;"></div>
-
-
-	<!-- top right -->
-	<div class="counter turn_now" style="left:1450px;top:4px;"></div>
-
-	<!-- bottom right -->
-	<div class="counter turn_now" style="left:1450px;top:1051px;"></div>
-
-	<!-- bottom left -->
-	<div class="counter turn_now" style="left:3px;top:1051px;"></div>
-
-	<div class="counter turn_now" style="left:242px;top:330px;"></div>
-
-	<div class="counter border_zone" style="left:163px;top:223px;"></div>
+	<div id="turn_now" class="counter turn_now"></div>
+	<div id="fln_psl" class="counter fln_psl"></div>
+	<div id="fln_ap" class="counter fln_ap"></div>
+	<div id="gov_psl" class="counter gov_psl"></div>
+	<div id="air_avail" class="counter air_avail"></div>
+	<div id="air_max" class="counter air_max"></div>
+	<div id="helo_avail" class="counter helo_avail"></div>
+	<div id="helo_max" class="counter helo_max"></div>
+	<div id="naval" class="counter naval_pts"></div>
+	<div id="border_zone" class="counter border_zone"></div>
 </div>
 
 <div id="units"></div>
@@ -278,7 +266,7 @@ main { background-color: dimgray }
 <div id="gov_supply_header" class="panel_header">Government Supply</div>
 <div id="gov_supply" class="panel_body">
 
-<div class="counter fr_xx_2"></div>
+<!-- <div class="counter fr_xx_2"></div>
 <div class="counter fr_xx_4"></div>
 <div class="counter fr_xx_9"></div>
 <div class="counter fr_xx_12"></div>
@@ -310,7 +298,7 @@ main { background-color: dimgray }
 <div class="counter alg_police"></div>
 <div class="counter alg_police"></div>
 <div class="counter alg_police"></div>
-<div class="counter alg_police"></div>
+<div class="counter alg_police"></div> -->
 
 </div>
 </div>
@@ -319,10 +307,17 @@ main { background-color: dimgray }
 <div id="fln_supply_header" class="panel_header">FLN Supply</div>
 <div id="fln_supply" class="panel_body">
 
-<div class="counter fln_failek neutralized"></div>
+<!-- <div class="counter fln_failek neutralized"></div>
 <div class="counter fln_band"></div>
 <div class="counter fln_cadre"></div>
-<div class="counter fln_front neutralized"></div>
+<div class="counter fln_front neutralized"></div> -->
+
+</div>
+</div>
+
+<div id="eliminated_panel" class="panel">
+<div id="eliminated_header" class="panel_header">Eliminated</div>
+<div id="eliminated" class="panel_body">
 
 </div>
 </div>

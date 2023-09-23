@@ -9,6 +9,9 @@ const URBAN = 1
 const REMOTE = 2
 const COUNTRY = 3
 
+const DEPLOY = 1
+const ELIMINATED = 2
+
 const UG = 0
 const OPS = 1
 const PTL = 2
@@ -16,8 +19,81 @@ const OC = 3
 // const BOXES = [UG, OPS, PTL, OC]
 const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
 
+const unit_count = 120
+
 let ui = {
 	board: document.getElementById("map"),
+	map: document.getElementById("map"),
+	favicon: document.getElementById("favicon"),
+	header: document.querySelector("header"),
+	status: document.getElementById("status"),
+	player: [
+		document.getElementById("role_FLN"),
+		document.getElementById("role_Government"),
+	],
+	markers: {
+		turn: document.getElementById("turn_now"),
+		fln_psl: document.getElementById("fln_psl"),
+		fln_ap: document.getElementById("fln_ap"),
+		gov_psl: document.getElementById("gov_psl"),
+		air_avail: document.getElementById("air_avail"),
+		air_max: document.getElementById("air_max"),
+		helo_avail: document.getElementById("helo_avail"),
+		helo_max: document.getElementById("helo_max"),
+		naval: document.getElementById("naval"),
+		border_zone: document.getElementById("border_zone"),
+
+	},
+	tracker: [],
+	drm: [],
+	areas: [],
+	locations: [],
+	zones: [],
+	units: [],
+	units_holder: document.getElementById("units"),
+	fln_supply: document.getElementById("fln_supply"),
+	gov_supply: document.getElementById("gov_supply"),
+	eliminated: document.getElementById("eliminated"),
+}
+
+// === UNIT STATE ===
+
+// location (8 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
+
+const UNIT_NEUTRALIZED_SHIFT = 0
+const UNIT_NEUTRALIZED_MASK = 1 << UNIT_NEUTRALIZED_SHIFT
+
+const UNIT_AIRMOBILE_SHIFT = 1
+const UNIT_AIRMOBILE_MASK = 1 << UNIT_AIRMOBILE_SHIFT
+
+const UNIT_DISPERSED_SHIFT = 2
+const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
+
+const UNIT_LOC_SHIFT = 3
+const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
+
+function is_unit_neutralized(u) {
+	return (game.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
+}
+
+function unit_loc(u) {
+	return (view.units[u] & UNIT_LOC_MASK) >> UNIT_LOC_SHIFT
+}
+
+function is_unit_airmobile(u) {
+	return (view.units[u] & UNIT_AIRMOBILE_MASK) === UNIT_AIRMOBILE_MASK
+}
+
+function is_unit_not_airmobile(u) {
+	return (view.units[u] & UNIT_AIRMOBILE_MASK) !== UNIT_AIRMOBILE_MASK
+}
+
+function is_unit_dispersed(u) {
+	return (view.units[u] & UNIT_DISPERSED_MASK) === UNIT_DISPERSED_MASK
+}
+
+function is_unit_not_dispersed(u) {
+	return (view.units[u] & UNIT_DISPERSED_MASK) !== UNIT_DISPERSED_MASK
 }
 
 let action_register = []
@@ -58,6 +134,36 @@ function create_item(p) {
 
 let on_init_once = false
 
+function build_units() {
+	function build_unit(u) {
+		let elt = ui.units[u] = document.createElement("div")
+		let klass = data.units[u].class
+		elt.className = `counter unit u${u} ${klass}`
+		elt.addEventListener("mousedown", on_click_unit)
+		// elt.addEventListener("mouseenter", on_focus_unit)
+		// elt.addEventListener("mouseleave", on_blur)
+		elt.unit = u
+	}
+	for (let u = 0; u < unit_count; ++u) {
+		build_unit(u)
+	}
+}
+
+function on_click_loc(evt) {
+	if (evt.button === 0) {
+		console.log('loc', evt.target.loc)
+		if (send_action('loc', evt.target.loc))
+			evt.stopPropagation()
+	}
+}
+
+function on_click_unit(evt) {
+	if (evt.button === 0) {
+		console.log('unit', evt.target.unit)
+		send_action('unit', evt.target.unit)
+	}
+}
+
 function on_init() {
 	if (on_init_once)
 		return
@@ -67,14 +173,14 @@ function on_init() {
 	let x = 5
 	let y = 5
 	for (let i = 0; i < 100; ++i) {
-		let e = document.createElement("div")
-		e.id = `tracker-${i}`
-		e.className = "box"
+		let e = ui.tracker[i] = document.createElement("div")
+		e.my_id = i
+		e.className = "box stack"
 		e.style.left = x / SCALE + "px"
 		e.style.top = y / SCALE + "px"
 		e.style.width = 85 / SCALE + "px"
 		e.style.height = 85 / SCALE + "px"
-		document.getElementById("boxes").appendChild(e)
+		document.getElementById("tracker").appendChild(e)
 
 		if (i < 29) {
 			x += 90
@@ -87,10 +193,10 @@ function on_init() {
 		}
 	}
 
-	// DRM
+	// Border Zone DRM
 	for (let i = 0; i < 4; ++i) {
-		let e = document.createElement("div")
-		e.id = `drm-${i}`
+		let e = ui.drm[i] = document.createElement("div")
+		e.my_id = i
 		e.className = "box"
 		e.style.left = (288.2 + (i * 99)) / SCALE + "px"
 		e.style.top = 396 / SCALE + "px"
@@ -98,7 +204,6 @@ function on_init() {
 		e.style.height = 94 / SCALE + "px"
 		document.getElementById("boxes").appendChild(e)
 	}
-
 
 	// Areas
 	for (let i = 0; i < data.areas.length; ++i) {
@@ -120,10 +225,12 @@ function on_init() {
 
 		if (type !== COUNTRY) {
 			for (let j = 0; j < 4; ++j) {
-				let e = document.createElement("div")
+				let e = ui.locations[i * 4 + j] = document.createElement("div")
 				let box_name = BOX_NAMES[j]
 				e.id = `ops-${name}-${box_name}`
-				e.className = "box"
+				e.className = "box stack loc"
+				e.addEventListener("mousedown", on_click_loc)
+				e.loc = i * 4 + j
 				e.style.left = (data.areas[i].x + (j % 2) * 99) / SCALE + "px"
 				e.style.top = (data.areas[i].y + Math.floor(j / 2) * 99) / SCALE + "px"
 				e.style.width = 94 / SCALE + "px"
@@ -132,10 +239,50 @@ function on_init() {
 			}
 		}
 	}
+
+	build_units()
+}
+
+function update_map() {
+
+	ui.tracker[view.turn].appendChild(ui.markers.turn)
+	ui.tracker[view.fln_ap].appendChild(ui.markers.fln_ap)
+	ui.tracker[view.fln_psl].appendChild(ui.markers.fln_psl)
+	ui.tracker[view.gov_psl].appendChild(ui.markers.gov_psl)
+	ui.tracker[view.air_avail].appendChild(ui.markers.air_avail)
+	ui.tracker[view.air_max].appendChild(ui.markers.air_max)
+	ui.tracker[view.helo_avail].appendChild(ui.markers.helo_avail)
+	ui.tracker[view.helo_max].appendChild(ui.markers.helo_max)
+	ui.tracker[view.naval].appendChild(ui.markers.naval)
+	ui.drm[view.border_zone].appendChild(ui.markers.border_zone)
+
+	for (let u = 0; u < unit_count; ++u) {
+		let e = ui.units[u]
+		let loc = unit_loc(u)
+
+		if (loc) {
+			e.loc = loc
+			if (loc === DEPLOY) {
+				if (!ui.fln_supply.contains(e))
+					ui.fln_supply.appendChild(e)
+
+			} else if (loc === ELIMINATED) {
+				if (!ui.eliminated.contains(e))
+					ui.eliminated.appendChild(e)
+			} else {
+				if (!ui.locations[loc].contains(e))
+					ui.locations[loc].appendChild(e)
+			}
+		} else {
+			e.remove()
+		}
+	}
 }
 
 function on_update() {
 	on_init()
+
+	update_map()
 
 	for (let e of action_register)
 		e.classList.toggle("action", is_action(e.my_action, e.my_id))
