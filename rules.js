@@ -425,12 +425,16 @@ function setup_scenario(scenario_name) {
 	Object.assign(game, scenario)
 	game.fln_ap = roll_2d6()
 
+	log(`FLN PSL=${game.fln_psl} AP=${game.fln_ap}`)
+	log(`Government PSL=${game.gov_psl}`)
+
 	SETUP[scenario_name]()
 }
 
 function goto_scenario_setup() {
 	game.active = GOV
 	game.state = "scenario_setup"
+	log_h1("Deployment")
 }
 
 states.scenario_setup = {
