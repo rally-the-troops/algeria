@@ -84,6 +84,7 @@ def_area("Sidi Aissa", REMOTE, "VI", 1385, 1186)
 def_area("Ain Qussera", RURAL, "VI", 1070.6, 1235.6)
 
 
+// XXX not sure about this
 let free_deploy_locations = []
 for (let l of ["I", "II", "III", "IV", "V", "VI"]) {
     free_deploy_locations.push(locations[l])
@@ -137,14 +138,18 @@ def_unit(GOV, EL_X, "fr_elite_x_marine", 3)
 
 def_unit(GOV, AL_X, "alg_x", 6)
 def_unit(GOV, POL, "alg_police", 10)
-console.log("last_gov_unit =", units.length)
 
 def_unit(FLN, FAILEK, "fln_failek", 10)
 def_unit(FLN, BAND, "fln_band", 24)
 def_unit(FLN, CADRE, "fln_cadre", 30)
 def_unit(FLN, FRONT, "fln_front", 16)
 
-console.log("unit_count =", units.length)
+console.log("const unit_count =", units.length)
+console.log("const first_gov_unit =", units.findIndex((u) => u.side === GOV))
+console.log("const last_gov_unit =", units.findLastIndex((u) => u.side === GOV))
+console.log("const first_fln_unit =", units.findIndex((u) => u.side === FLN))
+console.log("const last_fln_unit =", units.findLastIndex((u) => u.side === FLN))
+
 data.units = units
 
 fs.writeFileSync("data.js", "const data = " + JSON.stringify(data, 0, 0) + "\nif (typeof module !== 'undefined') module.exports = data\n")
