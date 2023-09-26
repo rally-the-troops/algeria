@@ -4,52 +4,36 @@ const fs = require("fs")
 
 let data = {}
 
-const RURAL = 0
-const URBAN = 1
-const REMOTE = 2
-const COUNTRY = 3
+const RURAL = 1
+const URBAN = 2
+const REMOTE = 3
+const COUNTRY = 4
 
-let areas = []
-let zones = {}
 let locations = {}
-let location_id = 0
-
-function def_location(name) {
-    locations[name] = ++location_id
-    return location_id
-}
-
-def_location("DEPLOY")
-def_location("ELIMINATED")
-def_location("I")
-def_location("II")
-def_location("III")
-def_location("IV")
-def_location("V")
-def_location("VI")
-// def_location("France")
-// def_location("Morocco")
-// def_location("Tunisia")
+let areas = []
+let zone_areas = {}
+let next_location_id = 0
 
 function def_area(id, name, type, zone, x, y, w, h) {
-    let loc = 0
-    if (id in locations) {
-        loc = locations[id]
-    } else {
-        loc = def_location(id)
-    }
+    let loc = next_location_id++
     areas.push({loc, id, name, type, zone, x, y, w, h})
     if (zone) {
-        if (!(zone in zones)) {
-            zones[zone] = []
+        if (!(zone in zone_areas)) {
+            zone_areas[zone] = []
         }
-        zones[zone].push(id)
+        zone_areas[zone].push(loc)
     }
 }
 
-def_area("FRANCE", "France", COUNTRY, null, 1605, 185.3, 266, 212.4)
-def_area("TUNISIA", "Tunisia", COUNTRY, null, 2499.9, 1667.6, 94, 94)
-def_area("MOROCCO", "Morocco", COUNTRY, null, 109, 1765, 94, 94)
+// special locations
+def_area("NONE", "None")
+def_area("DEPLOY", "Deployment")
+def_area("ELIMINATED", "Eliminated")
+
+// countries
+def_area("FRANCE", "France", COUNTRY, null, 1690.3, 244.8, 94, 94)
+def_area("TUNISIA", "Tunisia", COUNTRY, "TUNISIA", 2499.9, 1667.6, 94, 94)
+def_area("MOROCCO", "Morocco", COUNTRY, "MOROCCO", 109, 1765, 94, 94)
 
 def_area("I-1", "Barika", RURAL, "I", 1708.1, 1117.9)
 def_area("I-2", "Batna", REMOTE, "I", 2185.6, 1390.9)
@@ -81,7 +65,6 @@ def_area("V-8", "Laghouat", REMOTE, "V", 1191, 1615.6)
 
 def_area("VI-1", "Sidi Aissa", REMOTE, "VI", 1385, 1186)
 def_area("VI-2", "Ain Qussera", RURAL, "VI", 1070.6, 1235.6)
-
 
 let adjecents = {}
 
@@ -119,23 +102,17 @@ def_adjecent("V-4", ["VI-2"])
 def_adjecent("V-6", ["VI-2"])
 def_adjecent("V-8", ["VI-1", "VI-2"])
 
-
-// XXX not sure about this
-let free_deploy_locations = []
-for (let l of ["I", "II", "III", "IV", "V", "VI"]) {
-    free_deploy_locations.push(locations[l])
-}
-
-data.areas = areas
-data.zones = zones
 data.locations = locations
+data.areas = areas
+data.zone_areas = zone_areas
 data.adjecents = adjecents
-data.free_deploy_locations = free_deploy_locations
 
 let units = []
 
 const FLN = 0
 const GOV = 1
+
+// unit types
 
 const FR_XX = 0
 const FR_X = 1

@@ -4,10 +4,10 @@
 
 const SCALE = 1.80333333333333333333 
 
-const RURAL = 0
-const URBAN = 1
-const REMOTE = 2
-const COUNTRY = 3
+const RURAL = 1
+const URBAN = 2
+const REMOTE = 3
+const COUNTRY = 4
 
 const DEPLOY = 1
 const ELIMINATED = 2
@@ -68,6 +68,7 @@ let ui = {
 	tracker: [],
 	drm: [],
 	areas: [],
+	boxes: [],
 	locations: [],
 	zones: [],
 	units: [],
@@ -156,21 +157,6 @@ function is_action(action, arg) {
 	return !!(view.actions && view.actions[action] && view.actions[action].includes(arg))
 }
 
-function create(t, p, ...c) {
-	let e = document.createElement(t)
-	Object.assign(e, p)
-	e.append(c)
-	if (p.my_action)
-		register_action(e, p.my_action, p.my_id)
-	return e
-}
-
-function create_item(p) {
-	let e = create("div", p)
-	ui.board.appendChild(e)
-	return e
-}
-
 let on_init_once = false
 
 function build_units() {
@@ -191,8 +177,8 @@ function build_units() {
 
 function on_click_loc(evt) {
 	if (evt.button === 0) {
-		console.log('loc', evt.target.loc)
-		if (send_action('loc', evt.target.loc))
+		console.log('loc', evt.target.dataset.loc)
+		if (send_action('loc', evt.target.dataset.loc))
 			evt.stopPropagation()
 	}
 }
@@ -204,6 +190,59 @@ function on_click_unit(evt) {
 	}
 }
 
+function create_tracker(i, x, y) {
+	let e = ui.tracker[i] = document.createElement("div")
+	e.dataset.id = i
+	e.className = "space stack"
+	e.style.left = x / SCALE + "px"
+	e.style.top = y / SCALE + "px"
+	e.style.width = 85 / SCALE + "px"
+	e.style.height = 85 / SCALE + "px"
+	document.getElementById("tracker").appendChild(e)
+}
+
+function create_border_zone(i) {
+	let e = ui.drm[i] = document.createElement("div")
+	e.dataset.id = i
+	e.className = "space"
+	e.style.left = (288.2 + (i * 99)) / SCALE + "px"
+	e.style.top = 396 / SCALE + "px"
+	e.style.width = 94 / SCALE + "px"
+	e.style.height = 94 / SCALE + "px"
+	document.getElementById("tracker").appendChild(e)
+}
+
+function create_area(i, area_id, type) {
+	let e = ui.areas[i] = document.createElement("div")
+	e.id = `area-${area_id}`
+	e.dataset.loc = data.areas[i].loc
+	e.className = "space"
+	e.addEventListener("mousedown", on_click_loc)
+	e.style.left = data.areas[i].x / SCALE + "px"
+	e.style.top = data.areas[i].y / SCALE + "px"
+	if (type !== COUNTRY) {
+		e.style.width = 193 / SCALE + "px"
+		e.style.height = 193 / SCALE + "px"
+	} else {
+		e.style.width = data.areas[i].w / SCALE + "px"
+		e.style.height = data.areas[i].h / SCALE + "px"
+	}
+	document.getElementById("areas").appendChild(e)
+}
+
+function create_box(i, area_id, box_id) {
+	let e = ui.boxes[area_id * 4 + box_id] = document.createElement("div")
+	e.id = `ops-${area_id}-${box_id}`
+	e.dataset.loc = data.areas[i].loc
+	e.className = "space stack"
+	e.addEventListener("mousedown", on_click_loc)
+	e.style.left = (data.areas[i].x + (box_id % 2) * 99) / SCALE + "px"
+	e.style.top = (data.areas[i].y + Math.floor(box_id / 2) * 99) / SCALE + "px"
+	e.style.width = 94 / SCALE + "px"
+	e.style.height = 94 / SCALE + "px"
+	document.getElementById("boxes").appendChild(e)
+}
+
 function on_init() {
 	if (on_init_once)
 		return
@@ -213,14 +252,7 @@ function on_init() {
 	let x = 5
 	let y = 5
 	for (let i = 0; i < 100; ++i) {
-		let e = ui.tracker[i] = document.createElement("div")
-		e.dataset.id = i
-		e.className = "box stack"
-		e.style.left = x / SCALE + "px"
-		e.style.top = y / SCALE + "px"
-		e.style.width = 85 / SCALE + "px"
-		e.style.height = 85 / SCALE + "px"
-		document.getElementById("tracker").appendChild(e)
+		create_tracker(i, x, y)
 
 		if (i < 29) {
 			x += 90
@@ -235,49 +267,23 @@ function on_init() {
 
 	// Border Zone DRM
 	for (let i = 0; i < 4; ++i) {
-		let e = ui.drm[i] = document.createElement("div")
-		e.dataset.id = i
-		e.className = "box"
-		e.style.left = (288.2 + (i * 99)) / SCALE + "px"
-		e.style.top = 396 / SCALE + "px"
-		e.style.width = 94 / SCALE + "px"
-		e.style.height = 94 / SCALE + "px"
-		document.getElementById("boxes").appendChild(e)
+		create_border_zone(i)
 	}
 
 	// Areas
 	for (let i = 0; i < data.areas.length; ++i) {
-		let id = data.areas[i].id
-		let name = data.areas[i].name
+		let area_id = data.areas[i].id
 		let type = data.areas[i].type
-		let e = document.createElement("div")
-		e.id = `area-${name}`
-		e.dataset.id = id
-		e.className = "box"
-		e.style.left = data.areas[i].x / SCALE + "px"
-		e.style.top = data.areas[i].y / SCALE + "px"
-		if (type !== COUNTRY) {
-			e.style.width = 193 / SCALE + "px"
-			e.style.height = 193 / SCALE + "px"
-		} else {
-			e.style.width = data.areas[i].w / SCALE + "px"
-			e.style.height = data.areas[i].h / SCALE + "px"
-		}
-		document.getElementById("boxes").appendChild(e)
+		if (type) {
+			create_area(i, area_id, type)
 
-		if (type !== COUNTRY) {
-			for (let j = 0; j < 4; ++j) {
-				let e = ui.locations[id * 4 + j] = document.createElement("div")
-				let box_name = BOX_NAMES[j]
-				e.id = `ops-${name}-${box_name}`
-				e.className = "box stack loc"
-				e.addEventListener("mousedown", on_click_loc)
-				e.dataset.id = id * 4 + j
-				e.style.left = (data.areas[i].x + (j % 2) * 99) / SCALE + "px"
-				e.style.top = (data.areas[i].y + Math.floor(j / 2) * 99) / SCALE + "px"
-				e.style.width = 94 / SCALE + "px"
-				e.style.height = 94 / SCALE + "px"
-				document.getElementById("boxes").appendChild(e)
+			// Unit Boxes
+			if (type !== COUNTRY) {				
+				for (let box_id = 0; box_id < 4; ++box_id) {
+					create_box(i, area_id, box_id)
+				}
+			} else {
+				create_box(i, area_id, 0)
 			}
 		}
 	}
@@ -313,7 +319,7 @@ function update_map() {
 
 		if (loc) {
 			e.loc = loc
-			if (data.free_deploy_locations.includes(loc) || loc === DEPLOY) {
+			if (loc === DEPLOY) {
 				if (is_gov_unit(u) && !ui.gov_supply.contains(e))
 					ui.gov_supply.appendChild(e)
 				if (is_fln_unit(u) && !ui.fln_supply.contains(e))
@@ -323,8 +329,8 @@ function update_map() {
 				if (!ui.eliminated.contains(e))
 					ui.eliminated.appendChild(e)
 			} else {
-				if (!ui.locations[loc].contains(e))
-					ui.locations[loc].appendChild(e)
+				if (!ui.boxes[loc].contains(e))
+					ui.boxes[loc].appendChild(e)
 			}
 			update_unit(e, u)
 		} else {
@@ -332,10 +338,10 @@ function update_map() {
 		}
 	}
 
-	for (let i = 0; i < ui.locations.length; ++i) {
-		let e = ui.locations[i]
+	for (let i = 0; i < ui.areas.length; ++i) {
+		let e = ui.areas[i]
 		if (e) {
-			e.classList.toggle("action", is_loc_action(ui.locations[i].loc))
+			e.classList.toggle("action", is_loc_action(ui.areas[i].loc))
 		}
 	}
 }
@@ -343,7 +349,7 @@ function update_map() {
 function on_update() {
 	on_init()
 
-	update_map()
+	// update_map()
 
 	for (let e of action_register)
 		e.classList.toggle("action", is_action(e.my_action, e.my_id))

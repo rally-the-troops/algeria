@@ -1,7 +1,7 @@
 "use strict"
 
-const FLN = "FLN"
-const GOV = "Government"
+const FLN_NAME = "FLN"
+const GOV_NAME = "Government"
 const BOTH = "Both"
 
 const unit_count = 120
@@ -9,6 +9,14 @@ const first_gov_unit = 0
 const last_gov_unit = 39
 const first_fln_unit = 40
 const last_fln_unit = 119
+
+const UG = 0
+const OPS = 1
+const PTL = 2
+const OC = 3
+
+const FLN = 0
+const GOV = 1
 
 const FR_XX = 0
 const FR_X = 1
@@ -29,7 +37,7 @@ var game = null
 var view = null
 
 const {
-	areas, zones, locations, units, free_deploy_locations
+	areas, zone_areas, locations, units
 } = require("./data.js")
 
 var first_friendly_unit, last_friendly_unit
@@ -45,7 +53,7 @@ function set_active_player() {
 
 function set_passive_player() {
 	clear_undo()
-	let nonphasing = (game.phasing === GOV ? FLN : GOV)
+	let nonphasing = (game.phasing === GOV_NAME ? FLN_NAME : GOV_NAME)
 	if (game.active !== nonphasing) {
 		game.active = nonphasing
 		update_aliases()
@@ -68,15 +76,15 @@ function is_passive_player() {
 }
 
 function is_gov_player() {
-	return game.active === GOV
+	return game.active === GOV_NAME
 }
 
 function is_fln_player() {
-	return game.active === FLN
+	return game.active === FLN_NAME
 }
 
 function update_aliases() {
-	if (game.active === GOV) {
+	if (game.active === GOV_NAME) {
 		first_friendly_unit = first_gov_unit
 		last_friendly_unit = last_gov_unit
 		first_enemy_unit = first_fln_unit
@@ -98,7 +106,7 @@ function load_state(state) {
 
 // === UNIT STATE ===
 
-// location (8 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
+// location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
 
 function apply_select(u) {
 	if (game.selected === u)
@@ -122,7 +130,10 @@ const UNIT_AIRMOBILE_MASK = 1 << UNIT_AIRMOBILE_SHIFT
 const UNIT_DISPERSED_SHIFT = 2
 const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
 
-const UNIT_LOC_SHIFT = 3
+const UNIT_BOX_SHIFT = 3
+const UNIT_BOX_MASK = 2 << UNIT_BOX_SHIFT
+
+const UNIT_LOC_SHIFT = 5
 const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
 
 // neutralized
@@ -151,6 +162,16 @@ function unit_loc(u) {
 
 function set_unit_loc(u, x) {
 	game.units[u] = (game.units[u] & ~UNIT_LOC_MASK) | (x << UNIT_LOC_SHIFT)
+}
+
+// box
+
+function unit_box(u) {
+	return (game.units[u] & UNIT_BOX_MASK) >> UNIT_BOX_SHIFT
+}
+
+function set_unit_box(u, x) {
+	game.units[u] = (game.units[u] & ~UNIT_BOX_MASK) | (x << UNIT_BOX_SHIFT)
 }
 
 // airmobile
@@ -212,6 +233,7 @@ function set_unit_fired(u) {
 function eliminate_unit(u) {
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
+	set_unit_box(u, OC)
 }
 
 function is_unit_eliminated(u) {
@@ -225,6 +247,18 @@ function find_free_unit_by_type(type) {
 		if (!game.units[u] && units[u].type === type)
 			return u
 	throw new Error("cannot find free unit of type: " + type)
+}
+
+function is_gov_unit(u) {
+	return units[u].side === GOV
+}
+
+function is_fln_unit(u) {
+	return units[u].side === FLN
+}
+
+function is_police_unit(u) {
+	return units[u].type === POL
 }
 
 // === ITERATORS ===
@@ -242,6 +276,13 @@ function for_each_friendly_unit_in_locs(xs, fn) {
 				fn(u)
 }
 
+function has_friendly_unit_in_loc(x) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x)
+			return true
+	return false
+}
+
 function has_friendly_unit_in_locs(xs) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		for (let x of xs)
@@ -254,7 +295,7 @@ function has_friendly_unit_in_locs(xs) {
 
 exports.scenarios = [ "1954", "1958", "1960" ]
 
-exports.roles = [ FLN, GOV ]
+exports.roles = [ FLN_NAME, GOV_NAME ]
 
 function gen_action(action, argument) {
 	if (!(action in view.actions))
@@ -331,8 +372,8 @@ exports.resign = function (state, player) {
 	load_state(state)
 	if (game.state !== 'game_over') {
 		if (player === FLN_NAME)
-			goto_game_over(GOV, "FLN resigned.")
-		if (player === GOV)
+			goto_game_over(GOV_NAME, "FLN resigned.")
+		if (player === GOV_NAME)
 			goto_game_over(FLN_NAME, "Government resigned.")
 	}
 	return game
@@ -364,8 +405,8 @@ exports.setup = function (seed, scenario, options) {
 		
 		state: null,
 		selected: -1,
-		phasing: GOV,
-		active: GOV,
+		phasing: GOV_NAME,
+		active: GOV_NAME,
 
 		scenario: null,
 		turn: 0,
@@ -438,6 +479,7 @@ function setup_units(where, list) {
 	for (let u of list) {
 		u = find_free_unit_by_type(u)
 		set_unit_loc(u, loc)
+		set_unit_box(u, OC)
 	}
 }
 
@@ -494,7 +536,7 @@ function setup_scenario(scenario_name) {
 	log(`Government PSL=${game.gov_psl}`)
 
 	SETUP[scenario_name]()
-	game.phasing = GOV
+	game.phasing = GOV_NAME
 }
 
 function goto_scenario_setup() {
@@ -510,7 +552,7 @@ states.scenario_setup = {
 	prompt() {
 		view.prompt = `Setup: ${game.active} Deployment.`
 		let done = true
-		for_each_friendly_unit_in_locs(free_deploy_locations, u => {
+		for_each_friendly_unit_in_loc(DEPLOY, u => {
 			gen_action_unit(u)
 			done = false
 		})
@@ -518,10 +560,8 @@ states.scenario_setup = {
 			gen_action('end_deployment')
 		if (game.selected.length > 0) {
 			for (let i = 0; i < areas.length; ++i) {
-				let loc = areas[i].id
-				for (let j = 0; j < 4; ++j) {
-					gen_action_loc(loc * 4 + j)
-				}
+				let loc = areas[i].loc
+				gen_action_loc(loc)
 			}
 		}
 		// XXX
@@ -536,8 +576,18 @@ states.scenario_setup = {
 		game.selected = []
 		push_undo()
 		game.summary[to] = (game.summary[to] | 0) + list.length
-		for (let who of list)
+		for (let who of list) {
 			set_unit_loc(who, to)
+
+			// deploy unit: all FLN in UG, GOV in OPS, police in PTL
+			if (is_fln_unit(u)) {
+				set_unit_box(who, UG)
+			} else if (is_police_unit(u)) {
+				set_unit_box(who, PTL)
+			} else {
+				set_unit_box(who, OPS)
+			}
+		}
 	},
 	end_deployment() {
 		log(`Deployed`)
@@ -557,7 +607,7 @@ states.scenario_setup = {
 
 function end_scenario_setup() {
 	set_enemy_player()
-	if (has_friendly_unit_in_locs(free_deploy_locations)) {
+	if (has_friendly_unit_in_loc(DEPLOY)) {
 		goto_scenario_setup()
 	} else {
 		game.selected = -1
