@@ -214,7 +214,7 @@ function on_init() {
 	let y = 5
 	for (let i = 0; i < 100; ++i) {
 		let e = ui.tracker[i] = document.createElement("div")
-		e.my_id = i
+		e.dataset.id = i
 		e.className = "box stack"
 		e.style.left = x / SCALE + "px"
 		e.style.top = y / SCALE + "px"
@@ -236,7 +236,7 @@ function on_init() {
 	// Border Zone DRM
 	for (let i = 0; i < 4; ++i) {
 		let e = ui.drm[i] = document.createElement("div")
-		e.my_id = i
+		e.dataset.id = i
 		e.className = "box"
 		e.style.left = (288.2 + (i * 99)) / SCALE + "px"
 		e.style.top = 396 / SCALE + "px"
@@ -252,7 +252,7 @@ function on_init() {
 		let type = data.areas[i].type
 		let e = document.createElement("div")
 		e.id = `area-${name}`
-		e.my_id = id
+		e.dataset.id = id
 		e.className = "box"
 		e.style.left = data.areas[i].x / SCALE + "px"
 		e.style.top = data.areas[i].y / SCALE + "px"
@@ -272,7 +272,7 @@ function on_init() {
 				e.id = `ops-${name}-${box_name}`
 				e.className = "box stack loc"
 				e.addEventListener("mousedown", on_click_loc)
-				e.dataset.loc = i * 4 + j
+				e.dataset.id = id * 4 + j
 				e.style.left = (data.areas[i].x + (j % 2) * 99) / SCALE + "px"
 				e.style.top = (data.areas[i].y + Math.floor(j / 2) * 99) / SCALE + "px"
 				e.style.width = 94 / SCALE + "px"
