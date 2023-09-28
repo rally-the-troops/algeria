@@ -211,26 +211,6 @@ function clear_unit_dispersed(u) {
 	game.units[u] &= ~UNIT_DISPERSED_MASK
 }
 
-// moved
-
-function is_unit_moved(u) {
-	return set_has(game.moved, u)
-}
-
-function set_unit_moved(u) {
-	set_add(game.moved, u)
-}
-
-// fired
-
-function is_unit_fired(u) {
-	return set_has(game.fired, u)
-}
-
-function set_unit_fired(u) {
-	set_add(game.fired, u)
-}
-
 function eliminate_unit(u) {
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
@@ -423,8 +403,6 @@ exports.setup = function (seed, scenario, options) {
 		naval: 0,
 
 		units: new Array(unit_count).fill(0),
-		moved: [],
-		fired: [],
 
 		is_morocco_tunisia_independent: false,
 		border_zone: 0,
@@ -856,10 +834,6 @@ function log_sep() {
 }
 
 // === COMMON LIBRARY ===
-
-function log(msg) {
-	game.log.push(msg)
-}
 
 function clear_undo() {
 	game.undo.length = 0
