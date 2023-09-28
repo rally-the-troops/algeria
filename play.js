@@ -80,7 +80,7 @@ let ui = {
 
 // === UNIT STATE ===
 
-// location (8 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
+// location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
 
 const UNIT_NEUTRALIZED_SHIFT = 0
 const UNIT_NEUTRALIZED_MASK = 1 << UNIT_NEUTRALIZED_SHIFT
@@ -91,7 +91,10 @@ const UNIT_AIRMOBILE_MASK = 1 << UNIT_AIRMOBILE_SHIFT
 const UNIT_DISPERSED_SHIFT = 2
 const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
 
-const UNIT_LOC_SHIFT = 3
+const UNIT_BOX_SHIFT = 3
+const UNIT_BOX_MASK = 2 << UNIT_BOX_SHIFT
+
+const UNIT_LOC_SHIFT = 5
 const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
 
 function is_unit_neutralized(u) {
@@ -100,6 +103,10 @@ function is_unit_neutralized(u) {
 
 function unit_loc(u) {
 	return (view.units[u] & UNIT_LOC_MASK) >> UNIT_LOC_SHIFT
+}
+
+function unit_box(u) {
+	return (view.units[u] & UNIT_BOX_MASK) >> UNIT_BOX_SHIFT
 }
 
 function is_unit_airmobile(u) {
@@ -329,8 +336,9 @@ function update_map() {
 				if (!ui.eliminated.contains(e))
 					ui.eliminated.appendChild(e)
 			} else {
-				if (!ui.boxes[loc].contains(e))
-					ui.boxes[loc].appendChild(e)
+				let box_id = unit_box(u)
+				if (!ui.boxes[loc * 4 + box_id].contains(e))
+					ui.boxes[loc * 4 + box_id].appendChild(e)
 			}
 			update_unit(e, u)
 		} else {
@@ -349,7 +357,7 @@ function update_map() {
 function on_update() {
 	on_init()
 
-	// update_map()
+	update_map()
 
 	for (let e of action_register)
 		e.classList.toggle("action", is_action(e.my_action, e.my_id))

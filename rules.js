@@ -106,7 +106,6 @@ function load_state(state) {
 
 // === UNIT STATE ===
 
-// location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
 
 function apply_select(u) {
 	if (game.selected === u)
@@ -120,6 +119,8 @@ function pop_selected() {
 	game.selected = -1
 	return u
 }
+
+// location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
 
 const UNIT_NEUTRALIZED_SHIFT = 0
 const UNIT_NEUTRALIZED_MASK = 1 << UNIT_NEUTRALIZED_SHIFT
@@ -476,9 +477,9 @@ const SCENARIOS = {
 
 function setup_units(where, list) {
 	let loc = locations[where]
-	for (let u of list) {
-		u = find_free_unit_by_type(u)
-		set_unit_loc(u, loc)
+	for (let l of list) {
+		let u = find_free_unit_by_type(l)
+		set_unit_loc(u, DEPLOY)
 		set_unit_box(u, OC)
 	}
 }
