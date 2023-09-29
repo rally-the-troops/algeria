@@ -459,6 +459,13 @@ function has_friendly_unit_in_locs(xs) {
 	return false
 }
 
+function has_unit_type_in_loc(t, x) {
+	for (let u = 0; u <= unit_count; ++u)
+		if (unit_loc(u) === x && unit_type(u) === t)
+			return true
+	return false
+}
+
 // #endregion
 
 // #region PUBLIC FUNCTIONS
@@ -743,12 +750,18 @@ function can_deploy_to(u, to) {
 	let type = unit_type(u)
 	let zone = area_zone(to)
 	let deployment = current_player_deployment()
-	if (zone in deployment && deployment[zone].includes(type)) {
-		return deployment[zone].includes(type)
+	if (!(zone in deployment))
+		return false
 
-		// TODO check current deployment counts
-	}
-	return false
+	if (!deployment[zone].includes(type))
+		return false
+
+	// - only 1 Front per area
+	if (type === FRONT && has_unit_type_in_loc(FRONT, to))
+		return false
+
+	// TODO check current deployment counts
+	return true
 }
 
 states.scenario_setup = {
