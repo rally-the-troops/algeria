@@ -335,6 +335,7 @@ function unit_box(u) {
 }
 
 function set_unit_box(u, x) {
+	console.log("set_unit_box", u, x)
 	game.units[u] = (game.units[u] & ~UNIT_BOX_MASK) | (x << UNIT_BOX_SHIFT)
 }
 
@@ -725,7 +726,7 @@ states.scenario_setup = {
 		if (done)
 			gen_action('end_deployment')
 		if (game.selected.length > 0) {
-			for (let i = 0; i < areas.length; ++i) {
+			for (let i = 3; i < area_count; ++i) {
 				let loc = areas[i].loc
 				gen_action_loc(loc)
 			}

@@ -7,11 +7,11 @@ const SCALE = 1.8033333333333332
 const DEPLOY = 1
 const ELIMINATED = 2
 
-// const UG = 0
-// const OPS = 1
-// const PTL = 2
-// const OC = 3
-// const BOXES = [UG, OPS, PTL, OC]
+const UG = 0
+const OPS = 1
+const PTL = 2
+const OC = 3
+const BOXES = [UG, OPS, PTL, OC]
 
 const area_count = 31
 const unit_count = 120
@@ -211,15 +211,16 @@ function build_units() {
 
 function on_click_loc(evt) {
 	if (evt.button === 0) {
-		console.log('loc', evt.target.dataset.loc)
-		if (send_action('loc', evt.target.dataset.loc))
+		let loc = parseInt(evt.target.dataset.loc)
+		console.log('loc', loc)
+		if (send_action('loc', loc))
 			evt.stopPropagation()
 	}
 }
 
 function on_click_unit(evt) {
 	if (evt.button === 0) {
-		console.log('unit', evt.target.unit)
+		console.log('unit', evt.target.unit, data.units[evt.target.unit])
 		send_action('unit', evt.target.unit)
 	}
 }
@@ -267,7 +268,7 @@ function create_area(i, area_id, type) {
 }
 
 function create_box(i, area_id, box_id) {
-	let e = ui.boxes[area_id * 4 + box_id] = document.createElement("div")
+	let e = ui.boxes[i * 4 + box_id] = document.createElement("div")
 	e.id = `ops-${area_id}-${box_id}`
 	e.dataset.loc = data.areas[i].loc
 	e.className = "space stack"
@@ -311,6 +312,7 @@ function on_init() {
 		let area_id = data.areas[i].id
 		let type = data.areas[i].type
 		if (type) {
+			console.log("create area", i, area_id)
 			create_area(i, area_id, type)
 
 			// Unit Boxes
@@ -357,7 +359,6 @@ function update_map() {
 		let loc = unit_loc(u)
 
 		if (loc) {
-			e.loc = loc
 			if (loc === DEPLOY) {
 				if (is_gov_unit(u) && !ui.gov_supply.contains(e))
 					ui.gov_supply.appendChild(e)
@@ -368,7 +369,8 @@ function update_map() {
 				if (!ui.eliminated.contains(e))
 					ui.eliminated.appendChild(e)
 			} else {
-				let box_id = unit_box(u)
+				let box_id = BOXES[unit_box(u)]
+				console.log("box", u, loc, box_id)
 				if (!ui.boxes[loc * 4 + box_id].contains(e))
 					ui.boxes[loc * 4 + box_id].appendChild(e)
 			}
@@ -381,7 +383,8 @@ function update_map() {
 	for (let i = 0; i < ui.areas.length; ++i) {
 		let e = ui.areas[i]
 		if (e) {
-			e.classList.toggle("action", is_loc_action(ui.areas[i].loc))
+			let loc = parseInt(e.dataset.loc)
+			e.classList.toggle("action", is_loc_action(loc))
 		}
 	}
 }
