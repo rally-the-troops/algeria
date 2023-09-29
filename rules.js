@@ -276,6 +276,14 @@ function clear_area_propagandized(l) {
 
 // #endregion
 
+// #region AREA DATA
+
+function area_zone(l) {
+	return areas[l].zone
+}
+
+// #endregion
+
 // #region UNIT STATE
 
 function apply_select(u) {
@@ -413,6 +421,10 @@ function is_fln_unit(u) {
 
 function is_police_unit(u) {
 	return units[u].type === POL
+}
+
+function unit_type(u) {
+	return units[u].type
 }
 
 // #endregion
@@ -722,6 +734,23 @@ function goto_scenario_setup() {
 	game.summary = {}
 }
 
+function current_player_deployment() {
+	let deployment = SCENARIO_DEPLOYMENT[game.scenario]
+	return is_fln_player() ? deployment.fln : deployment.gov
+}
+
+function can_deploy_to(u, to) {
+	let type = unit_type(u)
+	let zone = area_zone(to)
+	let deployment = current_player_deployment()
+	if (zone in deployment && deployment[zone].includes(type)) {
+		return deployment[zone].includes(type)
+
+		// TODO check current deployment counts
+	}
+	return false
+}
+
 states.scenario_setup = {
 	inactive: "setup",
 	prompt() {
@@ -736,7 +765,9 @@ states.scenario_setup = {
 		if (game.selected.length > 0) {
 			for (let i = 3; i < area_count; ++i) {
 				let loc = areas[i].loc
-				gen_action_loc(loc)
+				if (can_deploy_to(game.selected[0], loc)) {
+					gen_action_loc(loc)
+				}
 			}
 		}
 		// XXX
