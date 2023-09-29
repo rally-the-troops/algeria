@@ -4,6 +4,7 @@ const FLN_NAME = "FLN"
 const GOV_NAME = "Government"
 const BOTH = "Both"
 
+const area_count = 31
 const unit_count = 120
 const first_gov_unit = 0
 const last_gov_unit = 39
@@ -42,6 +43,8 @@ const {
 
 var first_friendly_unit, last_friendly_unit
 var first_enemy_unit, last_enemy_unit
+
+// #region PLAYER STATE
 
 function set_active_player() {
 	clear_undo()
@@ -104,8 +107,168 @@ function load_state(state) {
 	}
 }
 
-// === UNIT STATE ===
+// #endregion
 
+// #region AREA STATE
+
+// propagandized (1 bit), struck (1 bit), raided (1 bit), civil affaired (1 bit), suppressed (1 bit),
+// remote (1 bit), terrorized (1 bit), gov control (1 bit), fln control (1 bit)
+
+const AREA_FLN_CONTROL_SHIFT = 0
+const AREA_FLN_CONTROL_MASK = 1 << AREA_FLN_CONTROL_SHIFT
+
+const AREA_GOV_CONTROL_SHIFT = 1
+const AREA_GOV_CONTROL_MASK = 1 << AREA_GOV_CONTROL_SHIFT
+
+const AREA_TERRORIZED_SHIFT = 2
+const AREA_TERRORIZED_MASK = 1 << AREA_TERRORIZED_SHIFT
+
+const AREA_REMOTE_SHIFT = 3
+const AREA_REMOTE_MASK = 1 << AREA_REMOTE_SHIFT
+
+// one mission / area / turn states
+
+const AREA_SUPPRESSED_SHIFT = 4
+const AREA_SUPPRESSED_MASK = 1 << AREA_SUPPRESSED_SHIFT
+
+const AREA_CIVIL_AFFAIRED_SHIFT = 5
+const AREA_CIVIL_AFFAIRED_MASK = 1 << AREA_CIVIL_AFFAIRED_SHIFT
+
+const AREA_RAIDED_SHIFT = 6
+const AREA_RAIDED_MASK = 1 << AREA_RAIDED_SHIFT
+
+const AREA_STRUCK_SHIFT = 7
+const AREA_STRUCK_MASK = 1 << AREA_STRUCK_SHIFT
+
+const AREA_PROPAGANDIZED_SHIFT = 8
+const AREA_PROPAGANDIZED_MASK = 1 << AREA_PROPAGANDIZED_SHIFT
+
+// area control
+
+function is_area_fln_control(l) {
+	return (game.areas[l] & AREA_FLN_CONTROL_MASK) === AREA_FLN_CONTROL_MASK
+}
+
+function is_area_gov_control(l) {
+	return (game.areas[l] & AREA_GOV_CONTROL_MASK) === AREA_GOV_CONTROL_MASK
+}
+
+function is_area_contested(l) {
+	return !(is_area_fln_control(l) || is_area_gov_control(l))
+}
+
+function set_area_fln_control(l) {
+	game.areas[l] |= AREA_FLN_CONTROL_MASK
+	game.areas[l] &= ~AREA_GOV_CONTROL_MASK
+}
+
+function set_area_gov_control(l) {
+	game.areas[l] |= AREA_GOV_CONTROL_MASK
+	game.areas[l] &= ~AREA_FLN_CONTROL_MASK
+}
+
+function set_area_contested(l) {
+	game.areas[l] &= ~AREA_FLN_CONTROL_MASK
+	game.areas[l] &= ~AREA_GOV_CONTROL_MASK
+}
+
+// terrorized
+
+function is_area_terrorized(l) {
+	return (game.areas[l] & AREA_TERRORIZED_MASK) === AREA_TERRORIZED_MASK
+}
+
+function set_area_terrorized(l) {
+	game.areas[l] |= AREA_TERRORIZED_MASK
+}
+
+function clear_area_terrorized(l) {
+	game.areas[l] &= ~AREA_TERRORIZED_MASK
+}
+
+// remote
+
+function is_area_remote(l) {
+	return (game.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+}
+
+function set_area_remote(l) {
+	game.areas[l] |= AREA_REMOTE_MASK
+}
+
+// suppressed
+
+function is_area_suppressed(l) {
+	return (game.areas[l] & AREA_SUPPRESSED_MASK) === AREA_SUPPRESSED_MASK
+}
+
+function set_area_suppressed(l) {
+	game.areas[l] |= AREA_SUPPRESSED_MASK
+}
+
+function clear_area_suppressed(l) {
+	game.areas[l] &= ~AREA_SUPPRESSED_MASK
+}
+
+// civil affaired
+
+function is_area_civil_affaired(l) {
+	return (game.areas[l] & AREA_CIVIL_AFFAIRED_MASK) === AREA_CIVIL_AFFAIRED_MASK
+}
+
+function set_area_civil_affaired(l) {
+	game.areas[l] |= AREA_CIVIL_AFFAIRED_MASK
+}
+
+function clear_area_civil_affaired(l) {
+	game.areas[l] &= ~AREA_CIVIL_AFFAIRED_MASK
+}
+
+// raided
+
+function is_area_raided(l) {
+	return (game.areas[l] & AREA_RAIDED_MASK) === AREA_RAIDED_MASK
+}
+
+function set_area_raided(l) {
+	game.areas[l] |= AREA_RAIDED_MASK
+}
+
+function clear_area_raided(l) {
+	game.areas[l] &= ~AREA_RAIDED_MASK
+}
+
+// struck
+
+function is_area_struck(l) {
+	return (game.areas[l] & AREA_STRUCK_MASK) === AREA_STRUCK_MASK
+}
+
+function set_area_struck(l) {
+	game.areas[l] |= AREA_STRUCK_MASK
+}
+
+function clear_area_struck(l) {
+	game.areas[l] &= ~AREA_STRUCK_MASK
+}
+
+// propagandized
+
+function is_area_propagandized(l) {
+	return (game.areas[l] & AREA_PROPAGANDIZED_MASK) === AREA_PROPAGANDIZED_MASK
+}
+
+function set_area_propagandized(l) {
+	game.areas[l] |= AREA_PROPAGANDIZED_MASK
+}
+
+function clear_area_propagandized(l) {
+	game.areas[l] &= ~AREA_PROPAGANDIZED_MASK
+}
+
+// #endregion
+
+// #region UNIT STATE
 
 function apply_select(u) {
 	if (game.selected === u)
@@ -221,7 +384,9 @@ function is_unit_eliminated(u) {
 	return unit_loc(u) === ELIMINATED
 }
 
-// === UNIT DATA ===
+// #endregion
+
+// #region UNIT DATA
 
 function find_free_unit_by_type(type) {
 	for (let u = 0; u < unit_count; ++u)
@@ -242,7 +407,9 @@ function is_police_unit(u) {
 	return units[u].type === POL
 }
 
-// === ITERATORS ===
+// #endregion
+
+// #region ITERATORS
 
 function for_each_friendly_unit_in_loc(x, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
@@ -272,7 +439,9 @@ function has_friendly_unit_in_locs(xs) {
 	return false
 }
 
-// === PUBLIC FUNCTIONS ===
+// #endregion
+
+// #region PUBLIC FUNCTIONS
 
 exports.scenarios = [ "1954", "1958", "1960" ]
 
@@ -324,9 +493,11 @@ exports.view = function(state, player) {
 		naval: game.naval,
 
 		is_morocco_tunisia_independent: game.is_morocco_tunisia_independent,
-		border_zone: game.border_zone,
+		border_zone_active: game.border_zone_active,
+		border_zone_drm: game.border_zone_drm,
 
 		units: game.units,
+		areas: game.areas,
 	}
 
 	if (player === game.active)
@@ -376,7 +547,9 @@ states.game_over = {
 	},
 }
 
-// === SETUP ===
+// #endregion
+
+// #region SETUP
 
 exports.setup = function (seed, scenario, options) {
 	load_state({
@@ -402,15 +575,13 @@ exports.setup = function (seed, scenario, options) {
 		helo_max: 0,
 		naval: 0,
 
-		units: new Array(unit_count).fill(0),
-
 		is_morocco_tunisia_independent: false,
-		border_zone: 0,
+		border_zone_active: false,
+		border_zone_drm: 0,
 
-		// event related effects
-		had_suez_crisis: false,
-		is_amnesty: false,
-		is_fln_move_restricted: false,
+		units: new Array(unit_count).fill(0),
+		areas: new Array(area_count).fill(0),
+		events: {},
 
 		// logging
 		summary: null,
@@ -440,7 +611,7 @@ const SCENARIOS = {
 		naval: 2,
 		fln_psl: 60,
 		is_morocco_tunisia_independent: true,
-		border_zone: -2
+		border_zone_drm: -2
 	},
 	"1960": {
 		gov_psl: 45,
@@ -449,58 +620,71 @@ const SCENARIOS = {
 		naval: 3,
 		fln_psl: 45,
 		is_morocco_tunisia_independent: true,
-		border_zone: -3
+		border_zone_drm: -3
 	}
 }
 
-function setup_units(where, list) {
-	let loc = locations[where]
-	for (let l of list) {
-		let u = find_free_unit_by_type(l)
-		set_unit_loc(u, DEPLOY)
-		set_unit_box(u, OC)
+const SCENARIO_DEPLOYMENT = {
+	"1954": {
+		fln: {
+			"I": [FRONT, CADRE],
+			"II": [FRONT, CADRE, CADRE],
+			"III": [FRONT, CADRE],
+			"IV": [CADRE],
+			"V": [FRONT, CADRE, CADRE]
+		},
+		gov: {
+			"II": [FR_X, AL_X, POL],
+			"IV": [FR_X, AL_X, POL],
+			"V": [FR_X, EL_X, AL_X, POL]
+		}
+	},
+	"1958": {
+		fln: {
+			"I": [FRONT, CADRE, CADRE, BAND, BAND],
+			"II": [FRONT, CADRE, CADRE, BAND, BAND],
+			"III": [FRONT, CADRE, CADRE, BAND, BAND],
+			"IV": [FRONT, FRONT, CADRE, CADRE, BAND, BAND],
+			"V": [FRONT, CADRE, BAND],
+			"VI": [FRONT, CADRE, BAND],
+			"Morocco": [BAND],
+			"Tunisia": [BAND, BAND, BAND, BAND, FAILEK]
+		},
+		gov: {
+			"I": [FR_XX, FR_XX, FR_X],
+			"II": [FR_XX, FR_XX, FR_X, EL_X, EL_X, EL_X, AL_X, POL, POL],
+			"III": [FR_XX, FR_XX, AL_X, POL, POL],
+			"IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
+			"V": [FR_XX, FR_XX, FR_XX, FR_X, EL_X, AL_X, POL, POL],
+		}
+	},
+	"1960": {
+		fln: {
+			"I": [CADRE, CADRE, BAND, BAND],
+			"II": [FRONT, CADRE, CADRE, BAND, BAND],
+			"III": [FRONT, FRONT, CADRE, CADRE, BAND, BAND],
+			"IV": [FRONT, CADRE, BAND],
+			"V": [CADRE, BAND],
+			"Morocco": [BAND, BAND, BAND, BAND],
+			"Tunisia": [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK]
+		},
+		gov: {
+			"I": [FR_XX, FR_XX, AL_X],
+			"II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
+			"III": [FR_XX, FR_XX, FR_X, AL_X],
+			"IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
+			"V": [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL]
+		}
 	}
 }
 
-const SETUP = {
-	"1954" () {
-		setup_units("I", [FRONT, CADRE])
-		setup_units("II", [FR_X, AL_X, POL])
-		setup_units("II", [FRONT, CADRE, CADRE])
-		setup_units("III", [FRONT, CADRE])
-		setup_units("IV", [FR_X, AL_X, POL])
-		setup_units("IV", [CADRE])
-		setup_units("V", [FR_X, EL_X, AL_X, POL])
-		setup_units("V", [FRONT, CADRE, CADRE])
-	},
-	"1958" () {
-		setup_units("I", [FR_XX, FR_XX, FR_X])
-		setup_units("I", [FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("II", [FR_XX, FR_XX, FR_X, EL_X, EL_X, EL_X, AL_X, POL, POL])
-		setup_units("II", [FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("III", [FR_XX, FR_XX, AL_X, POL, POL])
-		setup_units("III", [FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("IV", [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
-		setup_units("IV", [FRONT, FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("V", [FR_XX, FR_XX, FR_XX, FR_X, EL_X, AL_X, POL, POL])
-		setup_units("V", [FRONT, CADRE, BAND])
-		setup_units("VI", [FRONT, CADRE, BAND])
-		setup_units("Morocco", [BAND])
-		setup_units("Tunisia", [BAND, BAND, BAND, BAND, FAILEK])
-	},
-	"1960" () {
-		setup_units("I", [FR_XX, FR_XX, AL_X])
-		setup_units("I", [CADRE, CADRE, BAND, BAND])
-		setup_units("II", [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
-		setup_units("II", [FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("III", [FR_XX, FR_XX, FR_X, AL_X])
-		setup_units("III", [FRONT, FRONT, CADRE, CADRE, BAND, BAND])
-		setup_units("IV", [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL])
-		setup_units("IV", [FRONT, CADRE, BAND])
-		setup_units("V", [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL])
-		setup_units("V", [CADRE, BAND])
-		setup_units("Morocco", [BAND, BAND, BAND, BAND])
-		setup_units("Tunisia", [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK])
+function setup_units(deployment) {
+	for (const [zone, list] of Object.entries(deployment)) {
+		for (let l of list) {
+			let u = find_free_unit_by_type(l)
+			set_unit_loc(u, DEPLOY)
+			set_unit_box(u, OC)
+		}
 	}
 }
 
@@ -514,7 +698,10 @@ function setup_scenario(scenario_name) {
 	log(`FLN PSL=${game.fln_psl} AP=${game.fln_ap}`)
 	log(`Government PSL=${game.gov_psl}`)
 
-	SETUP[scenario_name]()
+	let deployment = SCENARIO_DEPLOYMENT[scenario_name]
+	setup_units(deployment.fln)
+	setup_units(deployment.gov)
+
 	game.phasing = GOV_NAME
 }
 
@@ -559,9 +746,9 @@ states.scenario_setup = {
 			set_unit_loc(who, to)
 
 			// deploy unit: all FLN in UG, GOV in OPS, police in PTL
-			if (is_fln_unit(u)) {
+			if (is_fln_unit(who)) {
 				set_unit_box(who, UG)
-			} else if (is_police_unit(u)) {
+			} else if (is_police_unit(who)) {
 				set_unit_box(who, PTL)
 			} else {
 				set_unit_box(who, OPS)
@@ -595,7 +782,9 @@ function end_scenario_setup() {
 	}
 }
 
-// === FLOW OF PLAY ===
+// #endregion
+
+// #region FLOW OF PLAY
 
 function begin_game() {
 	game.turn = 1
@@ -675,7 +864,7 @@ function goto_fln_foreign_arms_shipment() {
 function goto_jealousy_and_paranoia() {
 	log(".h2 Jealousy and Paranoia. TODO")
 	// TODO FLN units may not Move across wilaya borders this turn only (they may move across international borders)
-	game.is_fln_move_restricted = true
+	game.events.jealousy_and_paranoia = true
 	end_random_event()
 }
 
@@ -737,7 +926,7 @@ function goto_nato_pressure() {
 
 function goto_suez_crisis() {
 	log(".h2 Suez Crisis. TODO")
-	if (game.had_suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
+	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
 		log("Re-roll. No Event.")
 		end_random_event()
@@ -747,7 +936,7 @@ function goto_suez_crisis() {
 	// they will return in the Reinforcement Phase of the next turn automatically
 	// - they do not need to be mobilized again but do need to be activated.
 
-	game.had_suez_crisis = true
+	game.events.suez_crisis = true
 	end_random_event()
 }
 
@@ -755,7 +944,7 @@ function goto_amnesty() {
 	log(".h2 Amnesty. TODO")
 	// The French government offers "the peace of the brave" to FLN rebels.
 	// TODO All Government Civil Affairs or Suppression missions get a +1 DRM this turn.
-	game.is_amnesty = true
+	game.events.amnesty = true
 	end_random_event()
 }
 
@@ -791,13 +980,15 @@ function goto_next_turn() {
 	game.turn += 1
 
 	// make sure single-turn effects are disabled
-	game.is_amnesty = false
-	game.is_fln_move_restricted = false
+	delete game.events.amnesty
+	delete game.events.jealousy_and_paranoia
 
 	goto_random_event()
 }
 
-// === LOGGING ===
+// #endregion
+
+// #region LOGGING
 
 function log(msg) {
 	game.log.push(msg)
@@ -833,7 +1024,9 @@ function log_sep() {
 	log(".hr")
 }
 
-// === COMMON LIBRARY ===
+// #endregion
+
+// #region COMMON LIBRARY
 
 function clear_undo() {
 	game.undo.length = 0
@@ -1006,3 +1199,4 @@ function object_copy(original) {
 	}
 }
 
+// #endregion
