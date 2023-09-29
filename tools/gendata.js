@@ -158,6 +158,7 @@ def_unit(FLN, BAND, "fln_band", 24)
 def_unit(FLN, CADRE, "fln_cadre", 30)
 def_unit(FLN, FRONT, "fln_front", 16)
 
+console.log("const area_count =", areas.length)
 console.log("const unit_count =", units.length)
 console.log("const first_gov_unit =", units.findIndex((u) => u.side === GOV))
 console.log("const last_gov_unit =", units.findLastIndex((u) => u.side === GOV))
