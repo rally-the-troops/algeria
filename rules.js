@@ -46,6 +46,14 @@ var first_enemy_unit, last_enemy_unit
 
 // #region PLAYER STATE
 
+function set_next_player() {
+	if (game.phasing === GOV_NAME)
+		game.phasing = FLN_NAME
+	else
+		game.phasing = GOV_NAME
+}
+
+
 function set_active_player() {
 	clear_undo()
 	if (game.active !== game.phasing) {
@@ -295,7 +303,7 @@ const UNIT_DISPERSED_SHIFT = 2
 const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
 
 const UNIT_BOX_SHIFT = 3
-const UNIT_BOX_MASK = 2 << UNIT_BOX_SHIFT
+const UNIT_BOX_MASK = 3 << UNIT_BOX_SHIFT
 
 const UNIT_LOC_SHIFT = 5
 const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
@@ -335,7 +343,6 @@ function unit_box(u) {
 }
 
 function set_unit_box(u, x) {
-	console.log("set_unit_box", u, x)
 	game.units[u] = (game.units[u] & ~UNIT_BOX_MASK) | (x << UNIT_BOX_SHIFT)
 }
 
@@ -481,6 +488,7 @@ exports.view = function(state, player) {
 		log: game.log,
 		prompt: null,
 		scenario: game.scenario,
+		active: game.active,
 		phasing: game.phasing,
 
 		turn: game.turn,
@@ -773,7 +781,9 @@ states.scenario_setup = {
 }
 
 function end_scenario_setup() {
-	set_enemy_player()
+	set_next_player()
+	set_active_player()
+
 	if (has_friendly_unit_in_loc(DEPLOY)) {
 		goto_scenario_setup()
 	} else {
@@ -957,10 +967,12 @@ function goto_jean_paul_sartre() {
 }
 
 function end_random_event() {
+	game.phasing = GOV_NAME
 	goto_reinforcement_phase()
 }
 
 function goto_reinforcement_phase() {
+	set_active_player()
 	game.state = "reinforcement"
 }
 

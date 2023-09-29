@@ -7,11 +7,11 @@ const SCALE = 1.8033333333333332
 const DEPLOY = 1
 const ELIMINATED = 2
 
-const UG = 0
-const OPS = 1
-const PTL = 2
-const OC = 3
-const BOXES = [UG, OPS, PTL, OC]
+// const UG = 0
+// const OPS = 1
+// const PTL = 2
+// const OC = 3
+// const BOXES = [UG, OPS, PTL, OC]
 
 const area_count = 31
 const unit_count = 120
@@ -127,7 +127,7 @@ const UNIT_DISPERSED_SHIFT = 2
 const UNIT_DISPERSED_MASK = 1 << UNIT_DISPERSED_SHIFT
 
 const UNIT_BOX_SHIFT = 3
-const UNIT_BOX_MASK = 2 << UNIT_BOX_SHIFT
+const UNIT_BOX_MASK = 3 << UNIT_BOX_SHIFT
 
 const UNIT_LOC_SHIFT = 5
 const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
@@ -312,7 +312,6 @@ function on_init() {
 		let area_id = data.areas[i].id
 		let type = data.areas[i].type
 		if (type) {
-			console.log("create area", i, area_id)
 			create_area(i, area_id, type)
 
 			// Unit Boxes
@@ -357,6 +356,7 @@ function update_map() {
 	for (let u = 0; u < unit_count; ++u) {
 		let e = ui.units[u]
 		let loc = unit_loc(u)
+		e.dataset.loc = loc
 
 		if (loc) {
 			if (loc === DEPLOY) {
@@ -369,8 +369,7 @@ function update_map() {
 				if (!ui.eliminated.contains(e))
 					ui.eliminated.appendChild(e)
 			} else {
-				let box_id = BOXES[unit_box(u)]
-				console.log("box", u, loc, box_id)
+				let box_id = unit_box(u)
 				if (!ui.boxes[loc * 4 + box_id].contains(e))
 					ui.boxes[loc * 4 + box_id].appendChild(e)
 			}
