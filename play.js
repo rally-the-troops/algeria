@@ -1,24 +1,19 @@
 "use strict"
 
-/* global view, player, send_action, action_button, scroll_with_middle_mouse */
+/* global view, player, data, send_action, action_button, scroll_with_middle_mouse */
 
-const SCALE = 1.80333333333333333333 
-
-const RURAL = 1
-const URBAN = 2
-const REMOTE = 3
-const COUNTRY = 4
+const SCALE = 1.8033333333333332
 
 const DEPLOY = 1
 const ELIMINATED = 2
 
-const UG = 0
-const OPS = 1
-const PTL = 2
-const OC = 3
+// const UG = 0
+// const OPS = 1
+// const PTL = 2
+// const OC = 3
 // const BOXES = [UG, OPS, PTL, OC]
-const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
 
+const area_count = 31
 const unit_count = 120
 
 function is_gov_unit(u) { return (u >= 0 && u <= 39) }
@@ -78,6 +73,46 @@ let ui = {
 	eliminated: document.getElementById("eliminated"),
 }
 
+// remote (1 bit), terrorized (1 bit), gov control (1 bit), fln control (1 bit)
+
+const AREA_FLN_CONTROL_SHIFT = 0
+const AREA_FLN_CONTROL_MASK = 1 << AREA_FLN_CONTROL_SHIFT
+
+const AREA_GOV_CONTROL_SHIFT = 1
+const AREA_GOV_CONTROL_MASK = 1 << AREA_GOV_CONTROL_SHIFT
+
+const AREA_TERRORIZED_SHIFT = 2
+const AREA_TERRORIZED_MASK = 1 << AREA_TERRORIZED_SHIFT
+
+const AREA_REMOTE_SHIFT = 3
+const AREA_REMOTE_MASK = 1 << AREA_REMOTE_SHIFT
+
+// area control
+
+function is_area_fln_control(l) {
+	return (view.areas[l] & AREA_FLN_CONTROL_MASK) === AREA_FLN_CONTROL_MASK
+}
+
+function is_area_gov_control(l) {
+	return (view.areas[l] & AREA_GOV_CONTROL_MASK) === AREA_GOV_CONTROL_MASK
+}
+
+function is_area_contested(l) {
+	return !(is_area_fln_control(l) || is_area_gov_control(l))
+}
+
+// terrorized
+
+function is_area_terrorized(l) {
+	return (view.areas[l] & AREA_TERRORIZED_MASK) === AREA_TERRORIZED_MASK
+}
+
+// remote
+
+function is_area_remote(l) {
+	return (view.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+}
+
 // === UNIT STATE ===
 
 // location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
@@ -113,16 +148,8 @@ function is_unit_airmobile(u) {
 	return (view.units[u] & UNIT_AIRMOBILE_MASK) === UNIT_AIRMOBILE_MASK
 }
 
-function is_unit_not_airmobile(u) {
-	return (view.units[u] & UNIT_AIRMOBILE_MASK) !== UNIT_AIRMOBILE_MASK
-}
-
 function is_unit_dispersed(u) {
 	return (view.units[u] & UNIT_DISPERSED_MASK) === UNIT_DISPERSED_MASK
-}
-
-function is_unit_not_dispersed(u) {
-	return (view.units[u] & UNIT_DISPERSED_MASK) !== UNIT_DISPERSED_MASK
 }
 
 function is_unit_moved(u) {
@@ -216,8 +243,10 @@ function create_border_zone(i) {
 	e.style.top = 396 / SCALE + "px"
 	e.style.width = 94 / SCALE + "px"
 	e.style.height = 94 / SCALE + "px"
-	document.getElementById("tracker").appendChild(e)
+	document.getElementById("drm").appendChild(e)
 }
+
+const COUNTRY = 4
 
 function create_area(i, area_id, type) {
 	let e = ui.areas[i] = document.createElement("div")
@@ -309,6 +338,7 @@ function update_unit(e, u) {
 }
 
 function update_map() {
+	console.log("VIEW", view)
 	ui.tracker[view.turn].appendChild(ui.markers.turn)
 	ui.tracker[view.fln_ap].appendChild(ui.markers.fln_ap)
 	ui.tracker[view.fln_psl].appendChild(ui.markers.fln_psl)
@@ -318,7 +348,9 @@ function update_map() {
 	ui.tracker[view.helo_avail].appendChild(ui.markers.helo_avail)
 	ui.tracker[view.helo_max].appendChild(ui.markers.helo_max)
 	ui.tracker[view.naval].appendChild(ui.markers.naval)
-	ui.drm[view.border_zone].appendChild(ui.markers.border_zone)
+
+	ui.drm[view.border_zone_drm].appendChild(ui.markers.border_zone)
+	ui.markers.border_zone.classList.toggle("neutralized", !view.border_zone_active)
 
 	for (let u = 0; u < unit_count; ++u) {
 		let e = ui.units[u]
@@ -354,7 +386,7 @@ function update_map() {
 	}
 }
 
-function on_update() {
+function on_update() { // eslint-disable-line no-unused-vars
 	on_init()
 
 	update_map()
@@ -370,7 +402,7 @@ function on_update() {
 }
 
 
-function on_log(text) {
+function on_log(text) { // eslint-disable-line no-unused-vars
 	let p = document.createElement("div")
 	if (text.match(/^\.h1/)) {
 		text = text.substring(4)
