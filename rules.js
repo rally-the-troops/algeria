@@ -431,6 +431,17 @@ function unit_type(u) {
 
 // #region ITERATORS
 
+function for_each_friendly_unit(fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		fn(u)
+}
+
+function for_each_friendly_unit_on_map(fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) > 2)
+			fn(u)
+}
+
 function for_each_friendly_unit_in_loc(x, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) === x)
@@ -442,6 +453,17 @@ function for_each_friendly_unit_in_locs(xs, fn) {
 		for (let x of xs)
 			if (unit_loc(u) === x)
 				fn(u)
+}
+
+function for_each_map_area(fn) {
+	for (let i = 3; i < area_count; ++i)
+		fn(i)
+}
+
+function for_each_map_area_in_zone(z, fn) {
+	for (let i = 3; i < area_count; ++i)
+		if (area_zone(i) === z)
+			fn(i)
 }
 
 function has_friendly_unit_in_loc(x) {
@@ -746,43 +768,94 @@ function current_player_deployment() {
 	return is_fln_player() ? deployment.fln : deployment.gov
 }
 
-function can_deploy_to(u, to) {
-	let type = unit_type(u)
+function can_all_deploy_to(us, to) {
 	let zone = area_zone(to)
 	let deployment = current_player_deployment()
 	if (!(zone in deployment))
 		return false
 
-	if (!deployment[zone].includes(type))
-		return false
+	let target_types = []
+	for (let u of us) {
+		let type = unit_type(u)
+		target_types.push(type)
 
-	// - only 1 Front per area
-	if (type === FRONT && has_unit_type_in_loc(FRONT, to))
-		return false
+		if (!deployment[zone].includes(type))
+			return false
 
-	// TODO check current deployment counts
-	return true
+		// - only 1 Front per area
+		if (type === FRONT && has_unit_type_in_loc(FRONT, to))
+			return false
+	}
+
+	// check target against deployment type counts
+	for_each_friendly_unit_in_locs(zone_areas[zone], u => {
+		target_types.push(unit_type(u))
+	})
+
+	return is_subset_with_multiplicity(deployment[zone], target_types)
+}
+
+function deploy_unit(who, to) {
+	set_unit_loc(who, to)
+
+	// deploy unit: all FLN in UG, GOV in OPS, police in PTL
+	if (is_fln_unit(who)) {
+		set_unit_box(who, UG)
+	} else if (is_police_unit(who)) {
+		set_unit_box(who, PTL)
+	} else {
+		set_unit_box(who, OPS)
+	}
 }
 
 states.scenario_setup = {
 	inactive: "setup",
 	prompt() {
 		view.prompt = `Setup: ${game.active} Deployment.`
+
+		if (game.selected.length === 0) {
+			// first unit can be any unit in DEPLOY or on map
+			for_each_friendly_unit(u => {
+				gen_action_unit(u)
+			})
+		} else {
+			// subsequent units must be on the same map location (or also on DEPLOY)
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let selected_front = 0
+			for (let u of game.selected) {
+				if (unit_type(u) === FRONT) selected_front = u
+			}
+			for_each_friendly_unit(u => {
+				// but can only select a single FRONT
+				if (unit_loc(u) === first_unit_loc && (unit_type(u) !== FRONT || u === selected_front || !selected_front)) {
+					gen_action_unit(u)
+				}
+			})
+
+			if (first_unit_loc === DEPLOY) {
+				for_each_map_area(loc => {
+					if (can_all_deploy_to(game.selected, loc)) {
+						gen_action_loc(loc)
+					}
+				})
+			} else {
+				// once deployed, only allow shifting within zone
+				let first_unit_zone = area_zone(first_unit_loc)
+
+				for_each_map_area_in_zone(first_unit_zone, loc => {
+					gen_action_loc(loc)
+				})
+			}
+		}
+
 		let done = true
 		for_each_friendly_unit_in_loc(DEPLOY, u => {
-			gen_action_unit(u)
 			done = false
 		})
 		if (done)
 			gen_action('end_deployment')
-		if (game.selected.length > 0) {
-			for (let i = 3; i < area_count; ++i) {
-				let loc = areas[i].loc
-				if (can_deploy_to(game.selected[0], loc)) {
-					gen_action_loc(loc)
-				}
-			}
-		}
+
 		// XXX
 		gen_action("restart")
 	},
@@ -794,25 +867,24 @@ states.scenario_setup = {
 		let list = game.selected
 		game.selected = []
 		push_undo()
+		let from = unit_loc(list[0])
+		if (from !== DEPLOY) {
+			// make correction when shifting units within zone
+			game.summary[from] = (game.summary[from] | 0) - list.length
+		}
 		game.summary[to] = (game.summary[to] | 0) + list.length
 		for (let who of list) {
-			set_unit_loc(who, to)
-
-			// deploy unit: all FLN in UG, GOV in OPS, police in PTL
-			if (is_fln_unit(who)) {
-				set_unit_box(who, UG)
-			} else if (is_police_unit(who)) {
-				set_unit_box(who, PTL)
-			} else {
-				set_unit_box(who, OPS)
-			}
+			deploy_unit(who, to)
 		}
 	},
 	end_deployment() {
 		log(`Deployed`)
+		// TODO this can be more informative, mentioning unit types instead of summary
 		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
-		for (let x of keys)
-			log(`>${game.summary[x]} at #${x}`)
+		for (let x of keys) {
+			if (game.summary[x] > 0)
+				log(`>${game.summary[x]} at ${areas[x].name}`)
+		}
 		game.summary = null
 
 		end_scenario_setup()
@@ -1228,6 +1300,13 @@ function set_toggle(set, item) {
 			return array_remove(set, m)
 	}
 	return array_insert(set, a, item)
+}
+
+function is_subset_with_multiplicity(set, subset) {
+	return subset.every(val => set.includes(val)
+	  && subset.filter(el => el === val).length
+		 <=
+		 set.filter(el => el === val).length)
 }
 
 // Fast deep copy for objects without cycles
