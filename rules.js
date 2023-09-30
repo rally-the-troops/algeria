@@ -627,7 +627,7 @@ exports.setup = function (seed, scenario, options) {
 
 		is_morocco_tunisia_independent: false,
 		border_zone_active: false,
-		border_zone_drm: 0,
+		border_zone_drm: null,
 
 		units: new Array(unit_count).fill(0),
 		areas: new Array(area_count).fill(0),
@@ -652,7 +652,8 @@ const SCENARIOS = {
 		helo_max: 0,
 		naval: 0,
 		fln_psl: 50,
-		is_morocco_tunisia_independent: false
+		is_morocco_tunisia_independent: false,
+		border_zone_drm: null
 	},
 	"1958": {
 		gov_psl: 50,
@@ -1083,24 +1084,88 @@ function goto_jean_paul_sartre() {
 }
 
 function end_random_event() {
-	game.phasing = GOV_NAME
+	clear_undo()
 	goto_reinforcement_phase()
 }
 
 function goto_reinforcement_phase() {
-	set_active_player()
-	game.state = "reinforcement"
+	goto_gov_reinforcement_phase()
 }
 
-states.reinforcement = {
+function goto_gov_reinforcement_phase() {
+	game.phasing = GOV_NAME
+	set_active_player()
+	log_h2(`${game.active} Reinforcement`)
+	game.state = "gov_reinforcement"
+}
+
+const COST_AIR_POINT = 2
+const COST_HELO_POINT = 3
+const COST_NAVAL_POINT = 3
+const COST_BORDER_ZONE = 6
+
+states.gov_reinforcement = {
 	inactive: "to do reinforcement",
 	prompt() {
-		view.prompt = "Do reinforcement."
-		gen_action("done")
+		view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+
+		if (game.gov_psl > COST_AIR_POINT)
+			gen_action("acquire_air_point")
+		if (game.gov_psl > COST_HELO_POINT)
+			gen_action("acquire_helo_point")
+		if (game.gov_psl > COST_NAVAL_POINT)
+			gen_action("acquire_naval_point")
+		if (game.gov_psl > COST_BORDER_ZONE) {
+			// TODO starts at no border zone instead of 0
+			if (game.border_zone_drm === null) {
+				gen_action("mobilize_border_zone")
+			} else if (game.border_zone_drm > -3) {
+				gen_action("improve_border_zone")
+			}
+		}
+
+		gen_action("end_reinforcement")
 	},
-	done() {
+	acquire_air_point() {
+		push_undo()
+		log_h3("Asset Acquired:")
+		log(`+1 Air Point (cost: ${COST_AIR_POINT} PSP)`)
+		game.gov_psl -= COST_AIR_POINT
+		game.air_avail += 1
+		game.air_max += 1
+	},
+	acquire_helo_point() {
+		push_undo()
+		log_h3("Asset Acquired:")
+		log(`+1 Helo Point (cost: ${COST_HELO_POINT} PSP)`)
+		game.gov_psl -= COST_HELO_POINT
+		game.helo_avail += 1
+		game.helo_max += 1
+	},
+	acquire_naval_point() {
+		push_undo()
+		log_h3("Asset Acquired:")
+		log(`+1 Naval Point (cost: ${COST_NAVAL_POINT} PSP)`)
+		game.gov_psl -= COST_NAVAL_POINT
+		game.naval += 1
+	},
+	mobilize_border_zone() {
+		push_undo()
+		log_h3("Border Zone:")
+		log(`>Mobilized (cost: ${COST_BORDER_ZONE} PSP)`)
+		game.gov_psl -= COST_BORDER_ZONE
+		game.border_zone_drm = 0
+	},
+	improve_border_zone() {
+		push_undo()
+		log_h3("Border Zone:")
+		log(`>Improved DRM (cost: ${COST_BORDER_ZONE} PSP)`)
+		game.gov_psl -= COST_BORDER_ZONE
+		game.border_zone_drm -= 1
+	},
+	end_reinforcement() {
 		// XXX debug
-		log("End of turn...")
+		log("End of Gov reinforcement...")
 		goto_next_turn()
 	}
 }

@@ -350,7 +350,8 @@ function update_map() {
 	ui.tracker[view.helo_max].appendChild(ui.markers.helo_max)
 	ui.tracker[view.naval].appendChild(ui.markers.naval)
 
-	ui.drm[view.border_zone_drm].appendChild(ui.markers.border_zone)
+	ui.drm[-view.border_zone_drm].appendChild(ui.markers.border_zone)
+	ui.markers.border_zone.classList.toggle("hide", view.border_zone_drm === null)
 	ui.markers.border_zone.classList.toggle("neutralized", !view.border_zone_active)
 
 	for (let u = 0; u < unit_count; ++u) {
@@ -398,6 +399,21 @@ function on_update() { // eslint-disable-line no-unused-vars
 
 	action_button("end_deployment", "End deployment")
 	action_button("roll", "Roll")
+
+	// gov reinfircement
+	action_button("mobilization", "Mobilization")
+	action_button("activation", "Activation")
+	action_button("acquire_assets", "Acquire assets")
+
+	action_button("acquire_air_point", "+1 Air Point")
+	action_button("acquire_helo_point", "+1 Helo Point")
+	action_button("acquire_naval_point", "+1 Naval Point")
+	action_button("mobilize_border_zone", "Mobilize Border Zone")
+	action_button("improve_border_zone", "Improve Border Zone")
+
+	action_button("end_reinforcement", "End reinforcement")
+
+
 	action_button("done", "Done")
 	action_button("undo", "Undo")
     action_button("restart", "Restart")
