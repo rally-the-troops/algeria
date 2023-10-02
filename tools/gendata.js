@@ -124,39 +124,39 @@ const BAND = 6
 const CADRE = 7
 const FRONT = 8
 
-function def_unit(side, type, klass, count = 1) {
+function def_unit(side, type, name, klass, count = 1) {
     for (let i = 0; i < count; ++i) {
-        units.push({side, type, class: klass})
+        units.push({side, type, name, class: klass})
     }
 }
 
-def_unit(GOV, FR_XX, "fr_xx_2")
-def_unit(GOV, FR_XX, "fr_xx_4")
-def_unit(GOV, FR_XX, "fr_xx_9")
-def_unit(GOV, FR_XX, "fr_xx_12")
-def_unit(GOV, FR_XX, "fr_xx_13")
-def_unit(GOV, FR_XX, "fr_xx_14")
-def_unit(GOV, FR_XX, "fr_xx_19")
-def_unit(GOV, FR_XX, "fr_xx_20")
-def_unit(GOV, FR_XX, "fr_xx_21")
-def_unit(GOV, FR_XX, "fr_xx_29")
+def_unit(GOV, FR_XX, "French 2nd division", "fr_xx_2")
+def_unit(GOV, FR_XX, "French 4th division", "fr_xx_4")
+def_unit(GOV, FR_XX, "French 9th division", "fr_xx_9")
+def_unit(GOV, FR_XX, "French 12th division", "fr_xx_12")
+def_unit(GOV, FR_XX, "French 13th division", "fr_xx_13")
+def_unit(GOV, FR_XX, "French 14th division", "fr_xx_14")
+def_unit(GOV, FR_XX, "French 19th division", "fr_xx_19")
+def_unit(GOV, FR_XX, "French 20th division", "fr_xx_20")
+def_unit(GOV, FR_XX, "French 21th division", "fr_xx_21")
+def_unit(GOV, FR_XX, "French 29th division", "fr_xx_29")
 
-def_unit(GOV, FR_XX, "fr_xx_27")
-def_unit(GOV, FR_XX, "fr_xx_25")
-def_unit(GOV, FR_XX, "fr_xx_7")
+def_unit(GOV, FR_XX, "French 27th division", "fr_xx_27")
+def_unit(GOV, FR_XX, "French 5th division", "fr_xx_5")
+def_unit(GOV, FR_XX, "French 7th division", "fr_xx_7") // rules errata: - The French light mechanized division (circle with slash through it) should be numbered "7", not "2"
 
-def_unit(GOV, FR_X, "fr_x", 4)
-def_unit(GOV, EL_X, "fr_elite_x_para", 3)
-def_unit(GOV, EL_X, "fr_elite_x_inf")
-def_unit(GOV, EL_X, "fr_elite_x_marine", 3)
+def_unit(GOV, FR_X, "French brigade", "fr_x", 4)
+def_unit(GOV, EL_X, "French elite brigade", "fr_elite_x_para", 3)
+def_unit(GOV, EL_X, "French elite brigade", "fr_elite_x_inf")
+def_unit(GOV, EL_X, "French elite brigade", "fr_elite_x_marine", 3)
 
-def_unit(GOV, AL_X, "alg_x", 6)
-def_unit(GOV, POL, "alg_police", 10)
+def_unit(GOV, AL_X, "Algerian brigade", "alg_x", 6)
+def_unit(GOV, POL, "Police", "alg_police", 10)
 
-def_unit(FLN, FAILEK, "fln_failek", 10)
-def_unit(FLN, BAND, "fln_band", 24)
-def_unit(FLN, CADRE, "fln_cadre", 30)
-def_unit(FLN, FRONT, "fln_front", 16)
+def_unit(FLN, FAILEK, "Failek", "fln_failek", 10)
+def_unit(FLN, BAND, "Band", "fln_band", 24)
+def_unit(FLN, CADRE, "Cadre", "fln_cadre", 30)
+def_unit(FLN, FRONT, "Front", "fln_front", 16)
 
 console.log("const area_count =", areas.length)
 console.log("const unit_count =", units.length)

@@ -35,6 +35,7 @@ const CADRE = 7
 const FRONT = 8
 
 // Free deployment holding box
+const FREE = 0
 const DEPLOY = 1
 const ELIMINATED = 2
 
@@ -292,6 +293,10 @@ function is_area_remote(l) {
 	return areas[l].type === REMOTE
 }
 
+function is_area_algerian(l) {
+	return areas[l].type !== COUNTRY
+}
+
 // #endregion
 
 // #region UNIT STATE
@@ -429,6 +434,10 @@ function is_fln_unit(u) {
 	return units[u].side === FLN
 }
 
+function is_algerian_unit(u) {
+	return units[u].type === AL_X
+}
+
 function is_police_unit(u) {
 	return units[u].type === POL
 }
@@ -452,6 +461,18 @@ function for_each_friendly_unit_on_map(fn) {
 			fn(u)
 }
 
+function for_each_friendly_unit_on_map_box(box, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) > 2 && unit_box(u) === box)
+			fn(u)
+}
+
+function for_each_friendly_unit_on_map_of_type(type, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) > 2 && unit_type(u) === type)
+			fn(u)
+}
+
 function for_each_friendly_unit_in_loc(x, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) === x)
@@ -468,6 +489,12 @@ function for_each_friendly_unit_in_locs(xs, fn) {
 function for_each_map_area(fn) {
 	for (let i = 3; i < area_count; ++i)
 		fn(i)
+}
+
+function for_each_algerian_map_area(fn) {
+	for (let i = 3; i < area_count; ++i)
+		if (is_area_algerian(i))
+			fn(i)
 }
 
 function for_each_map_area_in_zone(z, fn) {
@@ -810,13 +837,15 @@ function can_all_deploy_to(us, to) {
 function deploy_unit(who, to) {
 	set_unit_loc(who, to)
 
-	// deploy unit: all FLN in UG, GOV in OPS, police in PTL
+	// deploy unit: all FLN in UG, GOV in OPS/OC, police in PTL
 	if (is_fln_unit(who)) {
 		set_unit_box(who, UG)
 	} else if (is_police_unit(who)) {
 		set_unit_box(who, PTL)
-	} else {
+	} else if (is_algerian_unit(who)) {
 		set_unit_box(who, OPS)
+	} else {
+		set_unit_box(who, OC)
 	}
 }
 
@@ -875,7 +904,6 @@ states.scenario_setup = {
 		set_toggle(game.selected, u)
 	},
 	loc(to) {
-		console.log("loc", to)
 		let list = game.selected
 		game.selected = []
 		push_undo()
@@ -1105,38 +1133,198 @@ function goto_gov_reinforcement_phase() {
 	set_active_player()
 	log_h2(`${game.active} Reinforcement`)
 	game.state = "gov_reinforcement"
+	game.selected = []
+
+	// Make sure all available units can be deployed
+	for_each_friendly_unit_in_loc(FREE, u => {
+		set_unit_loc(u, DEPLOY)
+		set_unit_box(u, OC)
+	})
+
+	// Algerian units activate for free
+	for_each_friendly_unit_on_map_of_type(AL_X, u => {
+		set_unit_box(u, OPS)
+	})
 }
 
 const COST_AIR_POINT = 2
 const COST_HELO_POINT = 3
 const COST_NAVAL_POINT = 3
 const COST_BORDER_ZONE = 6
+const COST_ACTIVATE_BORDER_ZONE = 1
 const MAX_AIR_POINT = 99
 const MAX_HELO_POINT = 99
 const MAX_NAVAL_POINT = 99
 const MAX_BORDER_ZONE_DRM = -3
 
+const GOV_UNIT_MOBILIZE_COST = {
+	[FR_XX]: 5,
+	[FR_X]: 2,
+	[EL_X]: 3,
+	[AL_X]: 2,
+	[POL]: 1
+}
+
+function mobilization_cost(units) {
+	let cost = 0
+	for (let u of units) {
+		cost += GOV_UNIT_MOBILIZE_COST[unit_type(u)]
+	}
+	return cost
+}
+
+const GOV_UNIT_ACTIVATION_COST = {
+	[FR_XX]: 1,
+	[FR_X]: .5,
+	[EL_X]: .5,
+	[AL_X]: 0
+}
+
+function activation_cost(units) {
+	let cost = 0
+	for (let u of units) {
+		cost += GOV_UNIT_ACTIVATION_COST[unit_type(u)]
+	}
+	return cost
+}
+
+function mobilize_unit(who, to) {
+	set_unit_loc(who, to)
+
+	if (is_police_unit(who)) {
+		set_unit_box(who, PTL)
+	} else {
+		set_unit_box(who, OPS)
+	}
+
+	log(`>${units[who].name} into ${areas[to].name}`)
+}
+
 states.gov_reinforcement = {
 	inactive: "to do reinforcement",
 	prompt() {
-		view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+		if (game.selected.length === 0) {
+			view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+			// first unit can be any unit in DEPLOY or on map
+			for_each_friendly_unit_in_loc(DEPLOY, u => {
+				gen_action_unit(u)
+			})
 
-		if (game.gov_psl > COST_AIR_POINT && game.air_max < MAX_AIR_POINT)
-			gen_action("acquire_air_point")
-		if (game.gov_psl > COST_HELO_POINT && game.helo_max < MAX_HELO_POINT)
-			gen_action("acquire_helo_point")
-		if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT)
-			gen_action("acquire_naval_point")
-		if (game.gov_psl > COST_BORDER_ZONE) {
-			// starts at no border zone instead of 0
-			if (game.border_zone_drm === null) {
-				gen_action("mobilize_border_zone")
-			} else if (game.border_zone_drm > MAX_BORDER_ZONE_DRM) {
-				gen_action("improve_border_zone")
+			// activate french mobile units
+			for_each_friendly_unit_on_map_box(OC, u => {
+				gen_action_unit(u)
+			})
+
+			// remove police units
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				gen_action_unit(u)
+			})
+
+			// activate border
+			// TODO consider making marker selectable
+			if (game.border_zone_drm !== null && !game.border_zone_active && game.gov_psl > COST_ACTIVATE_BORDER_ZONE) {
+				gen_action("activate_border_zone")
+			}
+
+			// asset acquisition
+			if (game.gov_psl > COST_AIR_POINT && game.air_max < MAX_AIR_POINT)
+				gen_action("acquire_air_point")
+			if (game.gov_psl > COST_HELO_POINT && game.helo_max < MAX_HELO_POINT)
+				gen_action("acquire_helo_point")
+			if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT)
+				gen_action("acquire_naval_point")
+			if (game.gov_psl > COST_BORDER_ZONE) {
+				// starts at no border zone instead of 0
+				if (game.border_zone_drm === null) {
+					gen_action("mobilize_border_zone")
+				} else if (game.border_zone_drm > MAX_BORDER_ZONE_DRM) {
+					gen_action("improve_border_zone")
+				}
+			}
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_type = unit_type(first_unit)
+			if (first_unit_type === POL && first_unit_loc !== DEPLOY) {
+				view.prompt = "Reinforcement: Remove Police units"
+
+				for_each_friendly_unit_on_map_of_type(POL, u => {
+					gen_action_unit(u)
+				})
+
+				gen_action("remove")
+			} else if (first_unit_loc === DEPLOY) {
+				let cost = mobilization_cost(game.selected)
+				view.prompt = `Reinforcement: Mobilize units (cost ${cost} PSP)`
+
+				for_each_friendly_unit_in_loc(DEPLOY, u => {
+					gen_action_unit(u)
+				})
+
+				if (game.gov_psl > cost) {
+					for_each_algerian_map_area(loc => {
+						gen_action_loc(loc)
+					})
+				}
+			} else {
+				let cost = activation_cost(game.selected)
+				view.prompt = `Reinforcement: Activate units (cost ${cost} PSP)`
+
+				for_each_friendly_unit_on_map_box(OC, u => {
+					gen_action_unit(u)
+				})
+
+				// Fractions rounded up
+				if (game.gov_psl >  Math.ceil(cost)) {
+					gen_action("activate")
+				}
 			}
 		}
 
+		// XXX debug
+		// TODO confirmation when no units are activated?
 		gen_action("end_reinforcement")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Mobilized:")
+		for (let who of list) {
+			mobilize_unit(who, to)
+		}
+		let cost = mobilization_cost(list)
+		game.gov_psl -= cost
+		log(`Paid ${cost} PSP`)
+	},
+	activate() {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Activated:")
+		for (let u of list) {
+			let loc = unit_loc(u)
+			log(`>${units[u].name} in ${areas[loc].name}`)
+			set_unit_box(u, OPS)
+		}
+		let cost = Math.ceil(activation_cost(list))
+		game.gov_psl -= cost
+		log(`Paid ${cost} PSP`)
+	},
+	remove() {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Removed:")
+		for (let u of list) {
+			let loc = unit_loc(u)
+			log(`>${units[u].name} from ${areas[loc].name}`)
+			set_unit_loc(u, DEPLOY)
+			set_unit_box(u, OC)
+		}
 	},
 	acquire_air_point() {
 		push_undo()
@@ -1160,6 +1348,13 @@ states.gov_reinforcement = {
 		log(`Paid  ${COST_NAVAL_POINT} PSP`)
 		game.gov_psl -= COST_NAVAL_POINT
 		game.naval += 1
+	},
+	activate_border_zone() {
+		push_undo()
+		log("Border Zone Activated")
+		log(`>Paid ${COST_ACTIVATE_BORDER_ZONE} PSP`)
+		game.gov_psl -= COST_ACTIVATE_BORDER_ZONE
+		game.border_zone_active = true
 	},
 	mobilize_border_zone() {
 		push_undo()
