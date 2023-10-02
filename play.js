@@ -422,6 +422,12 @@ function on_update() { // eslint-disable-line no-unused-vars
 
 function on_log(text) { // eslint-disable-line no-unused-vars
 	let p = document.createElement("div")
+
+	if (text.match(/^>/)) {
+		text = text.substring(1)
+		p.className = "i"
+	}
+
 	if (text.match(/^\.h1/)) {
 		text = text.substring(4)
 		p.className = 'h1'
