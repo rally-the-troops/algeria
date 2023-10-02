@@ -400,7 +400,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("end_deployment", "End deployment")
 	action_button("roll", "Roll")
 
-	// gov reinfircement
+	// gov reinforcement
 	action_button("mobilization", "Mobilization")
 	action_button("activation", "Activation")
 	action_button("acquire_assets", "Acquire assets")
@@ -410,13 +410,13 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("acquire_naval_point", "+1 Naval Point")
 	action_button("mobilize_border_zone", "Mobilize Border Zone")
 	action_button("improve_border_zone", "Improve Border Zone")
-
 	action_button("end_reinforcement", "End reinforcement")
-
 
 	action_button("done", "Done")
 	action_button("undo", "Undo")
+	// XXX debug
     action_button("restart", "Restart")
+	action_button("reset", "Reset")
 }
 
 
