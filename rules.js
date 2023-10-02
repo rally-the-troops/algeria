@@ -204,7 +204,7 @@ function clear_area_terrorized(l) {
 // remote
 
 function is_area_remote(l) {
-	return (game.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+	return areas[l].type === REMOTE || (game.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
 }
 
 function set_area_remote(l) {
@@ -287,10 +287,6 @@ function clear_area_propagandized(l) {
 
 function area_zone(l) {
 	return areas[l].zone
-}
-
-function is_area_remote(l) {
-	return areas[l].type === REMOTE
 }
 
 function is_area_algerian(l) {
@@ -1578,9 +1574,9 @@ function set_toggle(set, item) {
 
 function is_subset_with_multiplicity(set, subset) {
 	return subset.every(val => set.includes(val)
-	  && subset.filter(el => el === val).length
-		 <=
-		 set.filter(el => el === val).length)
+		&& subset.filter(el => el === val).length
+		<=
+		set.filter(el => el === val).length)
 }
 
 // Fast deep copy for objects without cycles
