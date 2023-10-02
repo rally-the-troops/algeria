@@ -19,6 +19,11 @@ const OC = 3
 const FLN = 0
 const GOV = 1
 
+const RURAL = 1
+const URBAN = 2
+const REMOTE = 3
+const COUNTRY = 4
+
 const FR_XX = 0
 const FR_X = 1
 const EL_X = 2
@@ -51,6 +56,7 @@ function set_next_player() {
 		game.phasing = FLN_NAME
 	else
 		game.phasing = GOV_NAME
+	set_active_player()
 }
 
 
@@ -280,6 +286,10 @@ function clear_area_propagandized(l) {
 
 function area_zone(l) {
 	return areas[l].zone
+}
+
+function is_area_remote(l) {
+	return areas[l].type === REMOTE
 }
 
 // #endregion
@@ -784,7 +794,8 @@ function can_all_deploy_to(us, to) {
 			return false
 
 		// - only 1 Front per area
-		if (type === FRONT && has_unit_type_in_loc(FRONT, to))
+		// - Front can't be created in Remote
+		if (type === FRONT && (has_unit_type_in_loc(FRONT, to) || is_area_remote(to)))
 			return false
 	}
 
@@ -899,7 +910,6 @@ states.scenario_setup = {
 
 function end_scenario_setup() {
 	set_next_player()
-	set_active_player()
 
 	if (has_friendly_unit_in_loc(DEPLOY)) {
 		goto_scenario_setup()
@@ -922,6 +932,7 @@ function begin_game() {
 function goto_random_event() {
 	game.active = BOTH
 	game.state = "random_event"
+	log_h2("Random Event")
 }
 
 states.random_event = {
@@ -931,10 +942,8 @@ states.random_event = {
 		gen_action("restart")
 	},
 	roll() {
-		clear_undo()
 		let rnd = 10 * roll_d6() + roll_d6()
-		log("Random event roll " + rnd)
-		// goto_reinforcement_phase()
+		log("Rolled " + rnd)
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -959,7 +968,7 @@ states.random_event = {
 		} else if (rnd <= 66) {
 			goto_jean_paul_sartre()
 		} else {
-			log("Invalid random value, out of range (11-66)")
+			throw Error("Invalid random value, out of range (11-66)")
 		}
 	},
 	restart() {
@@ -975,12 +984,12 @@ function goto_restart() {
 }
 
 function goto_no_event() {
-	log(".h2 No Event. Lucky you.")
+	log_h3("No Event. Lucky you.")
 	end_random_event()
 }
 
 function goto_fln_foreign_arms_shipment() {
-	log(".h2 FLN Foreign arms shipment.")
+	log_h3("FLN Foreign arms shipment.")
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
 	let roll = roll_2d6()
 	let delta_ap = Math.max(roll - game.gov_naval, 0)
@@ -990,34 +999,34 @@ function goto_fln_foreign_arms_shipment() {
 }
 
 function goto_jealousy_and_paranoia() {
-	log(".h2 Jealousy and Paranoia. TODO")
+	log_h3("Jealousy and Paranoia. TODO")
 	// TODO FLN units may not Move across wilaya borders this turn only (they may move across international borders)
 	game.events.jealousy_and_paranoia = true
 	end_random_event()
 }
 
 function goto_elections_in_france() {
-	log(".h2 Elections in France. TODO")
+	log_h3("Elections in France. TODO")
 	// Government player rolls on the Coup Table (no DRM) and adds or subtracts
 	// the number of PSP indicated: no units are mobilized or removed.
 	end_random_event()
 }
 
 function goto_un_debate() {
-	log(".h2 UN debates Algerian Independence. TODO")
+	log_h3("UN debates Algerian Independence. TODO")
 	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
 	end_random_event()
 }
 
 function goto_fln_factional_purge() {
-	log(".h2 FLN Factional Purge. TODO")
+	log_h3("FLN Factional Purge. TODO")
 	// The Government player chooses one wilaya and rolls 1d6, neutralizing
 	// that number of FLN units there (the FLN player's choice which ones).
 	end_random_event()
 }
 
 function goto_morocco_tunisia_independence() {
-	log(".h2 Morocco & Tunisia Gains Independence. TODO")
+	log_h3("Morocco & Tunisia Gains Independence. TODO")
 
 	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
 		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
@@ -1045,7 +1054,7 @@ function goto_morocco_tunisia_independence() {
 }
 
 function goto_nato_pressure() {
-	log(".h2 NATO pressures France to boost European defense. TODO")
+	log_h3("NATO pressures France to boost European defense. TODO")
 	// The Government player rolls 1d6 and must remove that number of French Army brigades
 	// (a division counts as three brigades) from the map.
 	// The units may be re-mobilized at least one turn later.
@@ -1053,7 +1062,7 @@ function goto_nato_pressure() {
 }
 
 function goto_suez_crisis() {
-	log(".h2 Suez Crisis. TODO")
+	log_h3("Suez Crisis. TODO")
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
 		log("Re-roll. No Event.")
@@ -1069,7 +1078,7 @@ function goto_suez_crisis() {
 }
 
 function goto_amnesty() {
-	log(".h2 Amnesty. TODO")
+	log_h3("Amnesty. TODO")
 	// The French government offers "the peace of the brave" to FLN rebels.
 	// TODO All Government Civil Affairs or Suppression missions get a +1 DRM this turn.
 	game.events.amnesty = true
@@ -1077,14 +1086,13 @@ function goto_amnesty() {
 }
 
 function goto_jean_paul_sartre() {
-	log(".h2 Jean-Paul Sartre writes article condemning the war.")
+	log_h3("Jean-Paul Sartre writes article condemning the war.")
 	// Reduce Government PSL by 1 PSP.
 	game.gov_psl -= 1
 	end_random_event()
 }
 
 function end_random_event() {
-	clear_undo()
 	goto_reinforcement_phase()
 }
 
@@ -1103,23 +1111,27 @@ const COST_AIR_POINT = 2
 const COST_HELO_POINT = 3
 const COST_NAVAL_POINT = 3
 const COST_BORDER_ZONE = 6
+const MAX_AIR_POINT = 99
+const MAX_HELO_POINT = 99
+const MAX_NAVAL_POINT = 99
+const MAX_BORDER_ZONE_DRM = -3
 
 states.gov_reinforcement = {
 	inactive: "to do reinforcement",
 	prompt() {
 		view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
 
-		if (game.gov_psl > COST_AIR_POINT)
+		if (game.gov_psl > COST_AIR_POINT && game.air_max < MAX_AIR_POINT)
 			gen_action("acquire_air_point")
-		if (game.gov_psl > COST_HELO_POINT)
+		if (game.gov_psl > COST_HELO_POINT && game.helo_max < MAX_HELO_POINT)
 			gen_action("acquire_helo_point")
-		if (game.gov_psl > COST_NAVAL_POINT)
+		if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT)
 			gen_action("acquire_naval_point")
 		if (game.gov_psl > COST_BORDER_ZONE) {
-			// TODO starts at no border zone instead of 0
+			// starts at no border zone instead of 0
 			if (game.border_zone_drm === null) {
 				gen_action("mobilize_border_zone")
-			} else if (game.border_zone_drm > -3) {
+			} else if (game.border_zone_drm > MAX_BORDER_ZONE_DRM) {
 				gen_action("improve_border_zone")
 			}
 		}
@@ -1128,38 +1140,38 @@ states.gov_reinforcement = {
 	},
 	acquire_air_point() {
 		push_undo()
-		log_h3("Asset Acquired:")
-		log(`+1 Air Point (cost: ${COST_AIR_POINT} PSP)`)
+		log("+1 Air Point")
+		log(`>Paid ${COST_AIR_POINT} PSP`)
 		game.gov_psl -= COST_AIR_POINT
 		game.air_avail += 1
 		game.air_max += 1
 	},
 	acquire_helo_point() {
 		push_undo()
-		log_h3("Asset Acquired:")
-		log(`+1 Helo Point (cost: ${COST_HELO_POINT} PSP)`)
+		log("+1 Helo Point")
+		log(`>Paid ${COST_HELO_POINT} PSP`)
 		game.gov_psl -= COST_HELO_POINT
 		game.helo_avail += 1
 		game.helo_max += 1
 	},
 	acquire_naval_point() {
 		push_undo()
-		log_h3("Asset Acquired:")
-		log(`+1 Naval Point (cost: ${COST_NAVAL_POINT} PSP)`)
+		log("+1 Naval Point")
+		log(`Paid  ${COST_NAVAL_POINT} PSP`)
 		game.gov_psl -= COST_NAVAL_POINT
 		game.naval += 1
 	},
 	mobilize_border_zone() {
 		push_undo()
-		log_h3("Border Zone:")
-		log(`>Mobilized (cost: ${COST_BORDER_ZONE} PSP)`)
+		log("Border Zone Mobilized")
+		log(`>Paid ${COST_BORDER_ZONE} PSP`)
 		game.gov_psl -= COST_BORDER_ZONE
 		game.border_zone_drm = 0
 	},
 	improve_border_zone() {
 		push_undo()
-		log_h3("Border Zone:")
-		log(`>Improved DRM (cost: ${COST_BORDER_ZONE} PSP)`)
+		log("Border Zone Improved")
+		log(`>Paid ${COST_BORDER_ZONE} PSP`)
 		game.gov_psl -= COST_BORDER_ZONE
 		game.border_zone_drm -= 1
 	},
@@ -1268,10 +1280,12 @@ function shuffle(list) {
 }
 
 function roll_d6() {
-	return random(6) + 1;
+	clear_undo()
+	return random(6) + 1
 }
 
 function roll_2d6() {
+	clear_undo()
 	return roll_d6() + roll_d6()
 }
 
