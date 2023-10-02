@@ -318,6 +318,10 @@ function area_zone(l) {
 	return areas[l].zone
 }
 
+function is_area_country(l) {
+	return areas[l].type === COUNTRY
+}
+
 function is_area_algerian(l) {
 	return areas[l].type !== COUNTRY
 }
@@ -334,16 +338,9 @@ function is_area_rural(l) {
 
 // #region UNIT STATE
 
-function apply_select(u) {
-	if (game.selected === u)
-		game.selected = -1
-	else
-		game.selected = u
-}
-
 function pop_selected() {
-	let u = game.selected
-	game.selected = -1
+	let u = game.selected[0]
+	game.selected = []
 	return u
 }
 
@@ -448,6 +445,10 @@ function is_unit_eliminated(u) {
 	return unit_loc(u) === ELIMINATED
 }
 
+function free_unit(u) {
+	game.units[u] = 0
+}
+
 // #endregion
 
 // #region UNIT DATA
@@ -457,6 +458,13 @@ function find_free_unit_by_type(type) {
 		if (!game.units[u] && units[u].type === type)
 			return u
 	throw new Error("cannot find free unit of type: " + type)
+}
+
+function has_free_unit_by_type(type) {
+	for (let u = 0; u < unit_count; ++u)
+		if (!game.units[u] && units[u].type === type)
+			return true
+	return false
 }
 
 function is_gov_unit(u) {
@@ -1458,19 +1466,117 @@ function goto_fln_reinforcement_phase() {
 	game.state = "fln_reinforcement"
 	game.selected = []
 
-	// Make sure all available units can be deployed
-	for_each_friendly_unit_in_loc(FREE, u => {
-		set_unit_loc(u, DEPLOY)
-		set_unit_box(u, OC)
+	// Make sure all available units can be build / converted
+	for_each_friendly_unit_in_locs([FREE, DEPLOY], u => {
+		free_unit(u)
 	})
 
+	// TODO If Morocco & Tunisia are independent, make sure we have a Front there
+
 	give_fln_ap()
+	log_br()
+}
+
+const BUILD_COST = 3
+const FOREIGN_BUILD_COST = 2
+
+const CONVERT_COST = {
+	[FRONT]: 3,
+	[BAND]: 1,
+	[FAILEK]: 2,
+	[CADRE]: 0
+}
+
+function build_cost(where) {
+	if (is_area_algerian(where)) {
+		return BUILD_COST
+	} else {
+		return FOREIGN_BUILD_COST
+	}
+}
+
+function convert_cost(type) {
+	return CONVERT_COST[type]
+}
+
+function build_fln_unit(type, where) {
+	let u = find_free_unit_by_type(type)
+	log(`Built ${units[u].name} in ${areas[where].name}`)
+	set_unit_loc(u, where)
+	set_unit_box(u, UG)
+	let cost = build_cost(type, where)
+	game.fln_ap -= cost
+	log(`>Paid ${cost} AP`)
+}
+
+function convert_fln_unit(u, type) {
+	let loc = unit_loc(u)
+	let n = find_free_unit_by_type(type)
+	log(`Converted ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
+	set_unit_loc(n, loc)
+	set_unit_box(n, UG)
+	free_unit(u)
+	let cost = convert_cost(type)
+	game.fln_ap -= cost
+	log(`>Paid ${cost} AP`)
 }
 
 states.fln_reinforcement = {
 	inactive: "to do reinforcement",
 	prompt() {
-		view.prompt = "Reinforcement: Build & Augment units"
+		if (game.selected.length === 0) {
+			view.prompt = "Reinforcement: Build & Augment units"
+
+			// Front can build Cadres and Bands, or be converted to Cadre
+			for_each_friendly_unit_on_map_of_type(FRONT, u => {
+				if (is_unit_not_neutralized(u))
+					gen_action_unit(u)
+			})
+
+			// Cadre can be converted to Front or Band
+			for_each_friendly_unit_on_map_of_type(CADRE, u => {
+				if (is_unit_not_neutralized(u))
+					gen_action_unit(u)
+			})
+
+			// Band can be converted to Failek in Morocco / Tunisia
+			for_each_friendly_unit_on_map_of_type(BAND, u => {
+				if (is_area_country(unit_loc(u)))
+					gen_action_unit(u)
+			})
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_type = unit_type(first_unit)
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			if (first_unit_type === FRONT) {
+				view.prompt = "Reinforcement: Front can build Cadre or Band"
+				// The FLN player may build new Cadres or Bands by spending the AP cost and placing them in the UG box of any area which contains a non-Neutralized Front
+				// (note that this requires the presence of a Front)
+				if (has_free_unit_by_type(CADRE) && game.fln_ap >= build_cost(first_unit_loc))
+					gen_action("build_cadre")
+				if (has_free_unit_by_type(BAND) && game.fln_ap >= build_cost(first_unit_loc))
+					gen_action("build_band")
+				if (has_free_unit_by_type(CADRE))
+					gen_action("convert_front_to_cadre")
+
+			} else if (first_unit_type === CADRE) {
+				view.prompt = "Reinforcement: Convert Cadre"
+				// Fronts may not be created in Remote areas (not enough people) and there may be only one Front per area.
+				if (!(has_unit_type_in_loc(FRONT, first_unit_loc) || is_area_remote(first_unit_loc)) && has_free_unit_by_type(FRONT) && game.fln_ap >= convert_cost(FRONT)) {
+					gen_action("convert_cadre_to_front")
+				}
+				if (has_free_unit_by_type(BAND) && game.fln_ap >= convert_cost(BAND))
+					gen_action("convert_cadre_to_band")
+			} else if (first_unit_type === BAND) {
+				view.prompt = "Reinforcement: Convert Band"
+				if (has_free_unit_by_type(FAILEK) && game.fln_ap >= convert_cost(FAILEK))
+					gen_action("convert_band_to_failek")
+			}
+		}
 
 		// XXX debug
 		gen_action("reset")
@@ -1479,20 +1585,34 @@ states.fln_reinforcement = {
 	unit(u) {
 		set_toggle(game.selected, u)
 	},
-	loc(to) {
-		let list = game.selected
-		game.selected = []
-		push_undo()
-		log("Mobilized:")
-		for (let who of list) {
-			mobilize_unit(who, to)
-		}
-		let cost = mobilization_cost(list)
-		game.gov_psl -= cost
-		log(`Paid ${cost} PSP`)
+	build_cadre() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+		build_fln_unit(CADRE, loc)
+	},
+	build_band() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+		build_fln_unit(BAND, loc)
+	},
+	convert_front_to_cadre() {
+		let unit = pop_selected()
+		convert_fln_unit(unit, CADRE)
+	},
+	convert_cadre_to_front() {
+		let unit = pop_selected()
+		convert_fln_unit(unit, FRONT)
+	},
+	convert_cadre_to_band() {
+		let unit = pop_selected()
+		convert_fln_unit(unit, BAND)
+	},
+	convert_band_to_failek() {
+		let unit = pop_selected()
+		convert_fln_unit(unit, FAILEK)
 	},
 	reset() {
-		goto_gov_reinforcement_phase()
+		goto_fln_reinforcement_phase()
 	},
 	end_reinforcement() {
 		// XXX debug

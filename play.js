@@ -413,6 +413,15 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("activate_border_zone", "Activate Border")
 	action_button("remove", "Remove")
 	action_button("activate", "Activate")
+
+
+	action_button("build_cadre", "Build Cadre")
+	action_button("build_band", "Build Band")
+	action_button("convert_cadre_to_front", "Convert to Front")
+	action_button("convert_cadre_to_band", "Convert to Band")
+	action_button("convert_band_to_failek", "Convert to Failek")
+	action_button("convert_front_to_cadre", "Convert to Cadre")
+
 	action_button("end_reinforcement", "End reinforcement")
 
 	action_button("done", "Done")
