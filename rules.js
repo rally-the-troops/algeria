@@ -122,6 +122,35 @@ function load_state(state) {
 	}
 }
 
+// If a player's PSL rises to above 99 during the game due to various events, any such "excess" PSP gained for that player are not lost: instead they are SUBTRACTED from the other player's PSL.
+
+const MAX_PSL = 99
+const MAX_AP = 99
+
+function raise_fln_psl(amount) {
+	game.fln_psl += amount
+	if (game.fln_psl > MAX_PSL) {
+		let excess_psl = game.fln_psl - MAX_PSL
+		log(`FLN PSL exceeds ${MAX_PSL}; Goverment ${-excess_psl} PSL`)
+		game.fln_psl = MAX_PSL
+		game.gov_psl -= excess_psl
+	}
+}
+
+function raise_gov_psl(amount) {
+	game.gov_psl += amount
+	if (game.gov_psl > MAX_PSL) {
+		let excess_psl = game.gov_psl - MAX_PSL
+		log(`Government PSL exceeds ${MAX_PSL}; FLN ${-excess_psl} PSL`)
+		game.gov_psl = MAX_PSL
+		game.fln_psl -= excess_psl
+	}
+}
+
+function raise_fln_ap(amount) {
+	game.fln_ap = Math.min(MAX_PSL, game.fln_ap + amount)
+}
+
 // #endregion
 
 // #region AREA STATE
@@ -291,6 +320,14 @@ function area_zone(l) {
 
 function is_area_algerian(l) {
 	return areas[l].type !== COUNTRY
+}
+
+function is_area_urban(l) {
+	return areas[l].type === URBAN
+}
+
+function is_area_rural(l) {
+	return areas[l].type === RURAL
 }
 
 // #endregion
@@ -502,6 +539,13 @@ function for_each_map_area_in_zone(z, fn) {
 function has_friendly_unit_in_loc(x) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) === x)
+			return true
+	return false
+}
+
+function has_friendly_not_neutralized_unit_in_loc(x) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x && is_unit_not_neutralized(u))
 			return true
 	return false
 }
@@ -1016,9 +1060,9 @@ function goto_fln_foreign_arms_shipment() {
 	log_h3("FLN Foreign arms shipment.")
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
 	let roll = roll_2d6()
-	let delta_ap = Math.max(roll - game.gov_naval, 0)
-	log(`FLN adds ${roll} AP, minus ${game.gov_naval} Naval Points = ${delta_ap} AP`)
-	game.fln_ap += delta_ap
+	let delta_ap = Math.max(roll - game.naval, 0)
+	log(`FLN adds ${roll} AP, minus ${game.naval} Naval Points = ${delta_ap} AP`)
+	raise_fln_ap(delta_ap)
 	end_random_event()
 }
 
@@ -1065,11 +1109,11 @@ function goto_morocco_tunisia_independence() {
 	// Raise both FLN and Government PSL by 2d6;
 	let fln_roll = roll_2d6()
 	log(`Raising FLN PSL by ${fln_roll}`)
-	game.fln_psl += fln_roll
+	raise_fln_psl(fln_roll)
 
 	let gov_roll = roll_2d6()
 	log(`Raising Government PSL by ${gov_roll}`)
-	game.gov_psl += gov_roll
+	raise_fln_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
 	// and Government may begin to mobilize the Border Zone. See 11.22.
@@ -1367,11 +1411,95 @@ states.gov_reinforcement = {
 		game.border_zone_drm -= 1
 	},
 	end_reinforcement() {
+		goto_fln_reinforcement_phase()
+	}
+}
+
+function give_fln_ap() {
+	// Give AP
+	log_h3("Areas under FLN control:")
+	for_each_algerian_map_area(loc => {
+		let control_ap = 0
+		if(is_area_urban(loc)) {
+			// He gets 5 AP for each Urban area he controls, or 2 AP if the area is contested but he has non-neutralized units there.
+			if (is_area_fln_control(loc)) {
+				control_ap += 5
+			} else if (has_friendly_not_neutralized_unit_in_loc(loc)) {
+				control_ap += 2
+			}
+		} else if (is_area_rural(loc)) {
+			// He gets 2 AP for each Rural area he controls, and 1 if the area is contested but he has non-neutralized units there.
+			if (is_area_fln_control(loc)) {
+				control_ap += 2
+			} else if (has_friendly_not_neutralized_unit_in_loc(loc)) {
+				control_ap += 1
+			}
+		}
+		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
+		if (is_area_terrorized(loc)) control_ap -= 1
+		if (control_ap > 0) {
+			raise_fln_ap(control_ap)
+			log(`>${areas[loc].name} gave ${control_ap} AP`)
+		}
+	})
+
+	// The FLN PSL
+	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
+	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
+	let psl_ap = Math.max(psl_percentage - game.naval, 0)
+	log(`PSL gave ${psl_ap} AP`)
+	raise_fln_ap(psl_ap)
+}
+
+function goto_fln_reinforcement_phase() {
+	game.phasing = FLN_NAME
+	set_active_player()
+	log_h2(`${game.active} Reinforcement`)
+	game.state = "fln_reinforcement"
+	game.selected = []
+
+	// Make sure all available units can be deployed
+	for_each_friendly_unit_in_loc(FREE, u => {
+		set_unit_loc(u, DEPLOY)
+		set_unit_box(u, OC)
+	})
+
+	give_fln_ap()
+}
+
+states.fln_reinforcement = {
+	inactive: "to do reinforcement",
+	prompt() {
+		view.prompt = "Reinforcement: Build & Augment units"
+
 		// XXX debug
-		log("End of Gov reinforcement...")
+		gen_action("reset")
+		gen_action("end_reinforcement")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Mobilized:")
+		for (let who of list) {
+			mobilize_unit(who, to)
+		}
+		let cost = mobilization_cost(list)
+		game.gov_psl -= cost
+		log(`Paid ${cost} PSP`)
+	},
+	reset() {
+		goto_gov_reinforcement_phase()
+	},
+	end_reinforcement() {
+		// XXX debug
 		goto_next_turn()
 	}
 }
+
 
 function goto_next_turn() {
 	game.turn += 1
