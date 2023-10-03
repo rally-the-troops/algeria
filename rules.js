@@ -691,7 +691,7 @@ exports.setup = function (seed, scenario, options) {
 		seed: seed,
 		log: [],
 		undo: [],
-		
+
 		state: null,
 		selected: -1,
 		phasing: GOV_NAME,
@@ -1112,6 +1112,7 @@ function goto_morocco_tunisia_independence() {
 		// TODO
 
 		end_random_event()
+		return
 	}
 
 	// Raise both FLN and Government PSL by 2d6;
@@ -1270,7 +1271,7 @@ states.gov_reinforcement = {
 
 			// activate border
 			// TODO consider making marker selectable
-			if (game.border_zone_drm !== null && !game.border_zone_active && game.gov_psl > COST_ACTIVATE_BORDER_ZONE) {
+			if (game.border_zone_drm && !game.border_zone_active && game.gov_psl > COST_ACTIVATE_BORDER_ZONE) {
 				gen_action("activate_border_zone")
 			}
 
@@ -1285,7 +1286,8 @@ states.gov_reinforcement = {
 				// starts at no border zone instead of 0
 				if (game.border_zone_drm === null) {
 					gen_action("mobilize_border_zone")
-				} else if (game.border_zone_drm > MAX_BORDER_ZONE_DRM) {
+				} else if (game.border_zone_drm > MAX_BORDER_ZONE_DRM && !game.events.border_zone_mobilized) {
+					// improve not on the same turn as mobilized
 					gen_action("improve_border_zone")
 				}
 			}
@@ -1410,6 +1412,7 @@ states.gov_reinforcement = {
 		log(`>Paid ${COST_BORDER_ZONE} PSP`)
 		game.gov_psl -= COST_BORDER_ZONE
 		game.border_zone_drm = 0
+		game.events.border_zone_mobilized = true
 	},
 	improve_border_zone() {
 		push_undo()
@@ -1627,6 +1630,7 @@ function goto_next_turn() {
 	// make sure single-turn effects are disabled
 	delete game.events.amnesty
 	delete game.events.jealousy_and_paranoia
+	delete game.events.border_zone_mobilized
 
 	goto_random_event()
 }
