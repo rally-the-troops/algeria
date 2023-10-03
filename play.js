@@ -63,6 +63,7 @@ let ui = {
 	tracker: [],
 	drm: [],
 	areas: [],
+	area_markers: [],
 	boxes: [],
 	locations: [],
 	zones: [],
@@ -228,7 +229,7 @@ function on_click_unit(evt) {
 function create_tracker(i, x, y) {
 	let e = ui.tracker[i] = document.createElement("div")
 	e.dataset.id = i
-	e.className = "space stack"
+	e.className = "space stack m"
 	e.style.left = x / SCALE + "px"
 	e.style.top = y / SCALE + "px"
 	e.style.width = 85 / SCALE + "px"
@@ -265,6 +266,27 @@ function create_area(i, area_id, type) {
 		e.style.height = data.areas[i].h / SCALE + "px"
 	}
 	document.getElementById("areas").appendChild(e)
+}
+
+function create_area_markers(i, area_id) {
+	let e = ui.areas[i] = document.createElement("div")
+	e.id = `area-marker-${area_id}`
+	e.dataset.loc = data.areas[i].loc
+	e.className = "space stack s"
+	e.style.left = (data.areas[i].x + 175) / SCALE + "px"
+	e.style.top = (data.areas[i].y - 65) / SCALE + "px"
+	e.style.width = 65 / SCALE + "px"
+	e.style.height = 65 / SCALE + "px"
+	document.getElementById("area_markers").appendChild(e)
+
+	ui.area_markers[i] = {}
+
+	for (let marker of ['remote', 'fln_control', 'gov_control', 'terror']) {
+		let em = ui.area_markers[i][marker] = document.createElement("div")
+		em.id = `area-marker-${i}-${marker}`
+		em.className = `counter ${marker} s`
+		e.appendChild(em)
+	}
 }
 
 function create_box(i, area_id, box_id) {
@@ -314,8 +336,12 @@ function on_init() {
 		if (type) {
 			create_area(i, area_id, type)
 
-			// Unit Boxes
-			if (type !== COUNTRY) {				
+			if (type !== COUNTRY) {
+				// Area markers
+				// TODO better placement
+				create_area_markers(i, area_id)
+
+				// Unit Boxes
 				for (let box_id = 0; box_id < 4; ++box_id) {
 					create_box(i, area_id, box_id)
 				}
@@ -340,7 +366,7 @@ function update_unit(e, u) {
 
 function update_map() {
 	console.log("VIEW", view)
-	ui.tracker[view.turn].appendChild(ui.markers.turn)
+	ui.tracker[view.turn % 100].appendChild(ui.markers.turn)
 	ui.tracker[view.fln_ap].appendChild(ui.markers.fln_ap)
 	ui.tracker[view.fln_psl].appendChild(ui.markers.fln_psl)
 	ui.tracker[view.gov_psl].appendChild(ui.markers.gov_psl)
@@ -349,6 +375,10 @@ function update_map() {
 	ui.tracker[view.helo_avail].appendChild(ui.markers.helo_avail)
 	ui.tracker[view.helo_max].appendChild(ui.markers.helo_max)
 	ui.tracker[view.naval].appendChild(ui.markers.naval)
+
+	// Hide avail markers when no Air / Helo at all
+	ui.markers.air_avail.classList.toggle("hide", !view.air_max)
+	ui.markers.helo_avail.classList.toggle("hide", !view.helo_max)
 
 	ui.drm[-view.border_zone_drm].appendChild(ui.markers.border_zone)
 	ui.markers.border_zone.classList.toggle("hide", view.border_zone_drm === null)
@@ -385,6 +415,14 @@ function update_map() {
 		if (e) {
 			let loc = parseInt(e.dataset.loc)
 			e.classList.toggle("action", is_loc_action(loc))
+
+			let em = ui.area_markers[i]
+			if (em) {
+				em.fln_control.classList.toggle("hide", !is_area_fln_control(loc))
+				em.gov_control.classList.toggle("hide", !is_area_gov_control(loc))
+				em.remote.classList.toggle("hide", !is_area_remote(loc))
+				em.terror.classList.toggle("hide", !is_area_terrorized(loc))
+			}
 		}
 	}
 }

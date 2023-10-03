@@ -66,6 +66,14 @@ main { background-color: dimgray }
   grid-template-columns: repeat(8, 36px);
 }
 
+.stack.m:hover {
+  grid-template-columns: repeat(8, 34px);
+}
+
+.stack.s:hover {
+  grid-template-columns: repeat(8, 24px);
+}
+
 .stack:hover div {
   z-index: 100;
 }
@@ -99,6 +107,12 @@ main { background-color: dimgray }
 	width: 42px;
 	height: 42px;
 	border-width: 4px;
+}
+
+.counter.s {
+	width: 26px;
+	height: 26px;
+	border-width: 1px;
 }
 
 /* #mapwrap.fit .counter {
@@ -244,6 +258,7 @@ main { background-color: dimgray }
 <div id="drm"></div>
 
 <div id="areas"></div>
+<div id="area_markers"></div>
 <div id="boxes"></div>
 
 <div id="markers">
