@@ -462,6 +462,10 @@ function on_update() { // eslint-disable-line no-unused-vars
 
 	action_button("end_reinforcement", "End reinforcement")
 
+	action_button("to_patrol", "To Patrol")
+	action_button("end_deployment", "End deployment")
+
+
 	action_button("done", "Done")
 	action_button("undo", "Undo")
 	// XXX debug

@@ -1170,10 +1170,6 @@ function goto_jean_paul_sartre() {
 }
 
 function end_random_event() {
-	goto_reinforcement_phase()
-}
-
-function goto_reinforcement_phase() {
 	goto_gov_reinforcement_phase()
 }
 
@@ -1619,10 +1615,86 @@ states.fln_reinforcement = {
 	},
 	end_reinforcement() {
 		// XXX debug
-		goto_next_turn()
+		end_reinforcement()
 	}
 }
 
+function end_reinforcement() {
+	goto_gov_deployment_phase()
+}
+
+function goto_gov_deployment_phase() {
+	game.phasing = GOV_NAME
+	set_active_player()
+	log_h2(`${game.active} Deployment`)
+	game.state = "gov_deployment"
+	game.selected = []
+}
+
+
+states.gov_deployment = {
+	inactive: "to do deployment",
+	prompt() {
+		if (game.selected.length === 0) {
+			view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
+
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				gen_action_unit(u)
+			})
+		} else {
+			view.prompt = "Deployment: select where to deploy"
+
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_type = unit_type(first_unit)
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			gen_action("to_patrol")
+
+			for_each_algerian_map_area(loc => {
+				if (loc !== first_unit_loc)
+					gen_action_loc(loc)
+			})
+		}
+
+		// XXX debug
+		// TODO confirmation when no units are activated?
+		gen_action("end_deployment")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Deployed:")
+		for (let who of list) {
+			log(`>${units[who].name} to ${areas[to].name}`)
+			set_unit_loc(who, to)
+		}
+		// let cost = mobilization_cost(list)
+		// game.gov_psl -= cost
+		// log(`Paid ${cost} PSP`)
+	},
+	to_patrol() {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("To Patrol:")
+		for (let u of list) {
+			let loc = unit_loc(u)
+			log(`>${units[u].name} in ${areas[loc].name}`)
+			set_unit_box(u, PTL)
+		}
+	},
+	end_reinforcement() {
+		// XXX debug
+		goto_next_turn()
+	}
+}
 
 function goto_next_turn() {
 	game.turn += 1
