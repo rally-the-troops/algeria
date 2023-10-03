@@ -58,7 +58,7 @@ main { background-color: dimgray }
 .stack {
   display:  grid;
   grid-gap: 0.1rem;
-  grid-template-columns: repeat(8, 2px);
+  grid-template-columns: repeat(auto-fill, 2px);
   transition: grid-template-columns 0.5s;
 }
 
@@ -67,7 +67,7 @@ main { background-color: dimgray }
 }
 
 .stack:hover div {
-	z-index: 100;
+  z-index: 100;
 }
 
 #tracker div {
