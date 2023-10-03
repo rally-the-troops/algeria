@@ -269,7 +269,7 @@ function create_area(i, area_id, type) {
 }
 
 function create_area_markers(i, area_id) {
-	let e = ui.areas[i] = document.createElement("div")
+	let e = document.createElement("div")
 	e.id = `area-marker-${area_id}`
 	e.dataset.loc = data.areas[i].loc
 	e.className = "space stack s"
