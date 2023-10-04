@@ -827,9 +827,10 @@ const SCENARIO_DEPLOYMENT = {
 			"Morocco": [BAND, BAND, BAND, BAND],
 			"Tunisia": [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK]
 		},
+		// XXX RULE only 6 Algerian X counters provided, scenario requires 7.
 		gov: {
 			"I": [FR_XX, FR_XX, AL_X],
-			"II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
+			"II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, /*AL_X,*/ POL, POL],
 			"III": [FR_XX, FR_XX, FR_X, AL_X],
 			"IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
 			"V": [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL]
@@ -1773,7 +1774,7 @@ states.fln_deployment = {
 				gen_action_loc(first_unit_loc)
 			} else if (is_area_france(first_unit_loc)) {
 				// The Cadre unit in France may be deployed to any Area where there is a Front unit.
-				// XXX CHEAT this allows free movement when deploying to France and then again in the same turn elsewhere
+				// XXX RULE this allows free movement when deploying to France and then again in the same turn elsewhere
 				let has_front = false
 				for_each_friendly_unit_on_map_of_type(FRONT, u => {
 					gen_action_loc(unit_loc(u))
