@@ -38,6 +38,7 @@ const FRONT = 8
 const FREE = 0
 const DEPLOY = 1
 const ELIMINATED = 2
+const FRANCE = 3
 
 var states = {}
 var game = null
@@ -324,6 +325,10 @@ function is_area_country(l) {
 
 function is_area_algerian(l) {
 	return areas[l].type !== COUNTRY
+}
+
+function is_area_france(l) {
+	return l === FRANCE
 }
 
 function is_area_urban(l) {
@@ -1640,20 +1645,18 @@ states.gov_deployment = {
 	prompt() {
 		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 		if (game.selected.length === 0) {
-
-
 			for_each_friendly_unit_on_map(u => {
 				if (unit_box(u) === OPS || (!is_police_unit(u) && unit_box(u) === PTL) || is_division_unit(u))
 					gen_action_unit(u)
-		})
-	} else {
-		let first_unit = game.selected[0]
-		let first_unit_type = unit_type(first_unit)
+			})
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_type = unit_type(first_unit)
 
-		if (first_unit_type == FR_XX) {
-			if (is_unit_not_neutralized(first_unit)) {
-				view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
-			} else {
+			if (first_unit_type == FR_XX) {
+				if (is_unit_not_neutralized(first_unit)) {
+					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
+				} else {
 					// allow selection of neutralized divisions (to change mode only)
 					view.prompt = "Deploy: change division mode"
 				}
@@ -1709,6 +1712,92 @@ states.gov_deployment = {
 		} else {
 			log(`${units[u].name} in ${areas[loc].name} switched to Dispersed mode`)
 			set_unit_dispersed(u)
+		}
+	},
+	end_deployment() {
+		goto_fln_deployment_phase()
+	}
+}
+
+function goto_fln_deployment_phase() {
+	game.phasing = FLN_NAME
+	set_active_player()
+	log_h2(`${game.active} Deployment`)
+	game.state = "fln_deployment"
+	game.selected = []
+}
+
+states.fln_deployment = {
+	inactive: "to do deployment",
+	prompt() {
+		view.prompt = "Deploy units to OPS in same area"
+		if (game.selected.length === 0) {
+			for_each_friendly_unit_on_map(u => {
+				// TODO handle units in Morocco and Tunisia
+				if (unit_box(u) === OPS || unit_box(u) === UG)
+					gen_action_unit(u)
+			})
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_box = unit_box(first_unit)
+			let first_unit_type = unit_type(first_unit)
+
+			// Allow deselect && more units in same box
+			for_each_friendly_unit_in_loc(first_unit_loc, u => {
+				if (unit_box(u) === first_unit_box) {
+					gen_action_unit(u)
+				}
+			})
+
+			if (is_area_algerian(first_unit_loc)) {
+				gen_action_loc(first_unit_loc)
+			} else if (is_area_france(first_unit_loc)) {
+				// The Cadre unit in France may be deployed to any Area where there is a Front unit.
+				// XXX CHEAT this allows free movement when deploying to France and then again in the same turn elsewhere
+				let has_front = false
+				for_each_friendly_unit_on_map_of_type(FRONT, u => {
+					gen_action_loc(unit_loc(u))
+					has_front = true
+				})
+				if (has_front) {
+					view.prompt = "Deploy Cadre to Area with Front"
+				}
+			}
+
+			if (first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE)) {
+				view.prompt = "Deploy units to OPS in same area (or Cadre to France)"
+				// deploy single Cadre to France
+				gen_action_loc(FRANCE)
+			}
+		}
+
+		// XXX debug
+		// TODO confirmation when no units are activated?
+		gen_action("end_deployment")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Deployed:")
+		for (let u of list) {
+			let loc = unit_loc(u)
+			if (loc === to) {
+				log(`>${units[u].name} in ${areas[loc].name}`)
+				if (unit_box(u) === UG) {
+					set_unit_box(u, OPS)
+				} else {
+					set_unit_box(u, UG)
+				}
+			} else {
+				log(`>${units[u].name} to ${areas[to].name}`)
+				set_unit_loc(u, to)
+				set_unit_box(u, UG)
+			}
 		}
 	},
 	end_deployment() {

@@ -114,6 +114,10 @@ function is_area_remote(l) {
 	return (view.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
 }
 
+function is_area_country(l) {
+	return data.areas[l].type === COUNTRY
+}
+
 // === UNIT STATE ===
 
 // location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
@@ -401,6 +405,10 @@ function update_map() {
 					ui.eliminated.appendChild(e)
 			} else {
 				let box_id = unit_box(u)
+				if (is_area_country(loc)) {
+					// only single box in France, Morocco and Tunisia
+					box_id = 0
+				}
 				if (!ui.boxes[loc * 4 + box_id].contains(e))
 					ui.boxes[loc * 4 + box_id].appendChild(e)
 			}
