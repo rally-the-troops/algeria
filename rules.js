@@ -722,6 +722,7 @@ exports.setup = function (seed, scenario, options) {
 
 		scenario: null,
 		turn: 0,
+		passes: 0,
 
 		// game board state
 		fln_ap: 0,
@@ -1821,9 +1822,311 @@ states.fln_deployment = {
 		}
 	},
 	end_deployment() {
-		// XXX debug
-		goto_next_turn()
+		end_deployment()
 	}
+}
+
+function end_deployment() {
+	goto_operations_phase()
+}
+
+function goto_operations_phase() {
+	game.passes = 0
+	goto_fln_operations_phase()
+}
+
+function goto_fln_operations_phase() {
+	game.phasing = FLN_NAME
+	set_active_player()
+	log_h2(`${game.active} Operations`)
+	game.state = "fln_operations"
+}
+
+states.fln_operations = {
+	inactive: "to do operations",
+	prompt() {
+		view.prompt = "Operations: Perform a mission, let Government perform a mission, or Pass"
+
+		gen_action("propaganda")
+		gen_action("strike")
+		gen_action("move")
+		gen_action("raid")
+		gen_action("harass")
+		gen_action("gov_mission")
+		gen_action("pass")
+	},
+	propaganda() {
+		goto_fln_propaganda_mission()
+
+	},
+	strike() {
+		goto_fln_strike_mission()
+	},
+	move() {
+		goto_fln_move_mission()
+	},
+	raid() {
+		goto_fln_raid_mission()
+	},
+	harass() {
+		goto_fln_harass_mission()
+	},
+	gov_mission() {
+		game.passes = 0
+		goto_gov_operations_phase()
+	},
+	pass() {
+		log("FLN Passes")
+		game.passes += 1
+		if (game.passes >= 2) {
+			end_operations_phase()
+		} else {
+			goto_gov_operations_phase()
+		}
+	}
+}
+
+function goto_fln_propaganda_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Propaganda Mission`)
+	game.state = "fln_propaganda"
+}
+
+states.fln_propaganda = {
+	inactive: "to do Propaganda mission",
+	prompt() {
+		view.prompt = "Propaganda: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_fln_strike_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Strike Mission`)
+	game.state = "fln_strike"
+}
+
+states.fln_strike = {
+	inactive: "to do Strike mission",
+	prompt() {
+		view.prompt = "Strike: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_fln_move_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Move Mission`)
+	game.state = "fln_move"
+}
+
+states.fln_move = {
+	inactive: "to do Move mission",
+	prompt() {
+		view.prompt = "Move: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_fln_raid_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Raid Mission`)
+	game.state = "fln_raid"
+}
+
+states.fln_raid = {
+	inactive: "to do Raid mission",
+	prompt() {
+		view.prompt = "Raid: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_fln_harass_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Harass Mission`)
+	game.state = "fln_harass"
+}
+
+states.fln_harass = {
+	inactive: "to do Harass mission",
+	prompt() {
+		view.prompt = "Harass: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_gov_operations_phase() {
+	game.phasing = GOV_NAME
+	set_active_player()
+	log_h2(`${game.active} Operations`)
+	game.state = "gov_operations"
+}
+
+states.gov_operations = {
+	inactive: "to do operations",
+	prompt() {
+		view.prompt = "Operations: Perform a mission, or Pass."
+
+		gen_action("flush")
+		gen_action("intelligence")
+		gen_action("civil_affairs")
+		gen_action("suppression")
+		gen_action("population_resettlement")
+		gen_action("pass")
+	},
+	flush() {
+		goto_gov_flush_mission()
+	},
+	intelligence() {
+		goto_gov_intelligence_mission()
+	},
+	civil_affairs() {
+		goto_gov_civil_affairs_mission()
+	},
+	suppression() {
+		goto_gov_suppression_mission()
+	},
+	population_resettlement() {
+		goto_gov_population_resettlement_mission()
+	},
+	pass() {
+		log("Government Passes")
+		game.passes += 1
+		console.log("PASSES", game.passes)
+		if (game.passes >= 2) {
+			end_operations_phase()
+		} else {
+			goto_fln_operations_phase()
+		}
+	}
+}
+
+function goto_gov_flush_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Flush Mission`)
+	game.state = "gov_flush"
+}
+
+states.gov_flush = {
+	inactive: "to do Flush mission",
+	prompt() {
+		view.prompt = "Flush: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "gov_operations"
+	}
+}
+
+function goto_gov_intelligence_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Intelligence Mission`)
+	game.state = "gov_intelligence"
+}
+
+states.gov_intelligence = {
+	inactive: "to do Intelligence mission",
+	prompt() {
+		view.prompt = "Intelligence: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "gov_operations"
+	}
+}
+
+function goto_gov_civil_affairs_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Civil Affairs Mission`)
+	game.state = "gov_civil_affairs"
+}
+
+states.gov_civil_affairs = {
+	inactive: "to do Civil Affairs mission",
+	prompt() {
+		view.prompt = "Civil Affairs: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "gov_operations"
+	}
+}
+
+function goto_gov_suppression_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Suppression Mission`)
+	game.state = "gov_suppression"
+}
+
+states.gov_suppression = {
+	inactive: "to do Suppression mission",
+	prompt() {
+		view.prompt = "Suppression: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "gov_operations"
+	}
+}
+
+function goto_gov_population_resettlement_mission() {
+	push_undo()
+	game.passes = 0
+	log_h3(`Population Resettlement Mission`)
+	game.state = "gov_population_resettlement"
+}
+
+states.gov_population_resettlement = {
+	inactive: "to do Population Resettlement mission",
+	prompt() {
+		view.prompt = "Population Resettlement: TODO"
+		gen_action("reset")
+	},
+	reset() {
+		// XXX debug
+		game.state = "gov_operations"
+	}
+}
+
+function end_operations_phase() {
+	game.passes = 0
+	// XXX
+	log("End Operations Phase")
+	goto_next_turn()
 }
 
 function goto_next_turn() {

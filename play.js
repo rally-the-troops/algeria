@@ -473,6 +473,20 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("change_division_mode", "Change Division Mode")
 	action_button("end_deployment", "End deployment")
 
+	action_button("propaganda", "Propaganda")
+	action_button("strike", "Strike")
+	action_button("move", "Move")
+	action_button("raid", "Raid")
+	action_button("harass", "Harass")
+
+	action_button("flush", "Flush")
+	action_button("intelligence", "Intelligence")
+	action_button("civil_affairs", "Civil Affairs")
+	action_button("suppression", "Suppression")
+	action_button("population_resettlement", "Population Resettlement")
+
+	action_button("gov_mission", "Government Mission")
+	action_button("pass", "Pass")
 
 	action_button("done", "Done")
 	action_button("undo", "Undo")
