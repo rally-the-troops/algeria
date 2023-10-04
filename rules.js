@@ -131,6 +131,7 @@ const MAX_AP = 99
 function raise_fln_psl(amount) {
 	game.fln_psl += amount
 	if (game.fln_psl > MAX_PSL) {
+		// TODO can trigger victory
 		let excess_psl = game.fln_psl - MAX_PSL
 		log(`FLN PSL exceeds ${MAX_PSL}; Goverment ${-excess_psl} PSL`)
 		game.fln_psl = MAX_PSL
@@ -141,6 +142,7 @@ function raise_fln_psl(amount) {
 function raise_gov_psl(amount) {
 	game.gov_psl += amount
 	if (game.gov_psl > MAX_PSL) {
+		// TODO can trigger victory
 		let excess_psl = game.gov_psl - MAX_PSL
 		log(`Government PSL exceeds ${MAX_PSL}; FLN ${-excess_psl} PSL`)
 		game.gov_psl = MAX_PSL
@@ -675,6 +677,18 @@ exports.resign = function (state, player) {
 	return game
 }
 
+function check_victory() {
+	// TODO victory scale
+	if (game.gov_psl <= 0) {
+		goto_game_over(FLN_NAME, "FLN wins: Government PSL reduced to 0.")
+		return true
+	} else if (game.fln_psl <= 0) {
+		goto_game_over(GOV_NAME, "Government wins: FLN PSL reduced to 0.")
+		return true
+	}
+	return false
+}
+
 function goto_game_over(result, victory) {
 	game.state = "game_over"
 	game.active = "None"
@@ -1011,6 +1025,7 @@ function end_scenario_setup() {
 
 function begin_game() {
 	game.turn = 1
+	log_h1("Turn: " + game.turn)
 	goto_random_event()
 }
 
@@ -1112,6 +1127,7 @@ function goto_fln_factional_purge() {
 
 function goto_morocco_tunisia_independence() {
 	log_h3("Morocco & Tunisia Gains Independence. TODO")
+	log_br()
 
 	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
 		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
@@ -1126,11 +1142,11 @@ function goto_morocco_tunisia_independence() {
 
 	// Raise both FLN and Government PSL by 2d6;
 	let fln_roll = roll_2d6()
-	log(`Raising FLN PSL by ${fln_roll}`)
+	log(`Raised FLN PSL by ${fln_roll}`)
 	raise_fln_psl(fln_roll)
 
 	let gov_roll = roll_2d6()
-	log(`Raising Government PSL by ${gov_roll}`)
+	log(`Raised Government PSL by ${gov_roll}`)
 	raise_fln_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
@@ -1151,7 +1167,7 @@ function goto_suez_crisis() {
 	log_h3("Suez Crisis. TODO")
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
-		log("Re-roll. No Event.")
+		log("No Event.")
 		end_random_event()
 		return
 	}
@@ -1174,11 +1190,14 @@ function goto_amnesty() {
 function goto_jean_paul_sartre() {
 	log_h3("Jean-Paul Sartre writes article condemning the war.")
 	// Reduce Government PSL by 1 PSP.
+	log(`Reduced Government PSL by 1`)
 	game.gov_psl -= 1
 	end_random_event()
 }
 
 function end_random_event() {
+	if (check_victory())
+		return
 	goto_gov_reinforcement_phase()
 }
 
@@ -1813,6 +1832,8 @@ function goto_next_turn() {
 	delete game.events.amnesty
 	delete game.events.jealousy_and_paranoia
 	delete game.events.border_zone_mobilized
+
+	log_h1("Turn: " + game.turn)
 
 	goto_random_event()
 }
