@@ -2028,11 +2028,11 @@ function set_toggle(set, item) {
 	return array_insert(set, a, item)
 }
 
-function is_subset_with_multiplicity(set, subset) {
-	return subset.every(val => set.includes(val)
-		&& subset.filter(el => el === val).length
-		<=
-		set.filter(el => el === val).length)
+function is_subset_with_multiplicity(multiset, subset) {
+	const occurrences = (arr, val) =>
+		arr.reduce((acc, el) => (el === val ? acc + 1 : acc), 0)
+
+	return !subset.some(val => (occurrences(subset, val) > occurrences(multiset, val)))
 }
 
 // Fast deep copy for objects without cycles
