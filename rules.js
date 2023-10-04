@@ -2007,13 +2007,15 @@ states.fln_propaganda = {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
 
+		log(`>by ${units[unit].name} in ${areas[loc].name}`)
+
 		let drm = 0
 		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
 			drm += 1
 		})
 		if (is_area_terrorized(loc))
 			drm -= 1
-		const [result, effect] = roll_mst(drm)
+		let [result, effect] = roll_mst(drm)
 		if (is_area_urban(loc)) {
 			log('x2 in Urban area')
 			result *= 2
@@ -2068,6 +2070,7 @@ states.fln_distribute_mission_result = {
 		gen_action("reset")
 	},
 	add_fln_psl() {
+		push_undo()
 		log(">FLN PSL +1")
 		game.fln_psl += 1
 		game.distribute_mst -= 1
@@ -2075,6 +2078,7 @@ states.fln_distribute_mission_result = {
 			end_fln_mission()
 	},
 	remove_gov_psl() {
+		push_undo()
 		log(">Government PSL -1")
 		game.gov_psl -= 1
 		game.distribute_mst -= 1
@@ -2084,6 +2088,7 @@ states.fln_distribute_mission_result = {
 			end_fln_mission()
 	},
 	remove_fln_psl() {
+		push_undo()
 		log(">FLN PSL -1")
 		game.fln_psl -= 1
 		game.distribute_mst += 1
@@ -2093,6 +2098,7 @@ states.fln_distribute_mission_result = {
 			end_fln_mission()
 	},
 	add_gov_psl() {
+		push_undo()
 		log(">Government PSL +1")
 		game.gov_psl += 1
 		game.distribute_mst += 1
