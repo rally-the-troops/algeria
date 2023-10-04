@@ -773,7 +773,6 @@ exports.setup = function (seed, scenario, options) {
 
 		scenario: null,
 		turn: 0,
-		passes: 0,
 
 		// game board state
 		fln_ap: 0,
@@ -792,6 +791,10 @@ exports.setup = function (seed, scenario, options) {
 		units: new Array(unit_count).fill(0),
 		areas: new Array(area_count).fill(0),
 		events: {},
+
+		// transient state
+		passes: 0,
+		distribute_mst: 0,
 
 		// logging
 		summary: null,
@@ -2011,6 +2014,10 @@ states.fln_propaganda = {
 		if (is_area_terrorized(loc))
 			drm -= 1
 		const [result, effect] = roll_mst(drm)
+		if (is_area_urban(loc)) {
+			log('x2 in Urban area')
+			result *= 2
+		}
 
 		// pay cost & update flags
 		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
@@ -2028,9 +2035,69 @@ states.fln_propaganda = {
 			}
 		}
 
-		// TODO distribute result
-		log(`TODO distribute ${result} PSL`)
-		end_fln_mission()
+		if (result != 0) {
+			goto_fln_distribute_psl(result)
+		} else {
+			end_fln_mission()
+		}
+	},
+	reset() {
+		// XXX debug
+		game.state = "fln_operations"
+	}
+}
+
+function goto_fln_distribute_psl(result) {
+	log(`Distribute ${result} PSP`)
+	game.distribute_mst = result
+	game.state = "fln_distribute_mission_result"
+}
+
+states.fln_distribute_mission_result = {
+	inactive: "to distribute mission result PSP",
+	prompt() {
+		view.prompt = `Mission Result: distribute ${game.distribute_mst} PSP`
+
+		if (game.distribute_mst > 0) {
+			gen_action("add_fln_psl")
+			gen_action("remove_gov_psl")
+		} else if (game.distribute_mst < 0) {
+			gen_action("remove_fln_psl")
+			gen_action("add_gov_psl")
+		}
+		gen_action("reset")
+	},
+	add_fln_psl() {
+		log(">FLN PSL +1")
+		game.fln_psl += 1
+		game.distribute_mst -= 1
+		if (!game.distribute_mst)
+			end_fln_mission()
+	},
+	remove_gov_psl() {
+		log(">Government PSL -1")
+		game.gov_psl -= 1
+		game.distribute_mst -= 1
+		if (check_victory())
+			return
+		if (!game.distribute_mst)
+			end_fln_mission()
+	},
+	remove_fln_psl() {
+		log(">FLN PSL -1")
+		game.fln_psl -= 1
+		game.distribute_mst += 1
+		if (check_victory())
+			return
+		if (!game.distribute_mst)
+			end_fln_mission()
+	},
+	add_gov_psl() {
+		log(">Government PSL +1")
+		game.gov_psl += 1
+		game.distribute_mst += 1
+		if (!game.distribute_mst)
+			end_fln_mission()
 	},
 	reset() {
 		// XXX debug
@@ -2039,6 +2106,7 @@ states.fln_propaganda = {
 }
 
 function end_fln_mission() {
+	game.distribute_mst = 0
 	goto_fln_operations_phase()
 }
 

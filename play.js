@@ -488,6 +488,11 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("gov_mission", "Government Mission")
 	action_button("pass", "Pass")
 
+	action_button("add_fln_psl", "+1 FLN PSL")
+	action_button("remove_fln_psl", "-1 FLN PSL")
+	action_button("add_gov_psl", "+1 Government PSL")
+	action_button("remove_gov_psl", "-1 Government PSL")
+
 	action_button("done", "Done")
 	action_button("undo", "Undo")
 	// XXX debug
