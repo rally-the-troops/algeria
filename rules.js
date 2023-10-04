@@ -313,6 +313,15 @@ function clear_area_propagandized(l) {
 	game.areas[l] &= ~AREA_PROPAGANDIZED_MASK
 }
 
+function clear_area_all_mission_flags(l) {
+	// XXX could be combined with &= ~(X_MASK | Y_MASK)
+	clear_area_propagandized(l)
+	clear_area_raided(l)
+	clear_area_struck(l)
+	clear_area_civil_affaired(l)
+	clear_area_suppressed(l)
+}
+
 // #endregion
 
 // #region AREA DATA
@@ -498,6 +507,35 @@ function unit_type(u) {
 	return units[u].type
 }
 
+function is_propaganda_unit(u) {
+	let type = unit_type(u)
+	let loc = unit_loc(u)
+	return (type === FRONT || type === CADRE) && !is_area_propagandized(loc) && !is_area_remote(loc)
+}
+
+function is_strike_unit(u) {
+	let type = unit_type(u)
+	let loc = unit_loc(u)
+	return (type === FRONT) && !is_area_struck(loc) && is_area_urban(loc)
+}
+
+function is_movable_unit(u) {
+	// TODO check if movable across border
+	return !game.events.jealousy_and_paranoia || game.is_morocco_tunisia_independent
+}
+
+function is_raid_unit(u) {
+	let type = unit_type(u)
+	let loc = unit_loc(u)
+	return (type === BAND || type === FAILEK) && !is_area_raided(loc) && !is_area_remote(loc)
+}
+
+function is_harass_unit(u) {
+	let type = unit_type(u)
+	let loc = unit_loc(u)
+	return (type === BAND || type === FAILEK) && has_enemy_unit_in_loc(loc)
+}
+
 // #endregion
 
 // #region ITERATORS
@@ -516,6 +554,12 @@ function for_each_friendly_unit_on_map(fn) {
 function for_each_friendly_unit_on_map_box(box, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) > 2 && unit_box(u) === box)
+			fn(u)
+}
+
+function for_each_enemy_unit_in_loc_box(loc, box, fn) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === loc && unit_box(u) === box)
 			fn(u)
 }
 
@@ -557,6 +601,13 @@ function for_each_map_area_in_zone(z, fn) {
 
 function has_friendly_unit_in_loc(x) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x)
+			return true
+	return false
+}
+
+function has_enemy_unit_in_loc(x) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === x)
 			return true
 	return false
@@ -1842,22 +1893,51 @@ function goto_fln_operations_phase() {
 	game.state = "fln_operations"
 }
 
+const FLN_PROPAGANDA_COST = 1
+const FLN_STRIKE_COST = 3
+const FLN_RAID_COST = 1
+
 states.fln_operations = {
 	inactive: "to do operations",
 	prompt() {
-		view.prompt = "Operations: Perform a mission, let Government perform a mission, or Pass"
+		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass"
 
-		gen_action("propaganda")
-		gen_action("strike")
-		gen_action("move")
-		gen_action("raid")
-		gen_action("harass")
+		// check if any FLN missions can actually be performed
+		let has_propaganda_unit = false
+		let has_stike_unit = false
+		let has_movable_unit = false
+		let has_raid_unit = false
+		let has_harass_unit = false
+		for_each_friendly_unit_on_map_box(OPS, u => {
+			if (is_propaganda_unit(u)) {
+				has_propaganda_unit = true
+			}
+			if (is_strike_unit(u)) {
+				has_stike_unit = true
+			}
+			if (is_movable_unit(u))
+				has_movable_unit = true
+			if (is_raid_unit(u))
+				has_raid_unit = true
+			if (is_harass_unit(u))
+				has_harass_unit = true
+		})
+
+		if (game.fln_ap >= FLN_PROPAGANDA_COST && has_propaganda_unit)
+			gen_action("propaganda")
+		if (game.fln_ap >= FLN_STRIKE_COST && has_stike_unit)
+			gen_action("strike")
+		if (has_movable_unit)
+			gen_action("move")
+		if (game.fln_ap >= FLN_RAID_COST && has_raid_unit)
+			gen_action("raid")
+		if (has_harass_unit)
+			gen_action("harass")
 		gen_action("gov_mission")
 		gen_action("pass")
 	},
 	propaganda() {
 		goto_fln_propaganda_mission()
-
 	},
 	strike() {
 		goto_fln_strike_mission()
@@ -1891,18 +1971,85 @@ function goto_fln_propaganda_mission() {
 	game.passes = 0
 	log_h3(`Propaganda Mission`)
 	game.state = "fln_propaganda"
+	game.selected = []
+}
+
+function reduce_unit(u, type) {
+	let loc = unit_loc(u)
+	let n = find_free_unit_by_type(type)
+	log(`Reduced ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
+	set_unit_loc(n, loc)
+	set_unit_box(n, OC)
+	free_unit(u)
 }
 
 states.fln_propaganda = {
 	inactive: "to do Propaganda mission",
 	prompt() {
-		view.prompt = "Propaganda: TODO"
+
+		if (game.selected.length === 0) {
+			view.prompt = "Propaganda: Select Front or Cadre"
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_propaganda_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Propaganda: Execute mission"
+			let first_unit = game.selected[0]
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			gen_action("roll")
+		}
+
 		gen_action("reset")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+
+		// pay cost & update flags
+		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
+		game.fln_ap -= FLN_PROPAGANDA_COST
+		set_area_propagandized(loc)
+		set_unit_box(unit, OC)
+
+		let patrol = []
+		for_each_enemy_unit_in_loc_box(loc, PTL, u => {
+			patrol.push(u)
+		})
+		let drm = patrol.length
+		if (is_area_terrorized(loc))
+			drm -= 1
+		const [result, effect] = roll_mst(drm)
+
+		if (effect === '+') {
+			// eliminate Cadre or reduce Front
+			if (unit_type(unit) === CADRE) {
+				log(`Eliminated ${units[unit].name} in ${areas[loc].name}`)
+				eliminate_unit(unit)
+			} else {
+				reduce_unit(unit, CADRE)
+			}
+		}
+
+		// TODO distribute result
+		log(`TODO distribute ${result} PSL`)
+		end_fln_mission()
 	},
 	reset() {
 		// XXX debug
 		game.state = "fln_operations"
 	}
+}
+
+function end_fln_mission() {
+	goto_fln_operations_phase()
 }
 
 function goto_fln_strike_mission() {
@@ -1915,7 +2062,14 @@ function goto_fln_strike_mission() {
 states.fln_strike = {
 	inactive: "to do Strike mission",
 	prompt() {
-		view.prompt = "Strike: TODO"
+		view.prompt = "Strike: Select Front, Cadres may assist"
+
+		for_each_friendly_unit_on_map_box(OPS, u => {
+			if (is_strike_unit(u)) {
+				gen_action_unit(u)
+			}
+		})
+
 		gen_action("reset")
 	},
 	reset() {
@@ -1934,7 +2088,18 @@ function goto_fln_move_mission() {
 states.fln_move = {
 	inactive: "to do Move mission",
 	prompt() {
-		view.prompt = "Move: TODO"
+		if (game.events.jealousy_and_paranoia) {
+			view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)"
+		} else {
+			view.prompt = "Move: Select unit to move"
+		}
+
+		for_each_friendly_unit_on_map_box(OPS, u => {
+			if (is_movable_unit(u)) {
+				gen_action_unit(u)
+			}
+		})
+
 		gen_action("reset")
 	},
 	reset() {
@@ -1953,7 +2118,14 @@ function goto_fln_raid_mission() {
 states.fln_raid = {
 	inactive: "to do Raid mission",
 	prompt() {
-		view.prompt = "Raid: TODO"
+		view.prompt = "Raid: Select Band or Failek units"
+
+		for_each_friendly_unit_on_map_box(OPS, u => {
+			if (is_raid_unit(u)) {
+				gen_action_unit(u)
+			}
+		})
+
 		gen_action("reset")
 	},
 	reset() {
@@ -1972,7 +2144,15 @@ function goto_fln_harass_mission() {
 states.fln_harass = {
 	inactive: "to do Harass mission",
 	prompt() {
-		view.prompt = "Harass: TODO"
+		view.prompt = "Harass: Select Band or Failek unit (may combine if Failek present)"
+		// TODO combine if Failek present
+
+		for_each_friendly_unit_on_map_box(OPS, u => {
+			if (is_harass_unit(u)) {
+				gen_action_unit(u)
+			}
+		})
+
 		gen_action("reset")
 	},
 	reset() {
@@ -2137,6 +2317,11 @@ function goto_next_turn() {
 	delete game.events.jealousy_and_paranoia
 	delete game.events.border_zone_mobilized
 
+	// make sure all limited mission events are cleared
+	for_each_map_area(l => {
+		clear_area_all_mission_flags(l)
+	})
+
 	log_h1("Turn: " + game.turn)
 
 	goto_random_event()
@@ -2237,6 +2422,30 @@ function roll_d6() {
 function roll_2d6() {
 	clear_undo()
 	return roll_d6() + roll_d6()
+}
+
+const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
+const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
+
+function roll_mst(drm) {
+	let roll = roll_d6()
+	let net_roll = roll + drm
+	if (net_roll < -1) net_roll = -1
+	if (net_roll > 8) net_roll = 8
+
+	let result = MST[net_roll + 1]
+	let effect = MST_EFFECT[net_roll + 1]
+
+	let drm_str = ''
+	if (drm > 0) {
+		drm_str = ` +${drm} DRM`
+	} else if (drm < 0) {
+		drm_str = ` -${drm} DRM`
+	}
+
+	log(`Rolled ${roll}${drm_str} on MST: ${result}${effect}`)
+
+	return [result, effect]
 }
 
 // Array remove and insert (faster than splice)
