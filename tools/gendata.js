@@ -16,6 +16,7 @@ let next_location_id = 0
 
 function def_area(id, name, type, zone, x, y, w, h) {
     let loc = next_location_id++
+    locations[id] = loc
     areas.push({loc, id, name, type, zone, x, y, w, h})
     if (zone) {
         if (!(zone in zone_areas)) {
