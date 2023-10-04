@@ -1903,36 +1903,27 @@ states.fln_operations = {
 		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass"
 
 		// check if any FLN missions can actually be performed
-		let has_propaganda_unit = false
-		let has_stike_unit = false
-		let has_movable_unit = false
-		let has_raid_unit = false
-		let has_harass_unit = false
+		view.actions.propaganda = 0
+		view.actions.strike = 0
+		view.actions.move = 0
+		view.actions.raid = 0
+		view.actions.harass = 0
+
 		for_each_friendly_unit_on_map_box(OPS, u => {
-			if (is_propaganda_unit(u)) {
-				has_propaganda_unit = true
+			if (game.fln_ap >= FLN_PROPAGANDA_COST && is_propaganda_unit(u)) {
+				view.actions.propaganda = 1
 			}
-			if (is_strike_unit(u)) {
-				has_stike_unit = true
+			if (game.fln_ap >= FLN_STRIKE_COST && is_strike_unit(u)) {
+				view.actions.strike = 1
 			}
 			if (is_movable_unit(u))
-				has_movable_unit = true
-			if (is_raid_unit(u))
-				has_raid_unit = true
+				view.actions.move = 1
+			if (game.fln_ap >= FLN_RAID_COST && is_raid_unit(u))
+				view.actions.raid = 1
 			if (is_harass_unit(u))
-				has_harass_unit = true
+				view.actions.harass = 1
 		})
 
-		if (game.fln_ap >= FLN_PROPAGANDA_COST && has_propaganda_unit)
-			gen_action("propaganda")
-		if (game.fln_ap >= FLN_STRIKE_COST && has_stike_unit)
-			gen_action("strike")
-		if (has_movable_unit)
-			gen_action("move")
-		if (game.fln_ap >= FLN_RAID_COST && has_raid_unit)
-			gen_action("raid")
-		if (has_harass_unit)
-			gen_action("harass")
 		gen_action("gov_mission")
 		gen_action("pass")
 	},
@@ -2013,23 +2004,22 @@ states.fln_propaganda = {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
 
+		let drm = 0
+		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
+			drm += 1
+		})
+		if (is_area_terrorized(loc))
+			drm -= 1
+		const [result, effect] = roll_mst(drm)
+
 		// pay cost & update flags
 		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
 		game.fln_ap -= FLN_PROPAGANDA_COST
 		set_area_propagandized(loc)
 		set_unit_box(unit, OC)
 
-		let patrol = []
-		for_each_enemy_unit_in_loc_box(loc, PTL, u => {
-			patrol.push(u)
-		})
-		let drm = patrol.length
-		if (is_area_terrorized(loc))
-			drm -= 1
-		const [result, effect] = roll_mst(drm)
-
 		if (effect === '+') {
-			// eliminate Cadre or reduce Front
+			// bad effect: eliminate Cadre or reduce Front
 			if (unit_type(unit) === CADRE) {
 				log(`Eliminated ${units[unit].name} in ${areas[loc].name}`)
 				eliminate_unit(unit)
