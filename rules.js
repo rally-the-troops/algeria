@@ -575,6 +575,12 @@ function for_each_friendly_unit_in_loc(x, fn) {
 			fn(u)
 }
 
+function for_each_enemy_unit_in_loc(loc, fn) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === loc)
+			fn(u)
+}
+
 function for_each_friendly_unit_in_locs(xs, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		for (let x of xs)
@@ -2009,9 +2015,15 @@ states.fln_propaganda = {
 
 		log(`>by ${units[unit].name} in ${areas[loc].name}`)
 
+		// pay cost & update flags
+		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
+		game.fln_ap -= FLN_PROPAGANDA_COST
+		set_area_propagandized(loc)
+		set_unit_box(unit, OC)
+
 		let drm = 0
 		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
-			drm += 1
+			drm -= 1
 		})
 		if (is_area_terrorized(loc))
 			drm -= 1
@@ -2020,12 +2032,6 @@ states.fln_propaganda = {
 			log('x2 in Urban area')
 			result *= 2
 		}
-
-		// pay cost & update flags
-		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
-		game.fln_ap -= FLN_PROPAGANDA_COST
-		set_area_propagandized(loc)
-		set_unit_box(unit, OC)
 
 		if (effect === '+') {
 			// bad effect: eliminate Cadre or reduce Front
@@ -2037,7 +2043,7 @@ states.fln_propaganda = {
 			}
 		}
 
-		if (result != 0) {
+		if (result !== 0) {
 			goto_fln_distribute_psl(result)
 		} else {
 			end_fln_mission()
@@ -2128,13 +2134,88 @@ states.fln_strike = {
 	prompt() {
 		view.prompt = "Strike: Select Front, Cadres may assist"
 
-		for_each_friendly_unit_on_map_box(OPS, u => {
-			if (is_strike_unit(u)) {
-				gen_action_unit(u)
-			}
-		})
+		if (game.selected.length === 0) {
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				// first unit should be Front
+				if (is_strike_unit(u) && unit_type(u) === FRONT) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Strike: Execute mission"
+
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_strike_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+
+			gen_action("roll")
+		}
 
 		gen_action("reset")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		let front_unit = list[0]
+		let loc = unit_loc(front_unit)
+		let assist = list.length - 1
+
+		if (assist) {
+			log(`>by ${units[front_unit].name} (with ${assist} Cadre) in ${areas[loc].name}`)
+		} else {
+			log(`>by ${units[front_unit].name} in ${areas[loc].name}`)
+		}
+
+		// pay cost & update flags
+		log(`>Paid ${FLN_STRIKE_COST} AP`)
+		game.fln_ap -= FLN_STRIKE_COST
+		set_area_struck(loc)
+		for (let u of list) {
+			set_unit_box(u, OC)
+		}
+
+		let drm = assist
+		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
+			drm -= 1
+		})
+		if (is_area_terrorized(loc))
+			drm -= 1
+		let [result, effect] = roll_mst(drm)
+		let strike_result = roll_nd6(result)
+		log(`Rolled ${result}d6 = ${strike_result} PSP`)
+
+		if (effect === '+') {
+			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
+			for (let u of list) {
+				if (unit_type(u) === CADRE) {
+					log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
+					eliminate_unit(u)
+				} else {
+					reduce_unit(u, CADRE)
+				}
+			}
+		} else if (effect === '@') {
+			// good result: all Police units neutralized
+			log(`all Police units in ${areas[loc].name} neutralized`)
+			for_each_enemy_unit_in_loc(loc, u => {
+				if (is_police_unit(u)) {
+					set_unit_neutralized(u)
+				}
+			})
+		}
+
+		if (result !== 0) {
+			goto_fln_distribute_psl(strike_result)
+		} else {
+			end_fln_mission()
+		}
+
+		// TODO Government must react
 	},
 	reset() {
 		// XXX debug
@@ -2488,6 +2569,15 @@ function roll_2d6() {
 	return roll_d6() + roll_d6()
 }
 
+function roll_nd6(n) {
+	clear_undo()
+	let result = 0
+	for (let i = 0; i < n; ++i) {
+		result += roll_d6()
+	}
+	return result
+}
+
 const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
 const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
 
@@ -2504,7 +2594,7 @@ function roll_mst(drm) {
 	if (drm > 0) {
 		drm_str = ` +${drm} DRM`
 	} else if (drm < 0) {
-		drm_str = ` -${drm} DRM`
+		drm_str = ` ${drm} DRM`
 	}
 
 	log(`Rolled ${roll}${drm_str} on MST: ${result}${effect}`)
