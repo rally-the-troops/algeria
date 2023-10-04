@@ -479,6 +479,10 @@ function is_algerian_unit(u) {
 	return units[u].type === AL_X
 }
 
+function is_division_unit(u) {
+	return units[u].type === FR_XX
+}
+
 function is_police_unit(u) {
 	return units[u].type === POL
 }
@@ -882,18 +886,18 @@ function can_all_deploy_to(us, to) {
 	return is_subset_with_multiplicity(deployment[zone], target_types)
 }
 
-function deploy_unit(who, to) {
-	set_unit_loc(who, to)
+function deploy_unit(u, to) {
+	set_unit_loc(u, to)
 
 	// deploy unit: all FLN in UG, GOV in OPS/OC, police in PTL
-	if (is_fln_unit(who)) {
-		set_unit_box(who, UG)
-	} else if (is_police_unit(who)) {
-		set_unit_box(who, PTL)
-	} else if (is_algerian_unit(who)) {
-		set_unit_box(who, OPS)
+	if (is_fln_unit(u)) {
+		set_unit_box(u, UG)
+	} else if (is_police_unit(u)) {
+		set_unit_box(u, PTL)
+	} else if (is_algerian_unit(u)) {
+		set_unit_box(u, OPS)
 	} else {
-		set_unit_box(who, OC)
+		set_unit_box(u, OC)
 	}
 }
 
@@ -961,8 +965,8 @@ states.scenario_setup = {
 			game.summary[from] = (game.summary[from] | 0) - list.length
 		}
 		game.summary[to] = (game.summary[to] | 0) + list.length
-		for (let who of list) {
-			deploy_unit(who, to)
+		for (let u of list) {
+			deploy_unit(u, to)
 		}
 	},
 	end_deployment() {
@@ -1233,16 +1237,16 @@ function activation_cost(units) {
 	return cost
 }
 
-function mobilize_unit(who, to) {
-	set_unit_loc(who, to)
+function mobilize_unit(u, to) {
+	set_unit_loc(u, to)
 
-	if (is_police_unit(who)) {
-		set_unit_box(who, PTL)
+	if (is_police_unit(u)) {
+		set_unit_box(u, PTL)
 	} else {
-		set_unit_box(who, OPS)
+		set_unit_box(u, OPS)
 	}
 
-	log(`>${units[who].name} into ${areas[to].name}`)
+	log(`>${units[u].name} into ${areas[to].name}`)
 }
 
 states.gov_reinforcement = {
@@ -1339,8 +1343,8 @@ states.gov_reinforcement = {
 		game.selected = []
 		push_undo()
 		log("Mobilized:")
-		for (let who of list) {
-			mobilize_unit(who, to)
+		for (let u of list) {
+			mobilize_unit(u, to)
 		}
 		let cost = mobilization_cost(list)
 		game.gov_psl -= cost
@@ -1631,32 +1635,39 @@ function goto_gov_deployment_phase() {
 	game.selected = []
 }
 
-
 states.gov_deployment = {
 	inactive: "to do deployment",
 	prompt() {
+		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 		if (game.selected.length === 0) {
-			view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 
-			for_each_friendly_unit_on_map_box(OPS, u => {
-				gen_action_unit(u)
-			})
-		} else {
-			view.prompt = "Deployment: select where to deploy"
 
-			let first_unit = game.selected[0]
-			let first_unit_loc = unit_loc(first_unit)
-			let first_unit_type = unit_type(first_unit)
+			for_each_friendly_unit_on_map(u => {
+				if (unit_box(u) === OPS || (!is_police_unit(u) && unit_box(u) === PTL) || is_division_unit(u))
+					gen_action_unit(u)
+		})
+	} else {
+		let first_unit = game.selected[0]
+		let first_unit_type = unit_type(first_unit)
+
+		if (first_unit_type == FR_XX) {
+			if (is_unit_not_neutralized(first_unit)) {
+				view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
+			} else {
+					// allow selection of neutralized divisions (to change mode only)
+					view.prompt = "Deploy: change division mode"
+				}
+				gen_action("change_division_mode")
+			}
 
 			// Allow deselect
 			gen_action_unit(first_unit)
 
-			gen_action("to_patrol")
-
-			for_each_algerian_map_area(loc => {
-				if (loc !== first_unit_loc)
+			if (is_unit_not_neutralized(first_unit)) {
+				for_each_algerian_map_area(loc => {
 					gen_action_loc(loc)
-			})
+				})
+			}
 		}
 
 		// XXX debug
@@ -1671,26 +1682,36 @@ states.gov_deployment = {
 		game.selected = []
 		push_undo()
 		log("Deployed:")
-		for (let who of list) {
-			log(`>${units[who].name} to ${areas[to].name}`)
-			set_unit_loc(who, to)
-		}
-		// let cost = mobilization_cost(list)
-		// game.gov_psl -= cost
-		// log(`Paid ${cost} PSP`)
-	},
-	to_patrol() {
-		let list = game.selected
-		game.selected = []
-		push_undo()
-		log("To Patrol:")
 		for (let u of list) {
 			let loc = unit_loc(u)
-			log(`>${units[u].name} in ${areas[loc].name}`)
-			set_unit_box(u, PTL)
+			if (loc === to) {
+				if (unit_box(u) === PTL) {
+					log(`>${units[u].name} in ${areas[loc].name}`)
+					set_unit_box(u, OPS)
+				} else {
+					log(`>${units[u].name} in ${areas[loc].name} on PTL`)
+					set_unit_box(u, PTL)
+				}
+			} else {
+				log(`>${units[u].name} in ${areas[loc].name}`)
+				set_unit_loc(u, to)
+				set_unit_box(u, OPS)
+			}
 		}
 	},
-	end_reinforcement() {
+	change_division_mode() {
+		let u = pop_selected()
+		let loc = unit_loc(u)
+		push_undo()
+		if (is_unit_dispersed(u)) {
+			log(`${units[u].name} in ${areas[loc].name} switched to Concentrated mode`)
+			clear_unit_dispersed(u)
+		} else {
+			log(`${units[u].name} in ${areas[loc].name} switched to Dispersed mode`)
+			set_unit_dispersed(u)
+		}
+	},
+	end_deployment() {
 		// XXX debug
 		goto_next_turn()
 	}

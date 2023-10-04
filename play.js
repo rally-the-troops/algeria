@@ -357,7 +357,7 @@ function on_init() {
 function update_unit(e, u) {
 	e.classList.toggle("disrupted", is_unit_neutralized(u))
 	e.classList.toggle("airmobile", is_unit_airmobile(u))
-	e.classList.toggle("dispersed", is_unit_dispersed(u))
+	e.classList.toggle("fr_xx_dispersed", is_unit_dispersed(u))
 	e.classList.toggle("action", !view.battle && is_unit_action(u))
 	e.classList.toggle("selected", !view.battle && is_unit_selected(u))
 	e.classList.toggle("moved", is_unit_moved(u))
@@ -462,7 +462,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 
 	action_button("end_reinforcement", "End reinforcement")
 
-	action_button("to_patrol", "To Patrol")
+	action_button("change_division_mode", "Change Division Mode")
 	action_button("end_deployment", "End deployment")
 
 
