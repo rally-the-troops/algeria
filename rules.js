@@ -45,7 +45,7 @@ var game = null
 var view = null
 
 const {
-	areas, zone_areas, locations, units
+	areas, zone_areas, locations, units, adjecents
 } = require("./data.js")
 
 var first_friendly_unit, last_friendly_unit
@@ -603,6 +603,13 @@ function for_each_map_area_in_zone(z, fn) {
 	for (let i = 3; i < area_count; ++i)
 		if (area_zone(i) === z)
 			fn(i)
+}
+
+function for_each_adjecent_map_area(x, fn) {
+	if (x in adjecents) {
+		for (let i of adjecents[x])
+			fn(i)
+	}
 }
 
 function has_friendly_unit_in_loc(x) {
@@ -2215,7 +2222,7 @@ states.fln_strike = {
 			end_fln_mission()
 		}
 
-		// TODO Government must react
+		// TODO Government must react with one unit, otherwise -1d6 PSP
 	},
 	reset() {
 		// XXX debug
@@ -2233,19 +2240,53 @@ function goto_fln_move_mission() {
 states.fln_move = {
 	inactive: "to do Move mission",
 	prompt() {
-		if (game.events.jealousy_and_paranoia) {
-			view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)"
+		if (game.selected.length === 0) {
+			if (game.events.jealousy_and_paranoia) {
+				view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)"
+			} else {
+				view.prompt = "Move: Select unit to move"
+			}
+
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_movable_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
 		} else {
-			view.prompt = "Move: Select unit to move"
+			view.prompt = "Move: Select area to move to"
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let zone = area_zone(first_unit_loc)
+			for_each_map_area_in_zone(zone, to => {
+				// A unit may move from one area to any other area within its current wilaya.
+				if (first_unit_loc !== to)
+					gen_action_loc(to)
+				// A unit may also move to an area in a wilaya adjacent to its current one (that is, the two share a land border),
+				// but the area moved to must be adjacent to at least one area in its current wilaya.
+				// Morocco and Tunisia are treated as single-area wilaya for this purpose.
+				for_each_adjecent_map_area(to, adj => {
+					gen_action_loc(adj)
+				})
+			})
+
+			// Allow deselect
+			gen_action_unit(first_unit)
 		}
 
-		for_each_friendly_unit_on_map_box(OPS, u => {
-			if (is_movable_unit(u)) {
-				gen_action_unit(u)
-			}
-		})
-
 		gen_action("reset")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let unit = pop_selected()
+		push_undo()
+
+		// TODO check MST for success
+
+		log(`>Moved ${units[unit].name} to ${areas[to].name}`)
+		set_unit_loc(unit, to)
+		set_unit_box(unit, OC)
 	},
 	reset() {
 		// XXX debug
