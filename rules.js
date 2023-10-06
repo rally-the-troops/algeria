@@ -540,6 +540,15 @@ function is_harass_unit(u) {
 
 // #region ITERATORS
 
+function for_each_non_neutralized_unit_in_algeria(fn) {
+	for (let u = first_gov_unit; u <= last_fln_unit; ++u)
+		if (is_unit_not_neutralized(u)) {
+			let loc = unit_loc(u)
+			if (loc > 2 && is_area_algerian(loc))
+				fn(u)
+		}
+}
+
 function for_each_friendly_unit(fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		fn(u)
@@ -1267,6 +1276,8 @@ function goto_jean_paul_sartre() {
 function end_random_event() {
 	if (check_victory())
 		return
+
+	// TODO see who controls OAS
 	goto_gov_reinforcement_phase()
 }
 
@@ -2492,7 +2503,102 @@ function end_operations_phase() {
 	game.passes = 0
 	// XXX
 	log("End Operations Phase")
-	goto_next_turn()
+	goto_turn_interphase()
+}
+
+function determine_control() {
+	let fln_pts = new Array(area_count).fill(0)
+	let gov_pts = new Array(area_count).fill(0)
+
+	for_each_non_neutralized_unit_in_algeria(u => {
+		let loc = unit_loc(u)
+		if (unit_type(u) === FRONT) {
+			fln_pts[loc] += 3
+		} else if (is_division_unit(u) && is_unit_dispersed(u)) {
+			gov_pts[loc] += 3
+		} else if (is_fln_unit(u)) {
+			fln_pts[loc] += 1
+		} else {
+			gov_pts[loc] += 1
+		}
+	})
+
+	for_each_algerian_map_area(loc => {
+		let difference = Math.abs(fln_pts[loc] - gov_pts[loc])
+
+		// If one side has twice as many or more Control Points than the other, then it gets Control and an appropriate marker is placed in the area.
+		if (!difference || (!fln_pts[loc] && !gov_pts[loc])) {
+			// log(`>Contested`)
+			set_area_contested(loc)
+			return
+		}
+
+		log(`${areas[loc].name} (FLN ${fln_pts[loc]} vs Gov ${gov_pts[loc]})`)
+		if (fln_pts[loc] >= 2 * gov_pts[loc]) {
+			log(`>FLN Control`)
+			set_area_fln_control(loc)
+			return
+		} else if (gov_pts[loc] >= 2 * fln_pts[loc]) {
+			log(`>Government Control`)
+			set_area_gov_control(loc)
+			return
+		}
+
+		// If one side has less than twice as many Points, take the difference of the two totals
+		// Both sides then roll 1d6 trying to get equal to or less than that number.
+		let fln_roll = roll_d6()
+		log(`> FLN rolled ${fln_roll}`)
+		let gov_roll = roll_d6()
+		log(`> Government rolled ${gov_roll}`)
+
+		let fln_claim = fln_roll <= difference
+		let gov_claim = gov_roll <= difference
+		// If one side succeeds, then he gets Control. If both or neither succeed, then the area remains Contested and no marker is placed.
+		if (fln_claim && !gov_claim) {
+			log(`>FLN Control`)
+			set_area_fln_control(loc)
+		} else if (gov_claim && !fln_claim) {
+			log(`>Government Control`)
+			set_area_gov_control(loc)
+		} else {
+			log(`>Contested`)
+			set_area_contested(loc)
+		}
+	})
+}
+
+
+function goto_turn_interphase() {
+	// clear_undo()
+	game.active = BOTH
+	game.state = "turn_interphase"
+
+	// XXX debug
+	push_undo()
+	log_h2("Turn Interphase")
+
+	log_h3("Determine Control")
+	log_br()
+	determine_control()
+	log_h3("Depreciation")
+	// log_h3("Recovery")
+	// log_h3("Redeployment")
+	// log_h3("Final PSL Adjustment")
+}
+
+states.turn_interphase = {
+	prompt() {
+		view.prompt = "Turn Interphase: TODO"
+		gen_action("done")
+		gen_action("reset")
+	},
+	done() {
+		goto_next_turn()
+	},
+	reset() {
+		// XXX debug
+		goto_turn_interphase()
+	}
 }
 
 function goto_next_turn() {
