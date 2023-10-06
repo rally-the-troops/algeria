@@ -2718,6 +2718,14 @@ function unit_redeployment() {
 	log(`Air Avail = ${game.air_avail}, Helo Avail = ${game.helo_avail}`)
 }
 
+function final_psl_adjustment() {
+	log_h3("Final PSL Adjustment. TODO")
+
+	if (game.gov_psl < 30) {
+		log("Check for Coup d'etat TODO")
+	}
+}
+
 function goto_turn_interphase() {
 	// clear_undo()
 	game.active = BOTH
@@ -2733,7 +2741,7 @@ function goto_turn_interphase() {
 
 	unit_and_area_recovery()
 	unit_redeployment()
-	// log_h3("Final PSL Adjustment")
+	final_psl_adjustment()
 }
 
 states.turn_interphase = {
