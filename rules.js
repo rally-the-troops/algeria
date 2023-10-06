@@ -2533,7 +2533,9 @@ function determine_control() {
 			return
 		}
 
-		log(`${areas[loc].name} (FLN ${fln_pts[loc]} vs Gov ${gov_pts[loc]})`)
+		log(`${areas[loc].name}`)
+		log(`>FLN ${fln_pts[loc]} vs Gov ${gov_pts[loc]}`)
+
 		if (fln_pts[loc] >= 2 * gov_pts[loc]) {
 			log(`>FLN Control`)
 			set_area_fln_control(loc)
@@ -2567,6 +2569,83 @@ function determine_control() {
 	})
 }
 
+function depreciation_loss_number(pts) {
+	if (pts <= 0) {
+		throw new Error("cannot do depreciation for pts " + pts)
+	} else if (pts <= 5) {
+		return 1
+	} else if (pts <= 10) {
+		return 2
+	} else if (pts <= 15) {
+		return 3
+	} else if (pts <= 20) {
+		return 4
+	} else if (pts <= 24) {
+		return 5
+	} else {
+		return 6
+	}
+}
+
+function roll_depreciation(loss, drm) {
+	let roll = roll_d6()
+	let net_roll = roll + drm
+	let drm_str = ''
+	if (drm > 0) {
+		drm_str = ` +${drm} DRM`
+	} else if (drm < 0) {
+		drm_str = ` ${drm} DRM`
+	}
+
+	log(`Rolled ${roll}${drm_str}: ${net_roll} <= ${loss}`)
+	return net_roll
+}
+
+function gov_depreciation() {
+	if (!game.air_max && !game.helo_max) {
+		return;
+	}
+
+	log_h3("Government Asset Depreciation")
+	let drm = 0
+	if (game.gov_psl <= 30) drm -= 1
+	if (game.gov_psl >= 70) drm += 1
+	if (game.air_max) {
+		log(`Air MAX = ${game.air_max}`)
+		let loss = depreciation_loss_number(game.air_max)
+		let roll = roll_depreciation(loss, drm)
+		if (roll <= loss) {
+			game.air_max = Math.max(game.air_max - loss, 0)
+			log(`>Air MAX -${loss}`)
+		}
+	}
+	if (game.helo_max) {
+		log(`Helo MAX = ${game.helo_max}`)
+		let loss = depreciation_loss_number(game.helo_max)
+		let roll = roll_depreciation(loss, drm)
+		if (roll <= loss) {
+			game.helo_max = Math.max(game.helo_max - loss, 0)
+			log(`>Helo MAX -${loss}`)
+		}
+	}
+}
+
+function fln_depreciation() {
+	if (!game.fln_ap) {
+		return;
+	}
+
+	log_h3("FLN AP Depreciation")
+	let drm = 0
+	if (game.fln_psl <= 30) drm -= 1
+	if (game.fln_psl >= 70) drm += 1
+	let loss = depreciation_loss_number(game.fln_ap)
+	let roll = roll_depreciation(loss, drm)
+	if (roll <= loss) {
+		game.fln_ap = Math.max(game.fln_ap - loss, 0)
+		log(`>AP -${loss}`)
+	}
+}
 
 function goto_turn_interphase() {
 	// clear_undo()
@@ -2580,7 +2659,9 @@ function goto_turn_interphase() {
 	log_h3("Determine Control")
 	log_br()
 	determine_control()
-	log_h3("Depreciation")
+	gov_depreciation()
+	fln_depreciation()
+
 	// log_h3("Recovery")
 	// log_h3("Redeployment")
 	// log_h3("Final PSL Adjustment")
