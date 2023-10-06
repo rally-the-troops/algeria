@@ -503,6 +503,14 @@ function is_police_unit(u) {
 	return units[u].type === POL
 }
 
+function is_mobile_unit(u) {
+	return units[u].type !== POL && units[u].type !== FRONT
+}
+
+function is_elite_unit(u) {
+	return units[u].type === EL_X
+}
+
 function unit_type(u) {
 	return units[u].type
 }
@@ -539,6 +547,15 @@ function is_harass_unit(u) {
 // #endregion
 
 // #region ITERATORS
+
+function for_each_neutralized_unit_in_algeria(fn) {
+	for (let u = first_gov_unit; u <= last_fln_unit; ++u)
+		if (is_unit_neutralized(u)) {
+			let loc = unit_loc(u)
+			if (loc > 2 && is_area_algerian(loc))
+				fn(u)
+		}
+}
 
 function for_each_non_neutralized_unit_in_algeria(fn) {
 	for (let u = first_gov_unit; u <= last_fln_unit; ++u)
@@ -637,6 +654,13 @@ function has_enemy_unit_in_loc(x) {
 
 function has_friendly_not_neutralized_unit_in_loc(x) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x && is_unit_not_neutralized(u))
+			return true
+	return false
+}
+
+function has_fln_not_neutralized_unit_in_loc(x) {
+	for (let u = first_fln_unit; u <= last_fln_unit; ++u)
 		if (unit_loc(u) === x && is_unit_not_neutralized(u))
 			return true
 	return false
@@ -2507,6 +2531,9 @@ function end_operations_phase() {
 }
 
 function determine_control() {
+	log_h3("Determine Control")
+	log_br()
+
 	let fln_pts = new Array(area_count).fill(0)
 	let gov_pts = new Array(area_count).fill(0)
 
@@ -2587,20 +2614,6 @@ function depreciation_loss_number(pts) {
 	}
 }
 
-function roll_depreciation(loss, drm) {
-	let roll = roll_d6()
-	let net_roll = roll + drm
-	let drm_str = ''
-	if (drm > 0) {
-		drm_str = ` +${drm} DRM`
-	} else if (drm < 0) {
-		drm_str = ` ${drm} DRM`
-	}
-
-	log(`Rolled ${roll}${drm_str}: ${net_roll} <= ${loss}`)
-	return net_roll
-}
-
 function gov_depreciation() {
 	if (!game.air_max && !game.helo_max) {
 		return;
@@ -2611,21 +2624,23 @@ function gov_depreciation() {
 	if (game.gov_psl <= 30) drm -= 1
 	if (game.gov_psl >= 70) drm += 1
 	if (game.air_max) {
-		log(`Air MAX = ${game.air_max}`)
+		log(`Air Max = ${game.air_max}`)
 		let loss = depreciation_loss_number(game.air_max)
-		let roll = roll_depreciation(loss, drm)
+		let roll = roll_1d6(drm)
+		log(`>${roll} <= ${loss} ?`)
 		if (roll <= loss) {
 			game.air_max = Math.max(game.air_max - loss, 0)
-			log(`>Air MAX -${loss}`)
+			log(`>Air Max -${loss}`)
 		}
 	}
 	if (game.helo_max) {
-		log(`Helo MAX = ${game.helo_max}`)
+		log(`Helo Max = ${game.helo_max}`)
 		let loss = depreciation_loss_number(game.helo_max)
-		let roll = roll_depreciation(loss, drm)
+		let roll = roll_1d6(drm)
+		log(`>${roll} <= ${loss} ?`)
 		if (roll <= loss) {
 			game.helo_max = Math.max(game.helo_max - loss, 0)
-			log(`>Helo MAX -${loss}`)
+			log(`>Helo Max -${loss}`)
 		}
 	}
 }
@@ -2635,16 +2650,72 @@ function fln_depreciation() {
 		return;
 	}
 
-	log_h3("FLN AP Depreciation")
+	log_h3("FLN unused AP Depreciation")
 	let drm = 0
 	if (game.fln_psl <= 30) drm -= 1
 	if (game.fln_psl >= 70) drm += 1
 	let loss = depreciation_loss_number(game.fln_ap)
-	let roll = roll_depreciation(loss, drm)
+	let roll = roll_1d6(drm)
+	log(`>${roll} <= ${loss} ?`)
 	if (roll <= loss) {
 		game.fln_ap = Math.max(game.fln_ap - loss, 0)
 		log(`>AP -${loss}`)
 	}
+}
+
+function unit_and_area_recovery() {
+	log_h3("Recovery of Neutralized Units")
+	for_each_neutralized_unit_in_algeria(u => {
+		log(`${units[u].name} in ${areas[loc].name}`)
+		let drm = 0
+		if (is_fln_unit(u) && game.fln_psl <= 30) drm -= 1
+		if (is_fln_unit(u) && game.fln_psl >= 70) drm += 1
+		if (is_gov_unit(u) && game.gov_psl <= 30) drm -= 1
+		if (is_gov_unit(u) && (game.gov_psl >= 70 || is_elite_unit(u))) drm += 1
+
+		let roll = roll_1d6(drm)
+		if (roll >= 5) {
+			log(">Recovered")
+			clear_unit_neutralized(u)
+		}
+	})
+
+	log_h3("Recovery of Terrorized Areas")
+	for_each_algerian_map_area(loc => {
+		if (is_area_terrorized(loc)) {
+			log(`${areas[loc].name}`)
+			let drm = 0
+			if (!has_fln_not_neutralized_unit_in_loc(loc)) drm += 1
+			let roll = roll_1d6(drm)
+			if (roll >= 5) {
+				log(">Recovered")
+				clear_area_terrorized(loc)
+			}
+		}
+	})
+}
+
+function unit_redeployment() {
+	log_h3("Redeployment")
+	for_each_non_neutralized_unit_in_algeria(u => {
+		let loc = unit_loc(u)
+		if (is_fln_unit(u)) {
+			log(`>${units[u].name} in ${areas[loc].name} to UG`)
+			set_unit_box(u, UG)
+		} else if (is_gov_unit(u) && is_mobile_unit(u)) {
+			log(`>${units[u].name} in ${areas[loc].name} to OPS`)
+			set_unit_box(u, OPS)
+			if (is_unit_airmobile(u)) {
+				log(`>flipped airmobile back`)
+				clear_unit_airmobile(u)
+			}
+		}
+		// TODO check that Police works okay
+	})
+
+	game.air_avail = game.air_max
+	game.helo_avail = game.helo_max
+	log(`Air Avail = ${game.air_avail}, Helo Avail = ${game.helo_avail}`)
 }
 
 function goto_turn_interphase() {
@@ -2656,14 +2727,12 @@ function goto_turn_interphase() {
 	push_undo()
 	log_h2("Turn Interphase")
 
-	log_h3("Determine Control")
-	log_br()
 	determine_control()
 	gov_depreciation()
 	fln_depreciation()
 
-	// log_h3("Recovery")
-	// log_h3("Redeployment")
+	unit_and_area_recovery()
+	unit_redeployment()
 	// log_h3("Final PSL Adjustment")
 }
 
@@ -2797,6 +2866,21 @@ function roll_2d6() {
 	return roll_d6() + roll_d6()
 }
 
+function roll_1d6(drm) {
+	let roll = roll_d6()
+	let net_roll = roll + drm
+	let drm_str = ''
+	if (drm > 0) {
+		drm_str = `+${drm}`
+	} else if (drm < 0) {
+		drm_str = `${drm}`
+	}
+
+	//	Rolled 1d6+2=6
+	log(`Rolled 1d6${drm_str}=${net_roll}`)
+	return net_roll
+}
+
 function roll_nd6(n) {
 	clear_undo()
 	let result = 0
@@ -2810,22 +2894,13 @@ const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
 const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
 
 function roll_mst(drm) {
-	let roll = roll_d6()
-	let net_roll = roll + drm
-	if (net_roll < -1) net_roll = -1
-	if (net_roll > 8) net_roll = 8
+	let roll = roll_1d6(drm)
+	if (roll < -1) roll = -1
+	if (roll > 8) roll = 8
 
-	let result = MST[net_roll + 1]
-	let effect = MST_EFFECT[net_roll + 1]
-
-	let drm_str = ''
-	if (drm > 0) {
-		drm_str = ` +${drm} DRM`
-	} else if (drm < 0) {
-		drm_str = ` ${drm} DRM`
-	}
-
-	log(`Rolled ${roll}${drm_str} on MST: ${result}${effect}`)
+	let result = MST[roll + 1]
+	let effect = MST_EFFECT[roll + 1]
+	log(`MST ${result}${effect}`)
 
 	return [result, effect]
 }
