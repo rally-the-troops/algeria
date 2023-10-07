@@ -39,6 +39,8 @@ const FREE = 0
 const DEPLOY = 1
 const ELIMINATED = 2
 const FRANCE = 3
+const TUNISIA = 4
+const MOROCCO = 5
 
 var states = {}
 var game = null
@@ -130,6 +132,7 @@ const MAX_AP = 99
 
 function raise_fln_psl(amount) {
 	game.fln_psl += amount
+	log(`>FLN PSL +${amount}`)
 	if (game.fln_psl > MAX_PSL) {
 		// TODO can trigger victory
 		let excess_psl = game.fln_psl - MAX_PSL
@@ -141,6 +144,7 @@ function raise_fln_psl(amount) {
 
 function raise_gov_psl(amount) {
 	game.gov_psl += amount
+	log(`>Goverment PSL +${amount}`)
 	if (game.gov_psl > MAX_PSL) {
 		// TODO can trigger victory
 		let excess_psl = game.gov_psl - MAX_PSL
@@ -150,7 +154,18 @@ function raise_gov_psl(amount) {
 	}
 }
 
+function lower_fln_psl(amount) {
+	log(`>FLN PSL -${amount}`)
+	game.fln_psl = Math.max(0, game.fln_psl - amount)
+}
+
+function lower_gov_psl(amount) {
+	log(`>Goverment PSL -${amount}`)
+	game.gov_psl = Math.max(0, game.gov_psl - amount)
+}
+
 function raise_fln_ap(amount) {
+	log(`>FLN AP +${amount}`)
 	game.fln_ap = Math.min(MAX_PSL, game.fln_ap + amount)
 }
 
@@ -235,8 +250,12 @@ function clear_area_terrorized(l) {
 
 // remote
 
+function is_area_resettled(l) {
+	return (game.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+}
+
 function is_area_remote(l) {
-	return areas[l].type === REMOTE || (game.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+	return areas[l].type === REMOTE || is_area_resettled(l)
 }
 
 function set_area_remote(l) {
@@ -544,6 +563,28 @@ function is_harass_unit(u) {
 	return (type === BAND || type === FAILEK) && has_enemy_unit_in_loc(loc)
 }
 
+function unit_firepower(u) {
+	if (is_unit_dispersed(u)) {
+		return 12
+	} else {
+		return units[u].firepower
+	}
+}
+
+function unit_contact(u) {
+	// only for Government
+	let contact = units[u].evasion_contact
+	if (is_unit_airmobile(u)) {
+		contact += 1
+	}
+	return contact
+}
+
+function unit_evasion(u) {
+	// only for FLN
+	return units[u].evasion_contact
+}
+
 // #endregion
 
 // #region ITERATORS
@@ -638,6 +679,14 @@ function for_each_adjecent_map_area(x, fn) {
 	}
 }
 
+function for_each_fln_mobile_unit_in_morocco_tunisia(x) {
+	for (let u = first_fln_unit; u <= last_fln_unit; ++u) {
+		let loc = unit_loc(u)
+		if (is_mobile_unit(u) && (loc === MOROCCO || loc === TUNISIA))
+			fn(u)
+	}
+}
+
 function has_friendly_unit_in_loc(x) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) === x)
@@ -663,6 +712,16 @@ function has_fln_not_neutralized_unit_in_loc(x) {
 	for (let u = first_fln_unit; u <= last_fln_unit; ++u)
 		if (unit_loc(u) === x && is_unit_not_neutralized(u))
 			return true
+	return false
+}
+
+function has_fln_not_neutralized_mobile_unit_in_algeria(x) {
+	for (let u = first_fln_unit; u <= last_fln_unit; ++u)
+		if (is_unit_not_neutralized(u) && is_mobile_unit(u)) {
+			let loc = unit_loc(u)
+			if (loc > 2 && is_area_algerian(loc))
+				return true
+		}
 	return false
 }
 
@@ -774,13 +833,25 @@ exports.resign = function (state, player) {
 	return game
 }
 
+function victory_scale() {
+	let psl_diff = Math.abs(game.gov_psl - game.fln_psl)
+	if (psl_diff <= 25) {
+		return "Marginal"
+	} else if (psl_diff <= 50) {
+		return "Substantial"
+	} else {
+		return "Decisive"
+	}
+}
+
 function check_victory() {
-	// TODO victory scale
 	if (game.gov_psl <= 0) {
-		goto_game_over(FLN_NAME, "FLN wins: Government PSL reduced to 0.")
+		let scale = victory_scale()
+		goto_game_over(FLN_NAME, `FLN wins: ${scale} victory`)
 		return true
 	} else if (game.fln_psl <= 0) {
-		goto_game_over(GOV_NAME, "Government wins: FLN PSL reduced to 0.")
+		let scale = victory_scale()
+		goto_game_over(GOV_NAME, `Government wins: ${scale} victory`)
 		return true
 	}
 	return false
@@ -792,14 +863,8 @@ function goto_game_over(result, victory) {
 	game.result = result
 	game.victory = victory
 	log("")
-	log(game.victory)
-	return false
-}
-
-states.game_over = {
-	prompt() {
-		view.prompt = game.victory
-	},
+	log(game.result + " won!")
+	return true
 }
 
 // #endregion
@@ -954,7 +1019,7 @@ function setup_scenario(scenario_name) {
 
 	let scenario = SCENARIOS[scenario_name]
 	Object.assign(game, scenario)
-	game.fln_ap = roll_2d6()
+	game.fln_ap = roll_nd6(2)
 
 	log(`FLN PSL=${game.fln_psl} AP=${game.fln_ap}`)
 	log(`Government PSL=${game.gov_psl}`)
@@ -1193,7 +1258,7 @@ function goto_no_event() {
 function goto_fln_foreign_arms_shipment() {
 	log_h3("FLN Foreign arms shipment.")
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
-	let roll = roll_2d6()
+	let roll = roll_nd6(2)
 	let delta_ap = Math.max(roll - game.naval, 0)
 	log(`FLN adds ${roll} AP, minus ${game.naval} Naval Points = ${delta_ap} AP`)
 	raise_fln_ap(delta_ap)
@@ -1243,11 +1308,11 @@ function goto_morocco_tunisia_independence() {
 	}
 
 	// Raise both FLN and Government PSL by 2d6;
-	let fln_roll = roll_2d6()
+	let fln_roll = roll_nd6(2)
 	log(`Raised FLN PSL by ${fln_roll}`)
 	raise_fln_psl(fln_roll)
 
-	let gov_roll = roll_2d6()
+	let gov_roll = roll_d6(2)
 	log(`Raised Government PSL by ${gov_roll}`)
 	raise_fln_psl(gov_roll)
 
@@ -1293,7 +1358,7 @@ function goto_jean_paul_sartre() {
 	log_h3("Jean-Paul Sartre writes article condemning the war.")
 	// Reduce Government PSL by 1 PSP.
 	log(`Reduced Government PSL by 1`)
-	game.gov_psl -= 1
+	lower_gov_psl(1)
 	end_random_event()
 }
 
@@ -1475,7 +1540,7 @@ states.gov_reinforcement = {
 			mobilize_unit(u, to)
 		}
 		let cost = mobilization_cost(list)
-		game.gov_psl -= cost
+		lower_gov_psl(cost)
 		log(`Paid ${cost} PSP`)
 	},
 	activate() {
@@ -1489,7 +1554,7 @@ states.gov_reinforcement = {
 			set_unit_box(u, OPS)
 		}
 		let cost = Math.ceil(activation_cost(list))
-		game.gov_psl -= cost
+		lower_gov_psl(cost)
 		log(`Paid ${cost} PSP`)
 	},
 	remove() {
@@ -1508,7 +1573,7 @@ states.gov_reinforcement = {
 		push_undo()
 		log("+1 Air Point")
 		log(`>Paid ${COST_AIR_POINT} PSP`)
-		game.gov_psl -= COST_AIR_POINT
+		lower_gov_psl(COST_AIR_POINT)
 		game.air_avail += 1
 		game.air_max += 1
 	},
@@ -1516,7 +1581,7 @@ states.gov_reinforcement = {
 		push_undo()
 		log("+1 Helo Point")
 		log(`>Paid ${COST_HELO_POINT} PSP`)
-		game.gov_psl -= COST_HELO_POINT
+		lower_gov_psl(COST_HELO_POINT)
 		game.helo_avail += 1
 		game.helo_max += 1
 	},
@@ -1524,21 +1589,21 @@ states.gov_reinforcement = {
 		push_undo()
 		log("+1 Naval Point")
 		log(`Paid  ${COST_NAVAL_POINT} PSP`)
-		game.gov_psl -= COST_NAVAL_POINT
+		lower_gov_psl(COST_NAVAL_POINT)
 		game.naval += 1
 	},
 	activate_border_zone() {
 		push_undo()
 		log("Border Zone Activated")
 		log(`>Paid ${COST_ACTIVATE_BORDER_ZONE} PSP`)
-		game.gov_psl -= COST_ACTIVATE_BORDER_ZONE
+		lower_gov_psl(COST_ACTIVATE_BORDER_ZONE)
 		game.border_zone_active = true
 	},
 	mobilize_border_zone() {
 		push_undo()
 		log("Border Zone Mobilized")
 		log(`>Paid ${COST_BORDER_ZONE} PSP`)
-		game.gov_psl -= COST_BORDER_ZONE
+		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm = 0
 		game.events.border_zone_mobilized = true
 	},
@@ -1546,7 +1611,7 @@ states.gov_reinforcement = {
 		push_undo()
 		log("Border Zone Improved")
 		log(`>Paid ${COST_BORDER_ZONE} PSP`)
-		game.gov_psl -= COST_BORDER_ZONE
+		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm -= 1
 	},
 	end_reinforcement() {
@@ -2257,7 +2322,6 @@ states.fln_strike = {
 			drm -= 1
 		let [result, effect] = roll_mst(drm)
 		let strike_result = roll_nd6(result)
-		log(`Rolled ${result}d6 = ${strike_result} PSP`)
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
@@ -2752,11 +2816,124 @@ function unit_redeployment() {
 	log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
 }
 
+function coup_attempt() {
+	log_h3("> Coup attempt")
+	let coup = roll_nd6(2)
+
+	if (coup === 2) {
+		log("Wild success: +3d6 PSP, mobilize 2d6 PSP of units for free")
+		// TODO mobilize
+		let delta_psp = roll_nd6(3)
+		raise_gov_psl(delta_psp)
+	} else if (coup <= 4) {
+		log("Big success: +2d6 PSP, mobilize 1d6 PSP of units for free")
+		// TODO mobilize
+		let delta_psp = roll_nd6(2)
+		raise_gov_psl(delta_psp)
+	} else if (coup <= 6) {
+		log("Success: +1d6 PSP")
+		let delta_psp = roll_d6()
+		raise_gov_psl(delta_psp)
+	} else if (coup === 7) {
+		log("Fizzle: -1d6 PSP")
+		let delta_psp = roll_d6()
+		lower_gov_psl(delta_psp)
+	} else if (coup <= 9) {
+		log("Failure: -2d6 PSP, remove 1 elite unit from the game")
+		// TODO remove elite
+		let delta_psp = roll_nd6(2)
+		lower_gov_psl(delta_psp)
+	} else {
+		log("Abject failure: -3d6 PSP, remove 1d6 elite units from the game")
+		// TODO remove elite
+		let delta_psp = roll_nd6(3)
+		lower_gov_psl(delta_psp)
+	}
+}
+
 function final_psl_adjustment() {
-	log_h3("Final PSL Adjustment. TODO")
+	log_h3("Final PSL Adjustment")
 
 	if (game.gov_psl < 30) {
-		log("Check for Coup d'etat TODO")
+		log_br()
+		log("Gov. PSL<30: Checking for Coup d'etat")
+		let drm = 0 // TODO +1 if OAS is deployed in France
+		let roll = roll_1d6(drm)
+		if (roll === 6) {
+			coup_attempt()
+			if (check_victory())
+				return
+		} else {
+			log("> Nothing happened.")
+		}
+	}
+
+	// TODO OAS deployed in Algeria: -1
+	// TODO OAS deployed in France: -2
+
+	// TODO for each area currently Terrorized or ever Resettled
+	let gov_area_adjust = 0
+	for_each_algerian_map_area(loc => {
+		if (is_area_terrorized(loc) || is_area_resettled(loc)) {
+			gov_area_adjust += 1
+		}
+	})
+
+	if (gov_area_adjust > 0) {
+		log_br()
+		log("Areas Terrorized or ever Resettled")
+		lower_gov_psl(gov_area_adjust)
+		if (check_victory())
+			return
+	}
+
+	if (!has_fln_not_neutralized_mobile_unit_in_algeria()) {
+		log_br()
+		log("No non-neutralized FLN mobile units present in Algeria")
+		let roll = roll_nd6(3)
+		lower_fln_psl(roll)
+		if (check_victory())
+			return
+	}
+
+	if (game.is_morocco_tunisia_independent) {
+		// Total Firepower of FLN mobile units in Morocco and/or Tunisia x 10% (round fractions down)
+		let firepower = 0
+		for_each_fln_mobile_unit_in_morocco_tunisia(u => {
+			firepower += unit_firepower(u)
+		})
+		let fln_firepower_adjust = Math.floor(firepower * 0.1)
+		if (fln_firepower_adjust) {
+			log_br()
+			log("Total Firepower of FLN mobile units in Morocco and/or Tunisia x 10%")
+			raise_fln_psl(fln_firepower_adjust)
+		}
+		if (check_victory())
+			return
+	}
+
+	// Side that Controls more areas gets PSP equal to HALF the difference between them (round fractions down)
+	log_br()
+	log("Side that Controls more areas gets PSP equal to HALF the difference")
+	let fln_control = 0
+	let gov_control = 0
+	for_each_algerian_map_area(loc => {
+		if (is_area_fln_control(loc)) {
+			fln_control += 1
+		} else if (is_area_gov_control(loc)) {
+			gov_control += 1
+		}
+	})
+	log(`FLN=${fln_control} Government=${gov_control}`)
+	let control_adjust = Math.floor(Math.abs(fln_control - gov_control) / 2)
+	if (control_adjust > 0) {
+		if (fln_control > gov_control) {
+			raise_fln_psl(control_adjust)
+		} else if (gov_control > fln_control) {
+			raise_gov_psl(control_adjust)
+		}
+		if (check_victory())
+			return
 	}
 }
 
@@ -2776,11 +2953,17 @@ function goto_turn_interphase() {
 	unit_and_area_recovery()
 	unit_redeployment()
 	final_psl_adjustment()
+
+	// TODO check if we need to mobilize / remove any units
+	if (check_victory())
+			return
+
+	// goto_next_turn()
 }
 
 states.turn_interphase = {
 	prompt() {
-		view.prompt = "Turn Interphase: TODO"
+		view.prompt = "Turn Interphase:"
 		gen_action("done")
 		gen_action("reset")
 	},
@@ -2903,11 +3086,6 @@ function roll_d6() {
 	return random(6) + 1
 }
 
-function roll_2d6() {
-	clear_undo()
-	return roll_d6() + roll_d6()
-}
-
 function roll_1d6(drm) {
 	let roll = roll_d6()
 	let net_roll = roll + drm
@@ -2929,6 +3107,7 @@ function roll_nd6(n) {
 	for (let i = 0; i < n; ++i) {
 		result += roll_d6()
 	}
+	log(`Rolled ${n}d6=${result}`)
 	return result
 }
 
