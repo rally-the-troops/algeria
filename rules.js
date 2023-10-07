@@ -2103,6 +2103,24 @@ function goto_fln_distribute_psl(result) {
 	game.state = "fln_distribute_mission_result"
 }
 
+function distribute_fln_psl(delta) {
+	game.fln_psl += delta
+	game.distribute_mst -= delta
+	if (check_victory())
+		return
+	if (!game.distribute_mst)
+		end_fln_mission()
+}
+
+function distribute_gov_psl(delta) {
+	game.gov_psl += delta
+	game.distribute_mst += delta
+	if (check_victory())
+		return
+	if (!game.distribute_mst)
+		end_fln_mission()
+}
+
 states.fln_distribute_mission_result = {
 	inactive: "to distribute mission result PSP",
 	prompt() {
@@ -2111,6 +2129,10 @@ states.fln_distribute_mission_result = {
 		if (game.distribute_mst > 0) {
 			gen_action("add_fln_psl")
 			gen_action("remove_gov_psl")
+			if (game.distribute_mst >= 5) {
+				if (game.fln_psl < 95) gen_action("add_5_fln_psl")
+				if (game.gov_psl >= 5) gen_action("remove_5_gov_psl")
+			}
 		} else if (game.distribute_mst < 0) {
 			gen_action("remove_fln_psl")
 			gen_action("add_gov_psl")
@@ -2120,38 +2142,32 @@ states.fln_distribute_mission_result = {
 	add_fln_psl() {
 		push_undo()
 		log(">FLN PSL +1")
-		game.fln_psl += 1
-		game.distribute_mst -= 1
-		if (!game.distribute_mst)
-			end_fln_mission()
+		distribute_fln_psl(1)
+	},
+	add_5_fln_psl() {
+		push_undo()
+		log(">FLN PSL +5")
+		distribute_fln_psl(5)
 	},
 	remove_gov_psl() {
 		push_undo()
 		log(">Government PSL -1")
-		game.gov_psl -= 1
-		game.distribute_mst -= 1
-		if (check_victory())
-			return
-		if (!game.distribute_mst)
-			end_fln_mission()
+		distribute_gov_psl(-1)
+	},
+	remove_5_gov_psl() {
+		push_undo()
+		log(">Government PSL -5")
+		distribute_gov_psl(-5)
 	},
 	remove_fln_psl() {
 		push_undo()
 		log(">FLN PSL -1")
-		game.fln_psl -= 1
-		game.distribute_mst += 1
-		if (check_victory())
-			return
-		if (!game.distribute_mst)
-			end_fln_mission()
+		distribute_fln_psl(-1)
 	},
 	add_gov_psl() {
 		push_undo()
 		log(">Government PSL +1")
-		game.gov_psl += 1
-		game.distribute_mst += 1
-		if (!game.distribute_mst)
-			end_fln_mission()
+		distribute_gov_psl(1)
 	},
 	reset() {
 		// XXX debug
@@ -2174,7 +2190,7 @@ function goto_fln_strike_mission() {
 states.fln_strike = {
 	inactive: "to do Strike mission",
 	prompt() {
-		view.prompt = "Strike: Select Front, Cadres may assist"
+		view.prompt = "Strike: Select Front in Urban area, Cadres may assist"
 
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
@@ -2186,11 +2202,23 @@ states.fln_strike = {
 		} else {
 			view.prompt = "Strike: Execute mission"
 
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			let can_assist = false
+
 			for_each_friendly_unit_on_map_box(OPS, u => {
-				if (is_strike_unit(u)) {
+				if (unit_loc(u) === first_unit_loc && unit_type(u) === CADRE) {
 					gen_action_unit(u)
+					can_assist = true
 				}
 			})
+
+			if (can_assist) {
+				view.prompt = "Strike: Execute mission (or select Cadres to assist)"
+			}
+
+			// Allow deselect
+			gen_action_unit(first_unit)
 
 			gen_action("roll")
 		}
@@ -2208,9 +2236,9 @@ states.fln_strike = {
 		let assist = list.length - 1
 
 		if (assist) {
-			log(`>by ${units[front_unit].name} (with ${assist} Cadre) in ${areas[loc].name}`)
+			log(`>by Front (with ${assist} Cadre) in ${areas[loc].name}`)
 		} else {
-			log(`>by ${units[front_unit].name} in ${areas[loc].name}`)
+			log(`>by Front in ${areas[loc].name}`)
 		}
 
 		// pay cost & update flags
@@ -2339,7 +2367,7 @@ function goto_fln_raid_mission() {
 states.fln_raid = {
 	inactive: "to do Raid mission",
 	prompt() {
-		view.prompt = "Raid: Select Band or Failek units"
+		view.prompt = "Raid: Select Band or Failek units. TODO"
 
 		for_each_friendly_unit_on_map_box(OPS, u => {
 			if (is_raid_unit(u)) {
@@ -2348,6 +2376,9 @@ states.fln_raid = {
 		})
 
 		gen_action("reset")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
 	},
 	reset() {
 		// XXX debug
@@ -2624,7 +2655,7 @@ function gov_depreciation() {
 	if (game.gov_psl <= 30) drm -= 1
 	if (game.gov_psl >= 70) drm += 1
 	if (game.air_max) {
-		log(`Air Max = ${game.air_max}`)
+		log(`Air Max=${game.air_max}`)
 		let loss = depreciation_loss_number(game.air_max)
 		let roll = roll_1d6(drm)
 		log(`>${roll} <= ${loss} ?`)
@@ -2634,7 +2665,7 @@ function gov_depreciation() {
 		}
 	}
 	if (game.helo_max) {
-		log(`Helo Max = ${game.helo_max}`)
+		log(`Helo Max=${game.helo_max}`)
 		let loss = depreciation_loss_number(game.helo_max)
 		let roll = roll_1d6(drm)
 		log(`>${roll} <= ${loss} ?`)
@@ -2699,12 +2730,15 @@ function unit_redeployment() {
 	log_h3("Redeployment")
 	for_each_non_neutralized_unit_in_algeria(u => {
 		let loc = unit_loc(u)
-		if (is_fln_unit(u)) {
+		let box = unit_box(u)
+		if (is_fln_unit(u) && box !== UG) {
 			log(`>${units[u].name} in ${areas[loc].name} to UG`)
 			set_unit_box(u, UG)
 		} else if (is_gov_unit(u) && is_mobile_unit(u)) {
-			log(`>${units[u].name} in ${areas[loc].name} to OPS`)
-			set_unit_box(u, OPS)
+			if (box !== OC) {
+				log(`>${units[u].name} in ${areas[loc].name} to OC`)
+				set_unit_box(u, OC)
+			}
 			if (is_unit_airmobile(u)) {
 				log(`>flipped airmobile back`)
 				clear_unit_airmobile(u)
@@ -2715,7 +2749,7 @@ function unit_redeployment() {
 
 	game.air_avail = game.air_max
 	game.helo_avail = game.helo_max
-	log(`Air Avail = ${game.air_avail}, Helo Avail = ${game.helo_avail}`)
+	log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
 }
 
 function final_psl_adjustment() {
@@ -2908,7 +2942,7 @@ function roll_mst(drm) {
 
 	let result = MST[roll + 1]
 	let effect = MST_EFFECT[roll + 1]
-	log(`MST ${result}${effect}`)
+	log(`>MST ${result}${effect}`)
 
 	return [result, effect]
 }
