@@ -451,6 +451,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("activation", "Activation")
 	action_button("acquire_assets", "Acquire assets")
 
+	action_button("select_all_inactive", "Select All")
 	action_button("acquire_air_point", "+1 Air")
 	action_button("acquire_helo_point", "+1 Helo")
 	action_button("acquire_naval_point", "+1 Naval")

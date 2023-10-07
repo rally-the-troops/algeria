@@ -642,6 +642,15 @@ function for_each_friendly_unit_in_loc(x, fn) {
 			fn(u)
 }
 
+function count_friendly_unit_in_loc(x, fn) {
+	let count = 0
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === x)
+			count++
+
+	return count
+}
+
 function for_each_enemy_unit_in_loc(loc, fn) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === loc)
@@ -1083,6 +1092,7 @@ function deploy_unit(u, to) {
 	} else if (is_algerian_unit(u)) {
 		set_unit_box(u, OPS)
 	} else {
+		// in OC because it needs to be activated
 		set_unit_box(u, OC)
 	}
 }
@@ -1090,7 +1100,8 @@ function deploy_unit(u, to) {
 states.scenario_setup = {
 	inactive: "setup",
 	prompt() {
-		view.prompt = `Setup: ${game.active} Deployment.`
+		let count = count_friendly_unit_in_loc(DEPLOY)
+		view.prompt = `Setup: ${game.active} Deployment. ${count} unit(s) remaining.`
 
 		if (game.selected.length === 0) {
 			// first unit can be any unit in DEPLOY or on map
@@ -1128,15 +1139,9 @@ states.scenario_setup = {
 			}
 		}
 
-		let done = true
-		for_each_friendly_unit_in_loc(DEPLOY, u => {
-			done = false
-		})
-		if (done)
+		if (!count) {
 			gen_action('end_deployment')
-
-		// XXX
-		gen_action("restart")
+		}
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -1166,11 +1171,6 @@ states.scenario_setup = {
 		game.summary = null
 
 		end_scenario_setup()
-	},
-	restart() {
-		// XXX debug
-		log("Restarting...")
-		goto_restart()
 	}
 }
 
@@ -1180,8 +1180,6 @@ function end_scenario_setup() {
 	if (has_friendly_unit_in_loc(DEPLOY)) {
 		goto_scenario_setup()
 	} else {
-		game.selected = -1
-		game.summary = null
 		begin_game()
 	}
 }
@@ -1191,6 +1189,8 @@ function end_scenario_setup() {
 // #region FLOW OF PLAY
 
 function begin_game() {
+	game.selected = -1
+	game.summary = null
 	game.turn = 1
 	log_h1("Turn: " + game.turn)
 	goto_random_event()
@@ -1206,11 +1206,10 @@ states.random_event = {
 	prompt() {
 		view.prompt = "Roll for a random event."
 		gen_action("roll")
-		gen_action("restart")
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
-		log("Rolled " + rnd)
+		log(">Rolled " + rnd)
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -1237,11 +1236,6 @@ states.random_event = {
 		} else {
 			throw Error("Invalid random value, out of range (11-66)")
 		}
-	},
-	restart() {
-		// XXX debug
-		log("Restarting...")
-		goto_restart()
 	}
 }
 
@@ -1258,9 +1252,9 @@ function goto_no_event() {
 function goto_fln_foreign_arms_shipment() {
 	log_h3("FLN Foreign arms shipment.")
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
+	log(`FLN adds 2d6 AP, -${game.naval} Naval Points`)
 	let roll = roll_nd6(2)
 	let delta_ap = Math.max(roll - game.naval, 0)
-	log(`FLN adds ${roll} AP, minus ${game.naval} Naval Points = ${delta_ap} AP`)
 	raise_fln_ap(delta_ap)
 	end_random_event()
 }
@@ -1453,7 +1447,9 @@ states.gov_reinforcement = {
 			})
 
 			// activate french mobile units
+			let has_inactive = false
 			for_each_friendly_unit_on_map_box(OC, u => {
+				has_inactive = true
 				gen_action_unit(u)
 			})
 
@@ -1461,6 +1457,9 @@ states.gov_reinforcement = {
 			for_each_friendly_unit_on_map_of_type(POL, u => {
 				gen_action_unit(u)
 			})
+
+			if (has_inactive)
+				gen_action("select_all_inactive")
 
 			// activate border
 			// TODO consider making marker selectable
@@ -1541,7 +1540,12 @@ states.gov_reinforcement = {
 		}
 		let cost = mobilization_cost(list)
 		lower_gov_psl(cost)
-		log(`Paid ${cost} PSP`)
+		// log(`Paid ${cost} PSP`)
+	},
+	select_all_inactive() {
+		for_each_friendly_unit_on_map_box(OC, u => {
+			set_toggle(game.selected, u)
+		})
 	},
 	activate() {
 		let list = game.selected
@@ -1555,7 +1559,7 @@ states.gov_reinforcement = {
 		}
 		let cost = Math.ceil(activation_cost(list))
 		lower_gov_psl(cost)
-		log(`Paid ${cost} PSP`)
+		// log(`Paid ${cost} PSP`)
 	},
 	remove() {
 		let list = game.selected
@@ -1572,7 +1576,7 @@ states.gov_reinforcement = {
 	acquire_air_point() {
 		push_undo()
 		log("+1 Air Point")
-		log(`>Paid ${COST_AIR_POINT} PSP`)
+		// log(`>Paid ${COST_AIR_POINT} PSP`)
 		lower_gov_psl(COST_AIR_POINT)
 		game.air_avail += 1
 		game.air_max += 1
@@ -1580,7 +1584,7 @@ states.gov_reinforcement = {
 	acquire_helo_point() {
 		push_undo()
 		log("+1 Helo Point")
-		log(`>Paid ${COST_HELO_POINT} PSP`)
+		// log(`>Paid ${COST_HELO_POINT} PSP`)
 		lower_gov_psl(COST_HELO_POINT)
 		game.helo_avail += 1
 		game.helo_max += 1
@@ -1588,21 +1592,21 @@ states.gov_reinforcement = {
 	acquire_naval_point() {
 		push_undo()
 		log("+1 Naval Point")
-		log(`Paid  ${COST_NAVAL_POINT} PSP`)
+		// log(`Paid  ${COST_NAVAL_POINT} PSP`)
 		lower_gov_psl(COST_NAVAL_POINT)
 		game.naval += 1
 	},
 	activate_border_zone() {
 		push_undo()
 		log("Border Zone Activated")
-		log(`>Paid ${COST_ACTIVATE_BORDER_ZONE} PSP`)
+		// log(`>Paid ${COST_ACTIVATE_BORDER_ZONE} PSP`)
 		lower_gov_psl(COST_ACTIVATE_BORDER_ZONE)
 		game.border_zone_active = true
 	},
 	mobilize_border_zone() {
 		push_undo()
 		log("Border Zone Mobilized")
-		log(`>Paid ${COST_BORDER_ZONE} PSP`)
+		// log(`>Paid ${COST_BORDER_ZONE} PSP`)
 		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm = 0
 		game.events.border_zone_mobilized = true
@@ -1610,7 +1614,7 @@ states.gov_reinforcement = {
 	improve_border_zone() {
 		push_undo()
 		log("Border Zone Improved")
-		log(`>Paid ${COST_BORDER_ZONE} PSP`)
+		// log(`>Paid ${COST_BORDER_ZONE} PSP`)
 		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm -= 1
 	},
@@ -3107,7 +3111,7 @@ function roll_nd6(n) {
 	for (let i = 0; i < n; ++i) {
 		result += roll_d6()
 	}
-	log(`Rolled ${n}d6=${result}`)
+	log(`>Rolled ${n}d6=${result}`)
 	return result
 }
 
