@@ -369,6 +369,10 @@ function is_area_rural(l) {
 	return areas[l].type === RURAL
 }
 
+function is_border_crossing(from, to) {
+	return from !== to && (is_area_country(from) || is_area_country(to))
+}
+
 // #endregion
 
 // #region UNIT STATE
@@ -1523,8 +1527,7 @@ states.gov_reinforcement = {
 			}
 		}
 
-		// XXX debug
-		// TODO confirmation when no units are activated?
+		// XXX confirmation when no units are activated?
 		gen_action("end_reinforcement")
 	},
 	unit(u) {
@@ -1646,8 +1649,8 @@ function give_fln_ap() {
 		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
 		if (is_area_terrorized(loc)) control_ap -= 1
 		if (control_ap > 0) {
+			log(`>${areas[loc].name}`)
 			raise_fln_ap(control_ap)
-			log(`>${areas[loc].name} gave ${control_ap} AP`)
 		}
 	})
 
@@ -1655,7 +1658,7 @@ function give_fln_ap() {
 	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
 	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
 	let psl_ap = Math.max(psl_percentage - game.naval, 0)
-	log(`PSL gave ${psl_ap} AP`)
+	log(`Received 10% of PSL, - ${game.naval} Naval Points`)
 	raise_fln_ap(psl_ap)
 }
 
@@ -1778,8 +1781,6 @@ states.fln_reinforcement = {
 			}
 		}
 
-		// XXX debug
-		gen_action("reset")
 		gen_action("end_reinforcement")
 	},
 	unit(u) {
@@ -1811,11 +1812,7 @@ states.fln_reinforcement = {
 		let unit = pop_selected()
 		convert_fln_unit(unit, FAILEK)
 	},
-	reset() {
-		goto_fln_reinforcement_phase()
-	},
 	end_reinforcement() {
-		// XXX debug
 		end_reinforcement()
 	}
 }
@@ -1865,8 +1862,7 @@ states.gov_deployment = {
 			}
 		}
 
-		// XXX debug
-		// TODO confirmation when no units are activated?
+		// XXX confirmation when no units are activated?
 		gen_action("end_deployment")
 	},
 	unit(u) {
@@ -1964,8 +1960,7 @@ states.fln_deployment = {
 			}
 		}
 
-		// XXX debug
-		// TODO confirmation when no units are activated?
+		// XXX confirmation when no units are activated?
 		gen_action("end_deployment")
 	},
 	unit(u) {
@@ -2114,8 +2109,6 @@ states.fln_propaganda = {
 
 			gen_action("roll")
 		}
-
-		gen_action("reset")
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -2159,10 +2152,6 @@ states.fln_propaganda = {
 		} else {
 			end_fln_mission()
 		}
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
 	}
 }
 
@@ -2206,7 +2195,6 @@ states.fln_distribute_mission_result = {
 			gen_action("remove_fln_psl")
 			gen_action("add_gov_psl")
 		}
-		gen_action("reset")
 	},
 	add_fln_psl() {
 		push_undo()
@@ -2237,10 +2225,6 @@ states.fln_distribute_mission_result = {
 		push_undo()
 		log(">Government PSL +1")
 		distribute_gov_psl(1)
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
 	}
 }
 
@@ -2291,8 +2275,6 @@ states.fln_strike = {
 
 			gen_action("roll")
 		}
-
-		gen_action("reset")
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -2354,10 +2336,6 @@ states.fln_strike = {
 		}
 
 		// TODO Government must react with one unit, otherwise -1d6 PSP
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
 	}
 }
 
@@ -2390,38 +2368,50 @@ states.fln_move = {
 			let zone = area_zone(first_unit_loc)
 			for_each_map_area_in_zone(zone, to => {
 				// A unit may move from one area to any other area within its current wilaya.
-				if (first_unit_loc !== to)
+				if (!game.events.jealousy_and_paranoia && first_unit_loc !== to)
 					gen_action_loc(to)
 				// A unit may also move to an area in a wilaya adjacent to its current one (that is, the two share a land border),
 				// but the area moved to must be adjacent to at least one area in its current wilaya.
 				// Morocco and Tunisia are treated as single-area wilaya for this purpose.
 				for_each_adjecent_map_area(to, adj => {
-					gen_action_loc(adj)
+					if (is_border_crossing(to, adj)) {
+						if (game.is_morocco_tunisia_independent)
+							gen_action_loc(adj)
+					} else if (!game.events.jealousy_and_paranoia) {
+						gen_action_loc(adj)
+					}
 				})
 			})
 
 			// Allow deselect
 			gen_action_unit(first_unit)
 		}
-
-		gen_action("reset")
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
 	},
 	loc(to) {
 		let unit = pop_selected()
+		let loc = unit_loc(unit)
 		push_undo()
 
-		// TODO check MST for success
-
-		log(`>Moved ${units[unit].name} to ${areas[to].name}`)
-		set_unit_loc(unit, to)
-		set_unit_box(unit, OC)
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
+		let drm = 0
+		for_each_enemy_unit_in_loc_box(to, PTL, _u => {
+			drm -= 1
+		})
+		if (is_border_crossing(loc, to)) {
+			drm += game.border_zone_drm
+		}
+		let [_result, effect] = roll_mst(drm)
+		if (effect === '+') {
+			log(`Eliminated ${units[unit].name} in ${areas[loc].name}`)
+			eliminate_unit(unit)
+		} else {
+			log(`>Moved ${units[unit].name} to ${areas[to].name}`)
+			set_unit_loc(unit, to)
+			set_unit_box(unit, OC)
+		}
+		end_fln_mission()
 	}
 }
 
@@ -2442,15 +2432,9 @@ states.fln_raid = {
 				gen_action_unit(u)
 			}
 		})
-
-		gen_action("reset")
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
 	}
 }
 
@@ -2472,12 +2456,6 @@ states.fln_harass = {
 				gen_action_unit(u)
 			}
 		})
-
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "fln_operations"
 	}
 }
 
@@ -2538,11 +2516,6 @@ states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
 		view.prompt = "Flush: TODO"
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "gov_operations"
 	}
 }
 
@@ -2557,11 +2530,6 @@ states.gov_intelligence = {
 	inactive: "to do Intelligence mission",
 	prompt() {
 		view.prompt = "Intelligence: TODO"
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "gov_operations"
 	}
 }
 
@@ -2576,11 +2544,6 @@ states.gov_civil_affairs = {
 	inactive: "to do Civil Affairs mission",
 	prompt() {
 		view.prompt = "Civil Affairs: TODO"
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "gov_operations"
 	}
 }
 
@@ -2595,11 +2558,6 @@ states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
 		view.prompt = "Suppression: TODO"
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "gov_operations"
 	}
 }
 
@@ -2614,18 +2572,11 @@ states.gov_population_resettlement = {
 	inactive: "to do Population Resettlement mission",
 	prompt() {
 		view.prompt = "Population Resettlement: TODO"
-		gen_action("reset")
-	},
-	reset() {
-		// XXX debug
-		game.state = "gov_operations"
 	}
 }
 
 function end_operations_phase() {
 	game.passes = 0
-	// XXX
-	log("End Operations Phase")
 	goto_turn_interphase()
 }
 
@@ -2960,23 +2911,16 @@ function goto_turn_interphase() {
 
 	// TODO check if we need to mobilize / remove any units
 	if (check_victory())
-			return
-
-	// goto_next_turn()
+		return
 }
 
 states.turn_interphase = {
 	prompt() {
-		view.prompt = "Turn Interphase:"
-		gen_action("done")
-		gen_action("reset")
+		view.prompt = "Turn Interphase"
+		gen_action("end_turn")
 	},
-	done() {
+	end_turn() {
 		goto_next_turn()
-	},
-	reset() {
-		// XXX debug
-		goto_turn_interphase()
 	}
 }
 
@@ -3125,7 +3069,10 @@ function roll_mst(drm) {
 
 	let result = MST[roll + 1]
 	let effect = MST_EFFECT[roll + 1]
-	log(`>MST ${result}${effect}`)
+	let effect_str = ''
+	if (effect === '+') effect_str = ' (bad)'
+	if (effect === '@') effect_str = ' (good)'
+	log(`>Mission Success: ${result}${effect}${effect_str}`)
 
 	return [result, effect]
 }

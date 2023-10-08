@@ -535,6 +535,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("remove_gov_psl", "-1 Government PSL")
 	action_button("remove_5_gov_psl", "-5 Government PSL")
 
+	action_button("end_turn", "End Turn")
 	action_button("done", "Done")
 	action_button("undo", "Undo")
 	// XXX debug
