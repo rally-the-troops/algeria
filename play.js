@@ -531,9 +531,16 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("add_fln_psl", "+1 FLN PSL")
 	action_button("add_5_fln_psl", "+5 FLN PSL")
 	action_button("remove_fln_psl", "-1 FLN PSL")
+	action_button("remove_5_fln_psl", "-5 FLN PSL")
 	action_button("add_gov_psl", "+1 Government PSL")
+	action_button("add_5_gov_psl", "+5 Government PSL")
 	action_button("remove_gov_psl", "-1 Government PSL")
 	action_button("remove_5_gov_psl", "-5 Government PSL")
+
+	action_button("eliminate_cadre", "Eliminate Cadre")
+	action_button("eliminate_band", "Eliminate Band")
+	action_button("reduce_front", "Reduce Front")
+	action_button("reduce_failek", "Reduce Failek")
 
 	action_button("end_turn", "End Turn")
 	action_button("done", "Done")

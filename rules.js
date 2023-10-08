@@ -475,6 +475,8 @@ function clear_unit_dispersed(u) {
 }
 
 function eliminate_unit(u) {
+	let loc = unit_loc(u)
+	log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
 	set_unit_box(u, OC)
@@ -643,6 +645,12 @@ function for_each_friendly_unit_on_map_of_type(type, fn) {
 function for_each_friendly_unit_in_loc(x, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) === x)
+			fn(u)
+}
+
+function for_each_enemy_unit_in_loc(loc, fn) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === loc)
 			fn(u)
 }
 
@@ -919,6 +927,7 @@ exports.setup = function (seed, scenario, options) {
 		// transient state
 		passes: 0,
 		distribute_mst: 0,
+		combat: {},
 
 		// logging
 		summary: null,
@@ -2144,7 +2153,6 @@ states.fln_propaganda = {
 		if (effect === '+') {
 			// bad effect: eliminate Cadre or reduce Front
 			if (unit_type(unit) === CADRE) {
-				log(`Eliminated ${units[unit].name} in ${areas[loc].name}`)
 				eliminate_unit(unit)
 			} else {
 				reduce_unit(unit, CADRE)
@@ -2526,16 +2534,355 @@ states.fln_harass = {
 	inactive: "to do Harass mission",
 	prompt() {
 		view.prompt = "Harass: Select Band or Failek unit (may combine if Failek present)"
-		// TODO combine if Failek present
+		if (game.selected.length === 0) {
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_harass_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
 
-		for_each_friendly_unit_on_map_box(OPS, u => {
-			if (is_harass_unit(u)) {
-				gen_action_unit(u)
+			let has_failek = false
+			let has_target = false
+			for (let u of game.selected) {
+				if (unit_type(u) === FAILEK) has_failek = true
+				if (is_gov_unit(u)) has_target = true
 			}
-		})
+
+			if (!has_target) {
+				view.prompt = "Harass: Select enemy unit in area"
+			} else if (game.selected.length > 1) {
+				view.prompt = "Harass: Execute mission"
+				gen_action("roll")
+			}
+
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_harass_unit(u)) {
+					if (set_has(game.selected, u)) {
+						gen_action_unit(u)
+					} else if (has_failek || (game.selected.length === 1 && has_target)) {
+						gen_action_unit(u)
+					}
+				}
+			})
+
+			for_each_enemy_unit_in_loc(first_unit_loc, u => {
+				if (!has_target || set_has(game.selected, u))
+					gen_action_unit(u)
+			})
+		}
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		game.combat = {
+			fln_units: [],
+			gov_units: [],
+			half_firepower: 1
+		}
+		for (let u of list) {
+			if (is_gov_unit(u)) {
+				set_add(game.combat.gov_units, u)
+			} else {
+				set_add(game.combat.fln_units, u)
+			}
+		}
+		goto_combat()
+	}
+}
+
+function goto_combat() {
+	// game.combat = {fln_units: [], gov_units: [], half_firepower: false}
+	// game.combat = {hits_on_fln: 0, hits_on_gov: 0}
+
+	let loc = unit_loc(game.combat.fln_units[0])
+
+	log_h3(`Combat in ${areas[loc].name}`)
+	// Result is the number of 'hits' on enemy units.
+
+	let fln_firepower = 0
+	for (let u of game.combat.fln_units) {
+		fln_firepower += unit_firepower(u)
+	}
+	log(`>FLN firepower ${fln_firepower}`)
+	game.combat.hits_on_gov = roll_crt(fln_firepower)
+	log(`Hits on Gov ${game.combat.hits_on_gov}`)
+
+	let gov_firepower = 0
+	for (let u of game.combat.gov_units) {
+		gov_firepower += unit_firepower(u)
+	}
+	if (game.combat.half_firepower) {
+		gov_firepower = Math.ceil(gov_firepower / 2)
+	}
+	log(`>Gov. firepower ${gov_firepower}`)
+	game.combat.hits_on_fln = roll_crt(gov_firepower)
+	log(`Hits on FLN ${game.combat.hits_on_fln}`)
+
+	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
+		game.combat.neut_gov_units = 1
+	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln) {
+		game.combat.neut_fln_units = 1
+	}
+
+	game.combat.distribute_gov_psl = 0
+	goto_fln_combat_gov_hits()
+}
+
+function end_combat() {
+	if (game.combat.distribute_gov_psl) {
+		goto_gov_combat_distribute_gov_psl()
+		return
+	}
+
+	// Remaining involved units of the side that received the largest number of 'hits'
+	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
+	// When units fire at half Firepower Rating, round fractions up.
+
+	if (game.combat.neut_gov_units) {
+		log(`>Gov. units neutralized`)
+		for (let u of game.combat.gov_units) {
+			set_unit_neutralized(u)
+			if (is_mobile_unit(u))
+				set_unit_box(u, OC)
+		}
+	} else if (game.combat.neut_fln_units && game.combat.fln_units.length) {
+		log(`>FLN units neutralized`)
+		for (let u of game.combat.fln_units) {
+			set_unit_neutralized(u)
+		}
+	}
+	for (let u of game.combat.fln_units) {
+		set_unit_box(u, OC)
+	}
+
+	game.combat = {}
+	goto_fln_operations_phase()
+}
+
+// TODO duplicate with distribute_mst code
+
+function goto_fln_combat_gov_hits() {
+	if (!game.combat.hits_on_gov) {
+		goto_fln_combat_fln_hits()
+		return
+	}
+	game.phasing = FLN_NAME
+	set_active_player()
+	log(`Distribute Government hits`)
+	game.state = "fln_combat_gov_hits"
+}
+
+function distribute_gov_hits_as_fln_psl(delta) {
+	game.fln_psl += delta
+	game.combat.hits_on_gov -= delta
+	if (check_victory())
+		return
+	if (!game.combat.hits_on_gov)
+		goto_fln_combat_fln_hits()
+}
+
+function distribute_gov_hits_as_gov_psl(delta) {
+	game.gov_psl += delta
+	game.combat.hits_on_gov += delta
+	if (check_victory())
+		return
+	if (!game.combat.hits_on_gov)
+		goto_fln_combat_fln_hits()
+}
+
+states.fln_combat_gov_hits = {
+	inactive: "to distribute Combat hits on Government units",
+	prompt() {
+		view.prompt = `Combat: distribute ${game.combat.hits_on_gov} hit(s) on Government units`
+
+		// Each 'hit' on Government units is -1 PSP to the Government PSL or +1 to the FLN PSL:
+		gen_action("add_fln_psl")
+		gen_action("remove_gov_psl")
+		if (game.combat.hits_on_gov >= 5) {
+			if (game.fln_psl < 95) gen_action("add_5_fln_psl")
+			if (game.gov_psl >= 5) gen_action("remove_5_gov_psl")
+		}
+	},
+	add_fln_psl() {
+		push_undo()
+		log(">FLN PSL +1")
+		distribute_gov_hits_as_fln_psl(1)
+	},
+	add_5_fln_psl() {
+		push_undo()
+		log(">FLN PSL +5")
+		distribute_gov_hits_as_fln_psl(5)
+	},
+	remove_gov_psl() {
+		push_undo()
+		log(">Government PSL -1")
+		distribute_gov_hits_as_gov_psl(-1)
+	},
+	remove_5_gov_psl() {
+		push_undo()
+		log(">Government PSL -5")
+		distribute_gov_hits_as_gov_psl(-5)
+	},
+}
+
+function goto_gov_combat_distribute_gov_psl() {
+	game.phasing = GOV_NAME
+	set_active_player()
+	log(`Distribute Government PSL`)
+	game.state = "gov_combat_distribute_gov_psl"
+}
+
+function distribute_gov_combat_as_fln_psl(delta) {
+	game.fln_psl += delta
+	game.combat.distribute_gov_psl += delta
+	if (check_victory())
+		return
+	if (!game.combat.distribute_gov_psl)
+		end_combat()
+}
+
+function distribute_gov_combat_as_gov_psl(delta) {
+	game.gov_psl += delta
+	game.combat.distribute_gov_psl -= delta
+	if (check_victory())
+		return
+	if (!game.combat.distribute_gov_psl)
+		end_combat()
+}
+
+states.gov_combat_distribute_gov_psl = {
+	inactive: "to distribute PSL",
+	prompt() {
+		view.prompt = `Combat: distribute ${game.combat.distribute_gov_psl} PSL`
+
+		gen_action("add_gov_psl")
+		gen_action("remove_fln_psl")
+		if (game.combat.distribute_gov_psl >= 5) {
+			if (game.gov_psl < 95) gen_action("add_5_gov_psl")
+			if (game.fln_psl >= 5) gen_action("remove_5_fln_psl")
+		}
+	},
+	add_gov_psl() {
+		push_undo()
+		log(">Government PSL +1")
+		distribute_gov_combat_as_gov_psl(1)
+	},
+	add_5_gov_psl() {
+		push_undo()
+		log(">Government PSL +5")
+		distribute_gov_combat_as_gov_psl(5)
+	},
+	remove_fln_psl() {
+		push_undo()
+		log(">FLN PSL -1")
+		distribute_gov_combat_as_fln_psl(-1)
+	},
+	remove_5_fln_psl() {
+		push_undo()
+		log(">FLN PSL -5")
+		distribute_gov_combat_as_fln_psl(-5)
+	},
+}
+
+
+function goto_fln_combat_fln_hits() {
+	if (!game.combat.hits_on_fln) {
+		end_combat()
+		return
+	}
+	game.phasing = FLN_NAME
+	set_active_player()
+	log(`Distribute FLN hits`)
+	game.state = "fln_combat_fln_hits"
+}
+
+function has_fln_combat_unit(type) {
+	for (let u of game.combat.fln_units) {
+		if (unit_type(u) === type) return true
+	}
+	return false
+}
+
+function for_first_fln_combat_unit(type, fn) {
+	for (let u of game.combat.fln_units) {
+		if (unit_type(u) === type) {
+			fn(u)
+			return
+		}
+	}
+}
+
+// TODO
+// Government
+//FLN	+1 OR -1	for each FLN Cadre or Band eliminated (Government player's choice)	Operations Phase
+
+states.fln_combat_fln_hits = {
+	inactive: "to distribute Combat hits on FLN units",
+	prompt() {
+		view.prompt = `Combat: distribute ${game.combat.hits_on_fln} hit(s) on FLN units`
+
+		// each 'hit' on FLN units eliminates one Cadre or Band, or reduces a Front to a Cadre, or reduces a Failek to a Band (FLN player chooses how to distribute his losses).
+		if (has_fln_combat_unit(CADRE))
+			gen_action("eliminate_cadre")
+		if (has_fln_combat_unit(BAND))
+			gen_action("eliminate_band")
+		if (has_fln_combat_unit(FRONT))
+			gen_action("reduce_front")
+		if (has_fln_combat_unit(FAILEK))
+			gen_action("reduce_failek")
+	},
+	eliminate_cadre() {
+		push_undo()
+		for_first_fln_combat_unit(CADRE, u =>{
+			eliminate_unit(u)
+			set_delete(game.combat.fln_units, u)
+			game.combat.hits_on_fln -= 1
+			game.combat.distribute_gov_psl += 1
+		})
+		if (!game.combat.hits_on_fln || !game.combat.fln_units.length)
+			end_combat()
+	},
+	eliminate_band() {
+		push_undo()
+		for_first_fln_combat_unit(BAND, u =>{
+			eliminate_unit(u)
+			set_delete(game.combat.fln_units, u)
+			game.combat.hits_on_fln -= 1
+			game.combat.distribute_gov_psl += 1
+		})
+		if (!game.combat.hits_on_fln || !game.combat.fln_units.length)
+			end_combat()
+	},
+	reduce_front() {
+		push_undo()
+		for_first_fln_combat_unit(FRONT, u =>{
+			reduce_unit(u, CADRE)
+			set_delete(game.combat.fln_units, u)
+			game.combat.hits_on_fln -= 1
+			raise_fln_psl(2)
+			lower_fln_psl(1)
+		})
+		if (!game.combat.hits_on_fln || !game.combat.fln_units.length)
+			end_combat()
+	},
+	reduce_failek() {
+		push_undo()
+		for_first_fln_combat_unit(FAILEK, u =>{
+			reduce_unit(u, BAND)
+			set_delete(game.combat.fln_units, u)
+			game.combat.hits_on_fln -= 1
+			raise_fln_psl(2)
+			lower_fln_psl(1)
+		})
+		if (!game.combat.hits_on_fln || !game.combat.fln_units.length)
+			end_combat()
 	}
 }
 
@@ -3115,7 +3462,7 @@ function roll_d6() {
 	return random(6) + 1
 }
 
-function roll_1d6(drm) {
+function roll_1d6(drm=0) {
 	let roll = roll_d6()
 	let net_roll = roll + drm
 	let drm_str = ''
@@ -3156,6 +3503,35 @@ function roll_mst(drm) {
 	log(`>Mission Success: ${result}${effect}${effect_str}`)
 
 	return [result, effect]
+}
+
+const COMBAT_RESULT_TABLE = [
+	// FP      1  2  3  4  5  6
+	[  1,    [ 0, 0, 0, 0, 0, 1]],
+	[  4,    [ 0, 0, 0, 1, 1, 2]],
+	[  8,    [ 1, 1, 2, 2, 2, 3]],
+	[  15,   [ 1, 2, 3, 3, 4, 5]],
+	[  24,   [ 2, 4, 5, 5, 6, 8]],
+	[  1000, [ 3, 5, 7, 8, 10, 12]],
+]
+
+function combat_result(firepower, die) {
+	let k = 0
+	for (k = 0; k < COMBAT_RESULT_TABLE.length; ++k) {
+		if (firepower < COMBAT_RESULT_TABLE[k][0])
+			break
+	}
+	if (k > 0 && k < COMBAT_RESULT_TABLE.length - 1) k -= 1
+	return COMBAT_RESULT_TABLE[k][1][die - 1]
+}
+
+
+function roll_crt(firepower) {
+	let roll = roll_1d6(0)
+	let result = combat_result(firepower, roll)
+	log(`>CRT result: ${result}`)
+
+	return result
 }
 
 // Array remove and insert (faster than splice)
