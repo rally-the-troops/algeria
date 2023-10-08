@@ -4,6 +4,9 @@
 
 const SCALE = 1.8033333333333332
 
+const FLN = 0
+const GOV = 1
+
 const DEPLOY = 1
 const ELIMINATED = 2
 
@@ -46,6 +49,11 @@ let ui = {
 	player: [
 		document.getElementById("role_FLN"),
 		document.getElementById("role_Government"),
+	],
+	ap: document.querySelector("#role_FLN .role_ap"),
+	psl: [
+		document.querySelector("#role_FLN .role_psl"),
+		document.querySelector("#role_Government .role_psl"),
 	],
 	markers: {
 		turn: document.getElementById("turn_now"),
@@ -392,6 +400,14 @@ Node.prototype.appendChildAnimated = function(e) {
 
 function update_map() {
 	console.log("VIEW", view)
+
+	ui.player[FLN].classList.toggle("active", view.active === "FLN")
+	ui.player[GOV].classList.toggle("active", view.active === "Government")
+
+	ui.ap.textContent = view.fln_ap
+	ui.psl[FLN].textContent = view.fln_psl
+	ui.psl[GOV].textContent = view.gov_psl
+
 	ui.tracker[view.turn % 100].appendChildAnimated(ui.markers.turn)
 	ui.tracker[view.fln_ap].appendChildAnimated(ui.markers.fln_ap)
 	ui.tracker[view.fln_psl].appendChildAnimated(ui.markers.fln_psl)

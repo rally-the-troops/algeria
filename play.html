@@ -17,6 +17,12 @@ main { background-color: dimgray }
 #role_FLN .role_name { background-color: #C1E1C1;}
 #role_Government .role_name { background-color: #BCDDFF;}
 
+.role.active span { text-decoration: underline; }
+.role_ap_text { color: #555; float: right; margin-right: 4px; }
+.role_ap { float: right; margin-right: 8px;}
+.role_psl_text { color: #555; float: right; margin-right: 4px;}
+.role_psl { float: right; }
+
 #log { background-color: whitesmoke; }
 #log .h1 { background-color: silver; font-weight: bold; padding-top:4px; padding-bottom:4px; margin: 8px 0; text-align: center; }
 #log .h2 { background-color: gainsboro; padding-top:2px; padding-bottom:2px; text-align: center; }
@@ -232,15 +238,19 @@ main { background-color: dimgray }
 <aside>
 	<div id="roles">
 		<div class="role" id="role_FLN">
-			<div class="role_name">
-				FLN &#x2013;
-				<span class="role_user">-</span>
+			<div class="role_name"><span>FLN</span>
+				<div class="role_psl"></div>
+				<div class="role_psl_text">PSL</div>
+				<div class="role_ap"></div>
+				<div class="role_ap_text">AP</div>
+				<div class="role_user">-</div>
 			</div>
 		</div>
 		<div class="role" id="role_Government">
-			<div class="role_name">
-				Government &#x2013;
-				<span class="role_user">-</span>
+			<div class="role_name"><span>Government</span>
+				<div class="role_psl"></div>
+				<div class="role_psl_text">PSL</div>
+				<div class="role_user">-</div>
 			</div>
 		</div>
 	</div>
