@@ -552,7 +552,7 @@ function is_strike_unit(u) {
 
 function is_movable_unit(u) {
 	// TODO check if movable across border
-	return !game.events.jealousy_and_paranoia || game.is_morocco_tunisia_independent
+	return is_mobile_unit(u) && !game.events.jealousy_and_paranoia || game.is_morocco_tunisia_independent
 }
 
 function is_raid_unit(u) {
@@ -2429,16 +2429,89 @@ function goto_fln_raid_mission() {
 states.fln_raid = {
 	inactive: "to do Raid mission",
 	prompt() {
-		view.prompt = "Raid: Select Band or Failek units. TODO"
+		view.prompt = "Raid: Select Band or Failek units."
 
-		for_each_friendly_unit_on_map_box(OPS, u => {
-			if (is_raid_unit(u)) {
-				gen_action_unit(u)
-			}
-		})
+		if (game.selected.length === 0) {
+			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_raid_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Raid: Execute mission"
+
+			let first_unit = game.selected[0]
+			let first_unit_type = unit_type(first_unit)
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_box= unit_box(first_unit)
+
+			for_each_friendly_unit_in_loc(first_unit_loc, u => {
+				if (is_raid_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+
+			gen_action("roll")
+		}
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		let first_unit = list[0]
+		let loc = unit_loc(first_unit)
+		let assist = list.length - 1
+
+		if (assist) {
+			log(`(with ${assist} assist) in ${areas[loc].name}`)
+		} else {
+			log(`>in ${areas[loc].name}`)
+		}
+
+		// pay cost & update flags
+		log(`>Paid ${FLN_RAID_COST} AP`)
+		game.fln_ap -= FLN_RAID_COST
+		set_area_raided(loc)
+		for (let u of list) {
+			set_unit_box(u, OC)
+		}
+
+		let drm = assist
+		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
+			drm -= 1
+		})
+		let [result, effect] = roll_mst(drm)
+		if (result > 0) {
+			if (is_area_urban(loc)) {
+				log('x2 in Urban area')
+				result *= 2
+			}
+			raise_fln_ap(result)
+		}
+
+		if (effect === '+') {
+			// bad effect: 1 Band/Failek neutralized, area is Terrorized
+			log(`Neutralized ${units[first_unit].name}`)
+			set_unit_neutralized(first_unit)
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		} else if (effect === '@') {
+			// good result: 1 Police unit neutralized, area is Terrorized
+			let done = false
+			for_each_enemy_unit_in_loc(loc, u => {
+				if (!done && is_police_unit(u)) {
+					log(`Police in ${areas[loc].name} neutralized`)
+					set_unit_neutralized(u)
+					done = true
+				}
+			})
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		}
+
+		end_fln_mission()
 	}
 }
 
@@ -2460,6 +2533,9 @@ states.fln_harass = {
 				gen_action_unit(u)
 			}
 		})
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
 	}
 }
 
@@ -2720,7 +2796,8 @@ function fln_depreciation() {
 function unit_and_area_recovery() {
 	log_h3("Recovery of Neutralized Units")
 	for_each_neutralized_unit_in_algeria(u => {
-		log(`${units[u].name} in ${areas[loc].name}`)
+		let loc = unit_loc(u)
+		log(`>${units[u].name} in ${areas[loc].name}`)
 		let drm = 0
 		if (is_fln_unit(u) && game.fln_psl <= 30) drm -= 1
 		if (is_fln_unit(u) && game.fln_psl >= 70) drm += 1
@@ -3049,7 +3126,7 @@ function roll_1d6(drm) {
 	}
 
 	//	Rolled 1d6+2=6
-	log(`Rolled 1d6${drm_str}=${net_roll}`)
+	log(`>Rolled 1d6${drm_str}=${net_roll}`)
 	return net_roll
 }
 

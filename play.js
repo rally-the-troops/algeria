@@ -367,7 +367,7 @@ function on_init() {
 }
 
 function update_unit(e, u) {
-	e.classList.toggle("disrupted", is_unit_neutralized(u))
+	e.classList.toggle("neutralized", is_unit_neutralized(u))
 	e.classList.toggle("airmobile", is_unit_airmobile(u))
 	e.classList.toggle("fr_xx_dispersed", is_unit_dispersed(u))
 	e.classList.toggle("action", !view.battle && is_unit_action(u))
