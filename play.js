@@ -368,23 +368,45 @@ function update_unit(e, u) {
 	e.classList.toggle("eliminated", unit_loc(u) === ELIMINATED)
 }
 
+Node.prototype.appendChildAnimated = function(e) {
+	const { left: x0, top: y0 } = e.getBoundingClientRect()
+	this.appendChild(e)
+	if (!x0)
+		return
+	const { left: x1, top: y1 } = e.getBoundingClientRect()
+	const dx = x0 - x1
+	const dy = y0 - y1
+	if (!dx && !dy)
+		return
+
+	const transformFrom = `translate3d(${dx}px, ${dy}px, 0)`
+	const transformTo = `translate3d(0, 0, 0)`
+	e.animate([
+		{ transform: transformFrom },
+		{ transform: transformTo },
+	  ], {
+		duration: 1000,
+		easing: 'ease',
+	  })
+}
+
 function update_map() {
 	console.log("VIEW", view)
-	ui.tracker[view.turn % 100].appendChild(ui.markers.turn)
-	ui.tracker[view.fln_ap].appendChild(ui.markers.fln_ap)
-	ui.tracker[view.fln_psl].appendChild(ui.markers.fln_psl)
-	ui.tracker[view.gov_psl].appendChild(ui.markers.gov_psl)
-	ui.tracker[view.air_avail].appendChild(ui.markers.air_avail)
-	ui.tracker[view.air_max].appendChild(ui.markers.air_max)
-	ui.tracker[view.helo_avail].appendChild(ui.markers.helo_avail)
-	ui.tracker[view.helo_max].appendChild(ui.markers.helo_max)
-	ui.tracker[view.naval].appendChild(ui.markers.naval)
+	ui.tracker[view.turn % 100].appendChildAnimated(ui.markers.turn)
+	ui.tracker[view.fln_ap].appendChildAnimated(ui.markers.fln_ap)
+	ui.tracker[view.fln_psl].appendChildAnimated(ui.markers.fln_psl)
+	ui.tracker[view.gov_psl].appendChildAnimated(ui.markers.gov_psl)
+	ui.tracker[view.air_avail].appendChildAnimated(ui.markers.air_avail)
+	ui.tracker[view.air_max].appendChildAnimated(ui.markers.air_max)
+	ui.tracker[view.helo_avail].appendChildAnimated(ui.markers.helo_avail)
+	ui.tracker[view.helo_max].appendChildAnimated(ui.markers.helo_max)
+	ui.tracker[view.naval].appendChildAnimated(ui.markers.naval)
 
 	// Hide avail markers when no Air / Helo at all
 	ui.markers.air_avail.classList.toggle("hide", !view.air_max)
 	ui.markers.helo_avail.classList.toggle("hide", !view.helo_max)
 
-	ui.drm[-view.border_zone_drm].appendChild(ui.markers.border_zone)
+	ui.drm[-view.border_zone_drm].appendChildAnimated(ui.markers.border_zone)
 	ui.markers.border_zone.classList.toggle("hide", view.border_zone_drm === null)
 	ui.markers.border_zone.classList.toggle("neutralized", !view.border_zone_active)
 
@@ -396,21 +418,22 @@ function update_map() {
 		if (loc) {
 			if (loc === DEPLOY) {
 				if (is_gov_unit(u) && !ui.gov_supply.contains(e))
-					ui.gov_supply.appendChild(e)
+					ui.gov_supply.appendChildAnimated(e)
 				if (is_fln_unit(u) && !ui.fln_supply.contains(e))
-					ui.fln_supply.appendChild(e)
+					ui.fln_supply.appendChildAnimated(e)
 
 			} else if (loc === ELIMINATED) {
 				if (!ui.eliminated.contains(e))
-					ui.eliminated.appendChild(e)
+					ui.eliminated.appendChildAnimated(e)
 			} else {
 				let box_id = unit_box(u)
 				if (is_area_country(loc)) {
 					// only single box in France, Morocco and Tunisia
 					box_id = 0
 				}
-				if (!ui.boxes[loc * 4 + box_id].contains(e))
-					ui.boxes[loc * 4 + box_id].appendChild(e)
+				if (!ui.boxes[loc * 4 + box_id].contains(e)) {
+					ui.boxes[loc * 4 + box_id].appendChildAnimated(e)
+				}
 			}
 			update_unit(e, u)
 		} else {
