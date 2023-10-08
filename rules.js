@@ -1841,8 +1841,10 @@ states.gov_deployment = {
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_type = unit_type(first_unit)
+			let first_unit_loc = unit_loc(first_unit)
+			let first_unit_box= unit_box(first_unit)
 
-			if (first_unit_type == FR_XX) {
+			if (first_unit_type == FR_XX && game.selected.length === 1) {
 				if (is_unit_not_neutralized(first_unit)) {
 					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
 				} else {
@@ -1852,8 +1854,11 @@ states.gov_deployment = {
 				gen_action("change_division_mode")
 			}
 
-			// Allow deselect
-			gen_action_unit(first_unit)
+			for_each_friendly_unit_in_loc(first_unit_loc, u => {
+				if (unit_box(u) === first_unit_box && is_mobile_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
 
 			if (is_unit_not_neutralized(first_unit)) {
 				for_each_algerian_map_area(loc => {
@@ -1862,7 +1867,6 @@ states.gov_deployment = {
 			}
 		}
 
-		// XXX confirmation when no units are activated?
 		gen_action("end_deployment")
 	},
 	unit(u) {
