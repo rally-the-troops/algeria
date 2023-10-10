@@ -3532,10 +3532,7 @@ const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
 const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
 
 function roll_mst(drm) {
-	let roll = roll_1d6(drm)
-	if (roll < -1) roll = -1
-	if (roll > 8) roll = 8
-
+	let roll = clamp(roll_1d6(drm), -1, 8)
 	let result = MST[roll + 1]
 	let effect = MST_EFFECT[roll + 1]
 	let effect_str = ''
@@ -3566,13 +3563,16 @@ function combat_result(firepower, die) {
 	return COMBAT_RESULT_TABLE[k][1][die - 1]
 }
 
-
 function roll_crt(firepower) {
 	let roll = roll_1d6(0)
 	let result = combat_result(firepower, roll)
 	log(`>CRT result: ${result}`)
 
 	return result
+}
+
+function clamp(x, min, max) {
+	return Math.min(Math.max(x, min), max)
 }
 
 // Array remove and insert (faster than splice)
