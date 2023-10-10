@@ -206,6 +206,14 @@ function is_action(action, arg) {
 
 let on_init_once = false
 
+function on_focus_unit(evt) {
+	document.getElementById("status").textContent = data.units[evt.target.unit].name
+}
+
+function on_blur(evt) {
+	document.getElementById("status").textContent = ""
+}
+
 function build_units() {
 	function build_unit(u) {
 		let side = is_gov_unit(u) ? "gov" : "fln"
@@ -213,8 +221,8 @@ function build_units() {
 		let klass = data.units[u].class
 		elt.className = `counter unit ${side} u${u} ${klass}`
 		elt.addEventListener("mousedown", on_click_unit)
-		// elt.addEventListener("mouseenter", on_focus_unit)
-		// elt.addEventListener("mouseleave", on_blur)
+		elt.addEventListener("mouseenter", on_focus_unit)
+		elt.addEventListener("mouseleave", on_blur)
 		elt.unit = u
 	}
 	for (let u = 0; u < unit_count; ++u) {
