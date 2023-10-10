@@ -482,6 +482,12 @@ function clear_unit_dispersed(u) {
 	game.units[u] &= ~UNIT_DISPERSED_MASK
 }
 
+function move_unit(u, to) {
+	log(`>Moved ${units[u].name} to ${areas[to].name}`)
+	set_unit_loc(u, to)
+	set_unit_box(u, OC)
+}
+
 function eliminate_unit(u) {
 	let loc = unit_loc(u)
 	log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
@@ -560,9 +566,24 @@ function is_strike_unit(u) {
 	return (type === FRONT) && !is_area_struck(loc) && is_area_urban(loc)
 }
 
+function can_cross_border(u) {
+	if (!game.is_morocco_tunisia_independent)
+		return false
+	let result = false
+	let loc = unit_loc(u)
+	for_each_adjecent_map_area(loc, adj => {
+		if (is_border_crossing(loc, adj))
+			result = true
+	})
+	return result
+}
+
 function is_movable_unit(u) {
-	// TODO check if movable across border
-	return is_mobile_unit(u) && !game.events.jealousy_and_paranoia || game.is_morocco_tunisia_independent
+	if (!is_mobile_unit(u))
+		return false
+	if (!game.events.jealousy_and_paranoia)
+		return true
+	return can_cross_border(u)
 }
 
 function is_raid_unit(u) {
@@ -2485,12 +2506,9 @@ states.fln_move = {
 		}
 		let [_result, effect] = roll_mst(drm)
 		if (effect === '+') {
-			log(`Eliminated ${units[unit].name} in ${areas[loc].name}`)
 			eliminate_unit(unit)
 		} else {
-			log(`>Moved ${units[unit].name} to ${areas[to].name}`)
-			set_unit_loc(unit, to)
-			set_unit_box(unit, OC)
+			move_unit(unit, to)
 		}
 		end_fln_mission()
 	}
@@ -3397,11 +3415,13 @@ function shuffle(list) {
 	}
 }
 
-function add_sign(num) {
-	if (num >= 0) {
+function add_sign(num, zero = '') {
+	if (num > 0) {
 		return `+${num}`
-	} else {
+	} else if (num < 0) {
 		return `${num}`
+	} else {
+		return zero
 	}
 }
 
