@@ -374,7 +374,7 @@ function is_area_urban(l) {
 }
 
 function is_area_rural(l) {
-	return areas[l].type === RURAL
+	return areas[l].type === RURAL && !is_area_resettled(l)
 }
 
 function is_border_crossing(from, to) {
@@ -600,9 +600,37 @@ function is_harass_unit(u) {
 	return (type === BAND || type === FAILEK) && has_enemy_unit_in_loc(loc)
 }
 
+function is_flush_unit(u) {
+	let loc = unit_loc(u)
+	return is_mobile_unit(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
+	// TODO airmobile && division
+}
+
+function is_intelligence_unit(u) {
+	let loc = unit_loc(u)
+	return is_police_unit(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc_boxes(loc, [UG])
+}
+
+function is_civil_affairs_unit(u) {
+	let loc = unit_loc(u)
+	return is_police_unit(u) && is_unit_not_neutralized(u) && !is_area_civil_affaired(loc) && !is_area_remote(loc)
+}
+
+function is_suppression_unit(u) {
+	let loc = unit_loc(u)
+	return is_police_unit(u) && is_unit_not_neutralized(u) && !is_area_suppressed(loc) && has_enemy_unit_in_loc(loc)
+}
+
+function is_population_resettlement_unit(u) {
+	let loc = unit_loc(u)
+	return is_police_unit(u) && is_unit_not_neutralized(u) && is_area_rural(loc)
+}
+
+const DISPERSED_FIREPOWER = 12
+
 function unit_firepower(u) {
 	if (is_unit_dispersed(u)) {
-		return 12
+		return DISPERSED_FIREPOWER
 	} else {
 		return units[u].firepower
 	}
@@ -658,6 +686,12 @@ function for_each_friendly_unit_on_map(fn) {
 function for_each_friendly_unit_on_map_box(box, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) > 2 && unit_box(u) === box)
+			fn(u)
+}
+
+function for_each_friendly_unit_on_map_boxes(boxes, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) > 2 && boxes.includes(unit_box(u)))
 			fn(u)
 }
 
@@ -743,6 +777,13 @@ function has_friendly_unit_in_loc(x) {
 function has_enemy_unit_in_loc(x) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === x)
+			return true
+	return false
+}
+
+function has_enemy_unit_in_loc_boxes(x, boxes) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === x && boxes.includes(unit_box(u)))
 			return true
 	return false
 }
@@ -2879,16 +2920,41 @@ function goto_gov_operations_phase() {
 	game.state = "gov_operations"
 }
 
+const GOV_INTELLIGENCE_COST = 1
+const GOV_CIVIL_AFFAIRS_COST = 1
+const GOV_SUPPRESSION_COST = 1
+const GOV_POPULATION_RESETTLEMENT_COST = 1
+
 states.gov_operations = {
 	inactive: "to do operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission, or Pass."
 
-		gen_action("flush")
-		gen_action("intelligence")
-		gen_action("civil_affairs")
-		gen_action("suppression")
-		gen_action("population_resettlement")
+		// check if any GOV missions can actually be performed
+		view.actions.flush = 0
+		view.actions.intelligence = 0
+		view.actions.civil_affairs = 0
+		view.actions.suppression = 0
+		view.actions.population_resettlement = 0
+
+		for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+			if (is_flush_unit(u)) {
+				view.actions.flush = 1
+			}
+			if (game.gov_psl >= GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
+				view.actions.intelligence = 1
+			}
+			if (game.gov_psl >= GOV_CIVIL_AFFAIRS_COST && is_civil_affairs_unit(u)) {
+				view.actions.civil_affairs = 1
+			}
+			if (game.gov_psl >= GOV_SUPPRESSION_COST && is_suppression_unit(u)) {
+				view.actions.suppression = 1
+			}
+			if (game.gov_psl >= GOV_POPULATION_RESETTLEMENT_COST && is_population_resettlement_unit(u)) {
+				view.actions.population_resettlement = 1
+			}
+		})
+
 		gen_action("pass")
 	},
 	flush() {
