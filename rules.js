@@ -971,6 +971,7 @@ const SCENARIOS = {
 	}
 }
 
+// quick setup from Colonial Twilight Scenario Guide
 const SCENARIO_DEPLOYMENT = {
 	"1954": {
 		fln: {
@@ -980,10 +981,27 @@ const SCENARIO_DEPLOYMENT = {
 			"IV": [CADRE],
 			"V": [FRONT, CADRE, CADRE]
 		},
+		fln_quick: {
+			"I-4": [FRONT, CADRE],
+			"CONSTANTINE": [CADRE],
+			"II-2": [FRONT, CADRE],
+			"III-1": [FRONT, CADRE],
+			"IV-1": [CADRE],
+			"V-2": [FRONT, CADRE],
+			"V-4": [CADRE],
+		},
 		gov: {
 			"II": [FR_X, AL_X, POL],
 			"IV": [FR_X, AL_X, POL],
 			"V": [FR_X, EL_X, AL_X, POL]
+		},
+		gov_quick: {
+			"CONSTANTINE": [POL, FR_X],
+			"II-2": [AL_X],
+			"ALGIERS": [POL, FR_X],
+			"IV-1": [AL_X],
+			"ORAN": [POL, AL_X],
+			"V-3": [EL_X, FR_X],
 		}
 	},
 	"1958": {
@@ -1027,11 +1045,14 @@ const SCENARIO_DEPLOYMENT = {
 }
 
 function setup_units(deployment) {
-	for (const [zone, list] of Object.entries(deployment)) {
+	for (const [target, list] of Object.entries(deployment)) {
 		for (let l of list) {
 			let u = find_free_unit_by_type(l)
-			set_unit_loc(u, DEPLOY)
-			set_unit_box(u, OC)
+			let loc = DEPLOY
+			if (target in locations) {
+				loc = locations[target]
+			}
+			deploy_unit(u, loc)
 		}
 	}
 }
@@ -1066,6 +1087,11 @@ function current_player_deployment() {
 	return is_fln_player() ? deployment.fln : deployment.gov
 }
 
+function current_player_quick_setup() {
+	let deployment = SCENARIO_DEPLOYMENT[game.scenario]
+	return is_fln_player() ? deployment.fln_quick : deployment.gov_quick
+}
+
 function can_all_deploy_to(us, to) {
 	let zone = area_zone(to)
 	let deployment = current_player_deployment()
@@ -1098,7 +1124,9 @@ function deploy_unit(u, to) {
 	set_unit_loc(u, to)
 
 	// deploy unit: all FLN in UG, GOV in OPS/OC, police in PTL
-	if (is_fln_unit(u)) {
+	if (to === DEPLOY) {
+		set_unit_box(u, OC)
+	} else if (is_fln_unit(u)) {
 		set_unit_box(u, UG)
 	} else if (is_police_unit(u)) {
 		set_unit_box(u, PTL)
@@ -1121,6 +1149,10 @@ states.scenario_setup = {
 			for_each_friendly_unit(u => {
 				gen_action_unit(u)
 			})
+
+			if (current_player_quick_setup()) {
+				gen_action("quick_setup")
+			}
 		} else {
 			// subsequent units must be on the same map location (or also on DEPLOY)
 			let first_unit = game.selected[0]
@@ -1155,6 +1187,15 @@ states.scenario_setup = {
 		if (!count) {
 			gen_action('end_deployment')
 		}
+	},
+	quick_setup() {
+		for_each_friendly_unit(u => {
+			free_unit(u)
+		})
+
+		log("Loading quick setup")
+		let deployment = current_player_quick_setup()
+		setup_units(deployment)
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -1640,7 +1681,7 @@ function give_fln_ap() {
 	log_h3("Areas under FLN control:")
 	for_each_algerian_map_area(loc => {
 		let control_ap = 0
-		if(is_area_urban(loc)) {
+		if (is_area_urban(loc)) {
 			// He gets 5 AP for each Urban area he controls, or 2 AP if the area is contested but he has non-neutralized units there.
 			if (is_area_fln_control(loc)) {
 				control_ap += 5

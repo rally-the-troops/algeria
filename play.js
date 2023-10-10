@@ -490,6 +490,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	for (let e of action_register)
 		e.classList.toggle("action", is_action(e.my_action, e.my_id))
 
+	action_button("quick_setup", "Quick Setup")
 	action_button("end_deployment", "End deployment")
 	action_button("roll", "Roll")
 
