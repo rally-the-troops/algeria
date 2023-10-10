@@ -491,6 +491,8 @@ function move_unit(u, to) {
 function eliminate_unit(u) {
 	let loc = unit_loc(u)
 	log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
+	if (is_fln_unit(u))
+		game.distribute_gov_psl += 1
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
 	set_unit_box(u, OC)
@@ -951,6 +953,7 @@ exports.setup = function (seed, scenario, options) {
 		passes: 0,
 		combat: {},
 		distribute: {},
+		distribute_gov_psl: 0,
 
 		// logging
 		summary: null,
@@ -2161,6 +2164,10 @@ function reduce_unit(u, type) {
 	let loc = unit_loc(u)
 	let n = find_free_unit_by_type(type)
 	log(`Reduced ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
+	if (is_fln_unit) {
+		raise_gov_psl(2)
+		lower_fln_psl(1)
+	}
 	set_unit_loc(n, loc)
 	set_unit_box(n, OC)
 	free_unit(u)
@@ -2224,10 +2231,19 @@ states.fln_propaganda = {
 		}
 
 		if (result) {
-			goto_distribute_psp(FLN, result, 'propaganda')
+			goto_distribute_psp(FLN, result, 'propaganda_result')
 		} else {
-			end_fln_mission()
+			continue_fln_propaganda()
 		}
+	}
+}
+
+function continue_fln_propaganda() {
+	// step 2
+	if (game.distribute_gov_psl) {
+		goto_distribute_psp(GOV, game.distribute_gov_psl, 'propaganda_distribute_gov_psl')
+	} else {
+		end_fln_mission()
 	}
 }
 
@@ -2318,11 +2334,17 @@ function end_distribute_psp() {
 	let reason = game.distribute.reason
 	game.distribute = {}
 	switch (reason) {
-	case 'propaganda':
-		goto_fln_operations_phase()
+	case 'propaganda_result':
+		continue_fln_propaganda()
 		break
-	case 'strike':
-		goto_fln_operations_phase()
+	case 'propaganda_distribute_gov_psl':
+		end_fln_mission()
+		break
+	case 'strike_result':
+		continue_fln_strike()
+		break
+	case 'strike_distribute_gov_psl':
+		end_fln_mission()
 		break
 	case 'combat_hits_on_gov':
 		continue_combat_after_hits_on_gov()
@@ -2409,12 +2431,12 @@ states.fln_strike = {
 		if (is_area_terrorized(loc))
 			drm -= 1
 		let [result, effect] = roll_mst(drm)
+		game.distribute_gov_psl = 0
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
 			for (let u of list) {
 				if (unit_type(u) === CADRE) {
-					log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
 					eliminate_unit(u)
 				} else {
 					reduce_unit(u, CADRE)
@@ -2432,13 +2454,21 @@ states.fln_strike = {
 
 		if (result) {
 			let strike_result = roll_nd6(result)
-			goto_distribute_psp(FLN, strike_result, 'strike')
+			goto_distribute_psp(FLN, strike_result, 'strike_result')
 		} else {
-			end_fln_mission()
+			continue_fln_strike()
 		}
-
-		// TODO Government must react with one unit, otherwise -1d6 PSP
 	}
+}
+
+function continue_fln_strike() {
+	// step 2
+	if (game.distribute_gov_psl) {
+		goto_distribute_psp(GOV, game.distribute_gov_psl, 'strike_distribute_gov_psl')
+	} else {
+		end_fln_mission()
+	}
+	// TODO Government must react with one unit, otherwise -1d6 PSP
 }
 
 function goto_fln_move_mission() {
@@ -2724,7 +2754,7 @@ function goto_combat() {
 function continue_combat_after_hits_on_gov() {
 	// Step 3: FLN to distribute losses
 	if (game.combat.hits_on_fln) {
-		game.combat.distribute_gov_psl = 0
+		game.distribute_gov_psl = 0
 		game.combat.distribute_fln_hits = game.combat.hits_on_fln
 		goto_combat_fln_losses()
 	} else {
@@ -2734,8 +2764,8 @@ function continue_combat_after_hits_on_gov() {
 
 function continue_combat_after_fln_losses() {
 	// Step 4: Gov to distribute PSL from losses
-	if (game.combat.distribute_gov_psl) {
-		goto_distribute_psp(GOV, game.combat.distribute_gov_psl, 'combat_distribute_gov_psl')
+	if (game.distribute_gov_psl) {
+		goto_distribute_psp(GOV, game.distribute_gov_psl, 'combat_distribute_gov_psl')
 	} else {
 		end_combat()
 	}
@@ -2797,7 +2827,6 @@ function eliminate_fln_unit(type) {
 		eliminate_unit(u)
 		set_delete(game.combat.fln_units, u)
 		game.combat.distribute_fln_hits -= 1
-		game.combat.distribute_gov_psl += 1
 	})
 	if (!game.combat.distribute_fln_hits || !game.combat.fln_units.length)
 		continue_combat_after_fln_losses()
@@ -2809,8 +2838,6 @@ function reduce_fln_unit(from_type, to_type) {
 		reduce_unit(u, to_type)
 		set_delete(game.combat.fln_units, u)
 		game.combat.distribute_fln_hits -= 1
-		raise_fln_psl(2)
-		lower_fln_psl(1)
 	})
 	if (!game.combat.distribute_fln_hits || !game.combat.fln_units.length)
 		continue_combat_after_fln_losses()
