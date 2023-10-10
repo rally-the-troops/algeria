@@ -2850,7 +2850,6 @@ states.gov_operations = {
 	pass() {
 		log("Government Passes")
 		game.passes += 1
-		console.log("PASSES", game.passes)
 		if (game.passes >= 2) {
 			end_operations_phase()
 		} else {
