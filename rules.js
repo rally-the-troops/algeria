@@ -2223,7 +2223,7 @@ states.fln_propaganda = {
 			}
 		}
 
-		if (result !== 0) {
+		if (result) {
 			goto_distribute_psp(FLN, result, 'propaganda')
 		} else {
 			end_fln_mission()
@@ -2409,7 +2409,6 @@ states.fln_strike = {
 		if (is_area_terrorized(loc))
 			drm -= 1
 		let [result, effect] = roll_mst(drm)
-		let strike_result = roll_nd6(result)
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
@@ -2431,7 +2430,8 @@ states.fln_strike = {
 			})
 		}
 
-		if (result !== 0) {
+		if (result) {
+			let strike_result = roll_nd6(result)
 			goto_distribute_psp(FLN, strike_result, 'strike')
 		} else {
 			end_fln_mission()
