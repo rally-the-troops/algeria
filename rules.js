@@ -3001,7 +3001,6 @@ function goto_gov_flush_mission() {
 states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
-		view.prompt = "Flush: TODO"
 		if (game.selected.length === 0) {
 			view.prompt = "Flush: Select mobile unit(s)"
 			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
@@ -3106,7 +3105,69 @@ function goto_gov_intelligence_mission() {
 states.gov_intelligence = {
 	inactive: "to do Intelligence mission",
 	prompt() {
-		view.prompt = "Intelligence: TODO"
+		if (game.selected.length === 0) {
+			view.prompt = "Intelligence: Select police unit(s)"
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				if (is_intelligence_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Intelligence: Execute mission"
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				if (unit_loc(u) == first_unit_loc && is_intelligence_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		let first_unit = list[0]
+		let loc = unit_loc(first_unit)
+		push_undo()
+
+		log(`>in ${areas[loc].name}`)
+
+		//  The Government player pays 1 PSP, indicates the area, totals the Contact Ratings of the non-neutralized Police units there
+		lower_gov_psl(GOV_INTELLIGENCE_COST)
+		let contact_ratings = 0
+		for (let u of list) {
+			contact_ratings += unit_contact(u)
+		}
+		log(`Combined Gov. contact = ${contact_ratings}`)
+
+		let base_drm = 0
+		if (is_area_remote(loc)) base_drm += 1
+		if (is_area_terrorized(loc)) base_drm += 1
+		if (is_area_urban(loc)) base_drm -= 1
+		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
+		// or mission is in a Remote area, or if a Terror marker is present; -1 if mission is in an Urban area).
+
+		for_each_enemy_unit_in_loc_boxes(loc, [UG], u => {
+			log(`${units[u].name}`)
+			let drm = base_drm
+			if (unit_evasion(u) > contact_ratings) drm += 1
+			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
+			let roll = roll_1d6(drm)
+			if (roll <= contact_ratings) {
+				log(">Contact")
+				set_unit_box(u, OC)
+			} else {
+				log(">No contact")
+			}
+		})
+
+		end_gov_mission()
 	}
 }
 
