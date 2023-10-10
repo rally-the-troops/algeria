@@ -55,6 +55,15 @@ var first_enemy_unit, last_enemy_unit
 
 // #region PLAYER STATE
 
+function player_name(player) {
+	if (player === FLN) {
+		return FLN_NAME
+	} else {
+		return GOV_NAME
+	}
+}
+
+
 function set_next_player() {
 	if (game.phasing === GOV_NAME)
 		game.phasing = FLN_NAME
@@ -62,7 +71,6 @@ function set_next_player() {
 		game.phasing = GOV_NAME
 	set_active_player()
 }
-
 
 function set_active_player() {
 	clear_undo()
@@ -1522,7 +1530,7 @@ states.gov_reinforcement = {
 				gen_action("acquire_helo_point")
 			if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT)
 				gen_action("acquire_naval_point")
-			if (game.gov_psl > COST_BORDER_ZONE) {
+			if (game.gov_psl > COST_BORDER_ZONE && game.is_morocco_tunisia_independent) {
 				// starts at no border zone instead of 0
 				if (game.border_zone_drm === null) {
 					gen_action("mobilize_border_zone")
@@ -2217,13 +2225,13 @@ function goto_distribute_psp(who, psp, reason) {
 		game.phasing = FLN_NAME
 	}
 	set_active_player()
-	log_h2(`${game.active} Distribute ${psp} PSP`)
+	log_h3(`${game.active} Distribute ${psp} PSP`)
 	game.state = "distribute_psp"
 }
 
 function distribute_psl(where, delta) {
 	push_undo()
-	log(`>${where} PSL ${add_sign(delta)}`)
+	log(`>${player_name(where)} PSL ${add_sign(delta)}`)
 
 	if (where === FLN) {
 		game.fln_psl += delta
@@ -2291,6 +2299,15 @@ function end_distribute_psp() {
 	switch (reason) {
 	case 'propaganda':
 		goto_fln_operations_phase()
+		break
+	case 'strike':
+		goto_fln_operations_phase()
+		break
+	case 'combat_hits_on_gov':
+		continue_combat_after_hits_on_gov()
+		break
+	case 'combat_distribute_gov_psl':
+		end_combat()
 		break
 	default:
 		throw Error("Unknown reason: " + reason)
@@ -2668,10 +2685,13 @@ function goto_combat() {
 	for (let u of game.combat.gov_units) {
 		gov_firepower += unit_firepower(u)
 	}
+	let half_str = ''
 	if (game.combat.half_firepower) {
+		// When units fire at half Firepower Rating, round fractions up.
 		gov_firepower = Math.ceil(gov_firepower / 2)
+		half_str = " (half)"
 	}
-	log(`>Gov. firepower ${gov_firepower}`)
+	log(`>Gov. firepower ${gov_firepower}${half_str}`)
 	game.combat.hits_on_fln = roll_crt(gov_firepower)
 	log(`Hits on FLN ${game.combat.hits_on_fln}`)
 
@@ -2697,7 +2717,7 @@ function continue_combat_after_hits_on_gov() {
 function continue_combat_after_fln_losses() {
 	// Step 4: Gov to distribute PSL from losses
 	if (game.combat.distribute_gov_psl) {
-		goto_distribute_psp(FLN, game.combat.distribute_gov_psl, 'combat_distribute_gov_psl')
+		goto_distribute_psp(GOV, game.combat.distribute_gov_psl, 'combat_distribute_gov_psl')
 	} else {
 		end_combat()
 	}
@@ -2705,24 +2725,18 @@ function continue_combat_after_fln_losses() {
 
 function end_combat() {
 	// Step 5: Neutralize remaining units with biggest hits
-	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
-		game.combat.neut_gov_units = 1
-	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln) {
-		game.combat.neut_fln_units = 1
-	}
 
 	// Remaining involved units of the side that received the largest number of 'hits'
 	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
-	// When units fire at half Firepower Rating, round fractions up.
 
-	if (game.combat.neut_gov_units) {
+	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
 		log(`>Gov. units neutralized`)
 		for (let u of game.combat.gov_units) {
 			set_unit_neutralized(u)
 			if (is_mobile_unit(u))
 				set_unit_box(u, OC)
 		}
-	} else if (game.combat.neut_fln_units && game.combat.fln_units.length) {
+	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln && game.combat.fln_units.length) {
 		log(`>FLN units neutralized`)
 		for (let u of game.combat.fln_units) {
 			set_unit_neutralized(u)
@@ -2739,7 +2753,7 @@ function end_combat() {
 function goto_combat_fln_losses() {
 	game.phasing = FLN_NAME
 	set_active_player()
-	log(`Distribute FLN losses`)
+	log_h3(`Distribute FLN losses`)
 	game.state = "fln_combat_fln_losses"
 }
 
@@ -3384,7 +3398,7 @@ function shuffle(list) {
 }
 
 function add_sign(num) {
-	if (num > 0) {
+	if (num >= 0) {
 		return `+${num}`
 	} else {
 		return `${num}`
@@ -3437,16 +3451,15 @@ const COMBAT_RESULT_TABLE = [
 	[  8,    [ 1, 1, 2, 2, 2, 3]],
 	[  15,   [ 1, 2, 3, 3, 4, 5]],
 	[  24,   [ 2, 4, 5, 5, 6, 8]],
-	[  1000, [ 3, 5, 7, 8, 10, 12]],
+	[  9999, [ 3, 5, 7, 8, 10, 12]],
 ]
 
 function combat_result(firepower, die) {
 	let k = 0
 	for (k = 0; k < COMBAT_RESULT_TABLE.length; ++k) {
-		if (firepower < COMBAT_RESULT_TABLE[k][0])
+		if (firepower <= COMBAT_RESULT_TABLE[k][0])
 			break
 	}
-	if (k > 0 && k < COMBAT_RESULT_TABLE.length - 1) k -= 1
 	return COMBAT_RESULT_TABLE[k][1][die - 1]
 }
 
@@ -3454,7 +3467,6 @@ function roll_crt(firepower) {
 	let roll = roll_1d6(0)
 	let result = combat_result(firepower, roll)
 	log(`>CRT result: ${result}`)
-
 	return result
 }
 
