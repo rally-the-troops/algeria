@@ -602,8 +602,8 @@ function is_harass_unit(u) {
 
 function is_flush_unit(u) {
 	let loc = unit_loc(u)
-	return is_mobile_unit(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
 	// TODO airmobile && division
+	return is_mobile_unit(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
 }
 
 function is_intelligence_unit(u) {
@@ -698,6 +698,12 @@ function for_each_friendly_unit_on_map_boxes(boxes, fn) {
 function for_each_enemy_unit_in_loc_box(loc, box, fn) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === loc && unit_box(u) === box)
+			fn(u)
+}
+
+function for_each_enemy_unit_in_loc_boxes(loc, boxes, fn) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === loc && boxes.includes(unit_box(u)))
 			fn(u)
 }
 
@@ -2217,7 +2223,6 @@ function reduce_unit(u, type) {
 states.fln_propaganda = {
 	inactive: "to do Propaganda mission",
 	prompt() {
-
 		if (game.selected.length === 0) {
 			view.prompt = "Propaganda: Select Front or Cadre"
 			for_each_friendly_unit_on_map_box(OPS, u => {
@@ -2303,7 +2308,7 @@ function goto_distribute_psp(who, psp, reason) {
 		game.phasing = FLN_NAME
 	}
 	set_active_player()
-	log_h3(`${game.active} Distribute ${psp} PSP`)
+	log_h3(`${game.active} to Distribute ${psp} PSP`)
 	game.state = "distribute_psp"
 }
 
@@ -2822,8 +2827,6 @@ function end_combat() {
 		log(`>Gov. units neutralized`)
 		for (let u of game.combat.gov_units) {
 			set_unit_neutralized(u)
-			if (is_mobile_unit(u))
-				set_unit_box(u, OC)
 		}
 	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln && game.combat.fln_units.length) {
 		log(`>FLN units neutralized`)
@@ -2831,8 +2834,13 @@ function end_combat() {
 			set_unit_neutralized(u)
 		}
 	}
+	// After taking any combat results, all remaining involved units are placed in the OC box.
 	for (let u of game.combat.fln_units) {
 		set_unit_box(u, OC)
+	}
+	for (let u of game.combat.gov_units) {
+		if (is_mobile_unit(u))
+			set_unit_box(u, OC)
 	}
 
 	game.combat = {}
@@ -2842,7 +2850,7 @@ function end_combat() {
 function goto_combat_fln_losses() {
 	game.phasing = FLN_NAME
 	set_active_player()
-	log_h3(`Distribute FLN losses`)
+	log_h3(`FLN to Distribute losses`)
 	game.state = "fln_combat_fln_losses"
 }
 
@@ -2994,6 +3002,97 @@ states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
 		view.prompt = "Flush: TODO"
+		if (game.selected.length === 0) {
+			view.prompt = "Flush: Select mobile unit(s)"
+			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+				if (is_flush_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Flush: Execute mission"
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+
+			// TODO airmobile
+			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
+				// any combination when division present
+				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+					if (unit_loc(u) === first_unit_loc && is_mobile_unit(u)) {
+						gen_action_unit(u)
+					}
+				})
+			} else if (is_elite_unit(first_unit)) {
+				// all elite
+				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+					if (unit_loc(u) === first_unit_loc && is_elite_unit(u)) {
+						gen_action_unit(u)
+					}
+				})
+			} else {
+				// Allow deselect
+				gen_action_unit(first_unit)
+			}
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		let first_unit = list[0]
+		let loc = unit_loc(first_unit)
+		push_undo()
+
+		log(`>in ${areas[loc].name}`)
+		// Total the Contact Ratings of Government units participating in the mission.
+		let contact_ratings = 0
+		for (let u of list) {
+			contact_ratings += unit_contact(u)
+		}
+		log(`Combined Gov. contact = ${contact_ratings}`)
+
+		let base_drm = 0
+		if (is_area_remote(loc)) base_drm += 1
+		if (is_area_terrorized(loc)) base_drm += 1
+		if (is_area_urban(loc)) base_drm -= 1
+		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
+		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
+
+		let contacted = []
+		for_each_enemy_unit_in_loc_boxes(loc, [OPS, OC], u => {
+			log(`${units[u].name}`)
+			let drm = base_drm
+			if (unit_evasion(u) > contact_ratings) drm += 1
+
+			// The Government player rolls to contact each FLN unit that is currently in the OPS or OC boxes
+			// by rolling equal to or less than this number, moving contacted units to one side.
+			let roll = roll_1d6(drm)
+			if (roll <= contact_ratings) {
+				log(">Contact")
+				set_add(contacted, u)
+			} else {
+				log(">No contact")
+			}
+		})
+
+		if (contacted.length) {
+			// Contacted FLN units then fire on the Combat Results Table, and the Government units return fire.
+			game.combat = {
+				fln_units: contacted,
+				gov_units: list
+			}
+			goto_combat()
+		} else {
+			for (let u of list) {
+				if (is_mobile_unit(u))
+					set_unit_box(u, OC)
+			}
+			end_gov_mission()
+		}
 	}
 }
 
@@ -3051,6 +3150,10 @@ states.gov_population_resettlement = {
 	prompt() {
 		view.prompt = "Population Resettlement: TODO"
 	}
+}
+
+function end_gov_mission() {
+	goto_fln_operations_phase()
 }
 
 function end_operations_phase() {
