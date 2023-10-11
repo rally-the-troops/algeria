@@ -2224,6 +2224,7 @@ function goto_fln_propaganda_mission() {
 
 function reduce_unit(u, type) {
 	let loc = unit_loc(u)
+	let box = unit_box(u)
 	let n = find_free_unit_by_type(type)
 	log(`Reduced ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
 	if (is_fln_unit) {
@@ -2231,8 +2232,9 @@ function reduce_unit(u, type) {
 		lower_fln_psl(1)
 	}
 	set_unit_loc(n, loc)
-	set_unit_box(n, OC)
+	set_unit_box(n, box)
 	free_unit(u)
+	return n
 }
 
 states.fln_propaganda = {
@@ -2309,6 +2311,8 @@ function continue_fln_propaganda() {
 }
 
 function end_fln_mission() {
+	if (check_victory())
+		return
 	// TODO Gov can React
 	goto_fln_operations_phase()
 }
@@ -2858,6 +2862,8 @@ function end_combat() {
 			set_unit_box(u, OC)
 	}
 
+	// TODO allow React on Harass mission
+
 	game.combat = {}
 	goto_fln_operations_phase()
 }
@@ -2899,7 +2905,8 @@ function eliminate_fln_unit(type) {
 function reduce_fln_unit(from_type, to_type) {
 	push_undo()
 	for_first_fln_combat_unit(from_type, u =>{
-		reduce_unit(u, to_type)
+		let n = reduce_unit(u, to_type)
+		set_add(game.combat.fln_units, n)
 		set_delete(game.combat.fln_units, u)
 		game.combat.distribute_fln_hits -= 1
 	})
@@ -3350,11 +3357,53 @@ function goto_gov_population_resettlement_mission() {
 states.gov_population_resettlement = {
 	inactive: "to do Population Resettlement mission",
 	prompt() {
-		view.prompt = "Population Resettlement: TODO"
+		if (game.selected.length === 0) {
+			view.prompt = " Population Resettlement: Select police unit"
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				if (is_population_resettlement_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = " Population Resettlement: Execute mission"
+			let first_unit = game.selected[0]
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+		push_undo()
+
+		log(`>in ${areas[loc].name}`)
+		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST)
+		set_area_remote(loc)
+		set_area_terrorized(loc)
+		log(">Area terrorized & now remote")
+
+		let fln_award = roll_nd6(3)
+		raise_fln_psl(fln_award)
+
+		for_each_enemy_unit_in_loc(loc, u => {
+			if (unit_type(u) === FRONT) {
+				reduce_unit(u, CADRE)
+			}
+		})
+
+		end_gov_mission()
 	}
 }
 
 function end_gov_mission() {
+	if (check_victory())
+		return
 	goto_fln_operations_phase()
 }
 
@@ -3532,7 +3581,7 @@ function unit_and_area_recovery() {
 function unit_redeployment() {
 	log_h3("Redeployment")
 	for_each_non_neutralized_unit_in_algeria(u => {
-		let loc = unit_loc(u)
+		// let loc = unit_loc(u)
 		let box = unit_box(u)
 		if (is_fln_unit(u) && box !== UG) {
 			// log(`>${units[u].name} in ${areas[loc].name} to UG`)
