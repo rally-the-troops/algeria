@@ -818,6 +818,13 @@ function has_fln_not_neutralized_mobile_unit_in_algeria() {
 	return false
 }
 
+function has_non_neutralized_police_in_loc(x) {
+	for (let u = 0; u <= unit_count; ++u)
+		if (unit_loc(u) === x && unit_type(u) === POL && is_unit_not_neutralized(u))
+			return true
+	return false
+}
+
 function has_friendly_unit_in_locs(xs) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		for (let x of xs)
@@ -831,6 +838,14 @@ function has_unit_type_in_loc(t, x) {
 		if (unit_loc(u) === x && unit_type(u) === t)
 			return true
 	return false
+}
+
+function count_unit_type_in_loc(t, x) {
+	let result = 0
+	for (let u = 0; u <= unit_count; ++u)
+		if (unit_loc(u) === x && unit_type(u) === t)
+			result += 1
+	return result
 }
 
 // #endregion
@@ -3218,7 +3233,6 @@ states.gov_civil_affairs = {
 
 		// PSP from successful Civil Affairs missions are subtracted from the FLN PSL (note this is different from the FLN Propaganda mission).
 		lower_fln_psl(result)
-		// The Police units remain in the PTL box regardless of the result.
 
 		// remove Terror marker on a @ or +.
 		if (is_area_terrorized(loc) && (effect === '+' || effect === '@')) {
@@ -3239,7 +3253,90 @@ function goto_gov_suppression_mission() {
 states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
-		view.prompt = "Suppression: TODO"
+		if (game.selected.length === 0) {
+			view.prompt = "Suppression: Select police unit, Elite units may assist"
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				if (is_suppression_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Suppression: Execute mission"
+			let first_unit = game.selected[0]
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+		push_undo()
+
+		let assist = count_unit_type_in_loc(loc, EL_X)
+		if (assist) {
+			log(`>in ${areas[loc].name} (with ${assist} Elite)`)
+		} else {
+			log(`>in ${areas[loc].name}`)
+		}
+
+		lower_gov_psl(GOV_SUPPRESSION_COST)
+		set_area_suppressed(loc)
+
+		// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
+		// Elite units may assist in this mission, each one yielding a +1 DRM.
+		// A DRM of +1 is applied if the "Amnesty" random event is in effect.
+		let drm = assist
+		if (game.events.amnesty) drm += 1
+		let [result, effect] = roll_mst(drm)
+
+		// rolls the die and a number of FLN Bands/Faileks in the area equal to the result on the Mission Success Table are neutralized,
+		// no matter what box they are in (FLN player chooses which exact units are neutralized).
+
+		let targets = []
+		for_each_enemy_unit_in_loc(loc, u => {
+			let type = unit_type(u)
+			if (type === BAND || type === FAILEK) {
+				targets.push(u)
+			}
+		})
+
+		// TODO FLN player chooses which exact units are neutralized)
+		shuffle(targets)
+		for(let u of targets.slice(result)) {
+			log(`>${units[u].name} neutralized`)
+			set_unit_neutralized(u)
+			set_unit_box(u, OC)
+		}
+
+		// On a '@' result, all Cadre and Front units in the area are neutralized as well
+		// and the area is Terrorized (place a Terror marker).
+		// On a '+' result, the mission backfired somehow and the Government player loses 1d6 PSP,
+		// as well as having to place a Terror marker.
+
+		if (effect === '@') {
+			for_each_enemy_unit_in_loc(loc, u => {
+				let type = unit_type(u)
+				if (type === FRONT || type === CADRE) {
+					log(`>${units[u].name} neutralized`)
+					set_unit_neutralized(u)
+					set_unit_box(u, OC)
+				}
+			})
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		} else if (effect === '+') {
+			log(">Mission backfired, area terrorized")
+			let roll = roll_1d6()
+			lower_gov_psl(roll)
+			set_area_terrorized(loc)
+		}
+		end_gov_mission()
 	}
 }
 
@@ -3733,7 +3830,6 @@ function roll_d6() {
 function roll_1d6(drm=0) {
 	let roll = roll_d6()
 	let net_roll = roll + drm
-	// let drm_str = add_sign(drm)
 	//	Rolled 1d6+2=6
 	log(`>Rolled 1d6${add_sign(drm)}=${net_roll}`)
 	return net_roll
@@ -3784,7 +3880,7 @@ function combat_result(firepower, die) {
 }
 
 function roll_crt(firepower) {
-	let roll = roll_1d6(0)
+	let roll = roll_1d6()
 	let result = combat_result(firepower, roll)
 	log(`>CRT result: ${result}`)
 	return result
