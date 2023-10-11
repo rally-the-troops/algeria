@@ -129,6 +129,10 @@ function is_area_country(l) {
 	return data.areas[l].type === COUNTRY
 }
 
+function is_area_oas_active(l) {
+	return view.oas === l
+}
+
 // === UNIT STATE ===
 
 // location (8 bits), op box (2 bits), dispersed (1 bit), airmobile (1 bit), neutralized (1 bit)
@@ -304,7 +308,7 @@ function create_area_markers(i, area_id) {
 
 	ui.area_markers[i] = {}
 
-	for (let marker of ['remote', 'fln_control', 'gov_control', 'terror']) {
+	for (let marker of ['remote', 'fln_control', 'gov_control', 'terror', 'oas_active']) {
 		let em = ui.area_markers[i][marker] = document.createElement("div")
 		em.id = `area-marker-${i}-${marker}`
 		em.className = `counter ${marker} s`
@@ -323,6 +327,7 @@ function create_box(i, area_id, box_id) {
 	e.style.width = 94 / SCALE + "px"
 	e.style.height = 94 / SCALE + "px"
 	document.getElementById("boxes").appendChild(e)
+	return e
 }
 
 function on_init() {
@@ -368,7 +373,16 @@ function on_init() {
 					create_box(i, area_id, box_id)
 				}
 			} else {
-				create_box(i, area_id, 0)
+				let e = create_box(i, area_id, 0)
+
+				if (area_id === "FRANCE") {
+					ui.area_markers[i] = {}
+					let marker = 'oas_active'
+					let em = ui.area_markers[i][marker] = document.createElement("div")
+					em.id = `area-marker-${i}-${marker}`
+					em.className = `counter ${marker}`
+					e.appendChild(em)
+				}
 			}
 		}
 	}
@@ -480,10 +494,13 @@ function update_map() {
 
 			let em = ui.area_markers[i]
 			if (em) {
-				em.fln_control.classList.toggle("hide", !is_area_fln_control(loc))
-				em.gov_control.classList.toggle("hide", !is_area_gov_control(loc))
-				em.remote.classList.toggle("hide", !is_area_remote(loc))
-				em.terror.classList.toggle("hide", !is_area_terrorized(loc))
+				if (!is_area_country(loc)) {
+					em.fln_control.classList.toggle("hide", !is_area_fln_control(loc))
+					em.gov_control.classList.toggle("hide", !is_area_gov_control(loc))
+					em.remote.classList.toggle("hide", !is_area_remote(loc))
+					em.terror.classList.toggle("hide", !is_area_terrorized(loc))
+				}
+				em.oas_active.classList.toggle("hide", !is_area_oas_active(loc))
 			}
 		}
 	}

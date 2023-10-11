@@ -511,8 +511,12 @@ function free_unit(u) {
 }
 
 function activate_oas() {
-	log("Gov. PSL<=30: OAS Active")
-	game.oas = 1
+	log("Gov. PSL<=30: OAS Activated")
+	game.oas = DEPLOY
+	game.oas_control = -1
+}
+
+function roll_oas_control() {
 	let roll = roll_1d6()
 	if (roll <= 3) {
 		game.oas_control = FLN
@@ -923,6 +927,7 @@ exports.view = function(state, player) {
 		helo_avail: game.helo_avail,
 		helo_max: game.helo_max,
 		naval: game.naval,
+		oas: game.oas,
 
 		is_morocco_tunisia_independent: game.is_morocco_tunisia_independent,
 		border_zone_active: game.border_zone_active,
@@ -1532,7 +1537,8 @@ function end_random_event() {
 
 	// See who controls OAS
 	if (game.oas) {
-		activate_oas()
+		log("OAS Active")
+		roll_oas_control()
 	}
 	goto_gov_reinforcement_phase()
 }
@@ -1541,12 +1547,12 @@ function goto_gov_reinforcement_phase() {
 	game.phasing = GOV_NAME
 	set_active_player()
 	log_h2(`${game.active} Reinforcement`)
-	game.state = "gov_reinforcement"
 	game.selected = []
 
 	if (!game.oas && game.gov_psl <= 30) {
 		activate_oas()
-	} else if (game.oas && game.gov.psl >= 70) {
+		roll_oas_control()
+	} else if (game.oas && game.gov_psl >= 70) {
 		remove_oas()
 	}
 
@@ -1561,7 +1567,38 @@ function goto_gov_reinforcement_phase() {
 		set_unit_box(u, OPS)
 	})
 
-	// TODO In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
+	//  In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
+	if (game.oas && game.oas_control === GOV) {
+		game.state = "place_oas"
+	} else {
+		game.state = "gov_reinforcement"
+	}
+}
+
+states.place_oas = {
+	inactive: "to place OAS",
+	prompt() {
+		view.prompt = "Reinforcement: Place OAS in Urban area or France"
+
+		for_each_map_area(loc => {
+			if (is_area_urban(loc))
+				gen_action_loc(loc)
+		})
+		gen_action_loc(FRANCE)
+	},
+	loc(to) {
+		push_undo()
+		game.oas = to
+		log(`OAS placed in ${areas[to].name}`)
+
+		// TODO OAS automatic missions
+
+		if (is_gov_player()) {
+			game.state = "gov_reinforcement"
+		} else {
+			game.state = "fln_reinforcement"
+		}
+	}
 }
 
 const COST_AIR_POINT = 2
@@ -1856,7 +1893,6 @@ function goto_fln_reinforcement_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
 	log_h2(`${game.active} Reinforcement`)
-	game.state = "fln_reinforcement"
 	game.selected = []
 
 	// Make sure all available units can be build / converted
@@ -1870,7 +1906,12 @@ function goto_fln_reinforcement_phase() {
 	give_fln_ap()
 	log_br()
 
-	// TODO In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
+	// In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
+	if (game.oas && game.oas_control === FLN) {
+		game.state = "place_oas"
+	} else {
+		game.state = "fln_reinforcement"
+	}
 }
 
 const BUILD_COST = 3
@@ -3736,12 +3777,15 @@ function final_psl_adjustment() {
 		}
 	}
 
-	if (is_area_algerian(game.oas)) {
-		log("OAS deployed in Algeria")
-		lower_gov_psl(1)
-	} else if (is_area_france(game.oas)) {
-		log("OAS deployed in France")
-		lower_gov_psl(2)
+	if (game.oas) {
+		log_br()
+		if (is_area_algerian(game.oas)) {
+			log("OAS deployed in Algeria")
+			lower_gov_psl(1)
+		} else if (is_area_france(game.oas)) {
+			log("OAS deployed in France")
+			lower_gov_psl(2)
+		}
 	}
 
 	// for each area currently Terrorized or ever Resettled
