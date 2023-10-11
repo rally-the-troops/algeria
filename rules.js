@@ -1150,10 +1150,11 @@ function setup_scenario(scenario_name) {
 
 	let scenario = SCENARIOS[scenario_name]
 	Object.assign(game, scenario)
-	game.fln_ap = roll_nd6(2)
 
-	log(`FLN PSL=${game.fln_psl} AP=${game.fln_ap}`)
-	log(`Government PSL=${game.gov_psl}`)
+	log(`FLN PSL=${game.fln_psl}`)
+	game.fln_ap = roll_nd6(2)
+	log(`FLN AP=${game.fln_ap}`)
+	log(`Gov. PSL=${game.gov_psl}`)
 
 	let deployment = SCENARIO_DEPLOYMENT[scenario_name]
 	setup_units(deployment.fln)
@@ -1445,11 +1446,9 @@ function goto_morocco_tunisia_independence() {
 
 	// Raise both FLN and Government PSL by 2d6;
 	let fln_roll = roll_nd6(2)
-	log(`Raised FLN PSL by ${fln_roll}`)
 	raise_fln_psl(fln_roll)
 
 	let gov_roll = roll_d6(2)
-	log(`Raised Government PSL by ${gov_roll}`)
 	raise_fln_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
@@ -1493,7 +1492,6 @@ function goto_amnesty() {
 function goto_jean_paul_sartre() {
 	log_h3("Jean-Paul Sartre writes article condemning the war.")
 	// Reduce Government PSL by 1 PSP.
-	log(`Reduced Government PSL by 1`)
 	lower_gov_psl(1)
 	end_random_event()
 }
@@ -1787,7 +1785,7 @@ function give_fln_ap() {
 		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
 		if (is_area_terrorized(loc)) control_ap -= 1
 		if (control_ap > 0) {
-			log(`>${areas[loc].name}`)
+			log(`${areas[loc].name}`)
 			raise_fln_ap(control_ap)
 		}
 	})
@@ -3451,7 +3449,7 @@ function determine_control() {
 			set_area_fln_control(loc)
 			return
 		} else if (gov_pts[loc] >= 2 * fln_pts[loc]) {
-			log(`>Government Control`)
+			log(`>Gov. Control`)
 			set_area_gov_control(loc)
 			return
 		}
@@ -3470,7 +3468,7 @@ function determine_control() {
 			log(`>FLN Control`)
 			set_area_fln_control(loc)
 		} else if (gov_claim && !fln_claim) {
-			log(`>Government Control`)
+			log(`>Gov. Control`)
 			set_area_gov_control(loc)
 		} else {
 			log(`>Contested`)
@@ -3605,7 +3603,7 @@ function unit_redeployment() {
 }
 
 function coup_attempt() {
-	log_h3("> Coup attempt")
+	log_h3("Coup attempt")
 	let coup = roll_nd6(2)
 
 	if (coup === 2) {
@@ -3712,7 +3710,7 @@ function final_psl_adjustment() {
 			gov_control += 1
 		}
 	})
-	log(`Area control FLN=${fln_control} Government=${gov_control}`)
+	log(`Area control FLN=${fln_control} Gov.=${gov_control}`)
 	let control_adjust = Math.floor(Math.abs(fln_control - gov_control) / 2)
 	if (control_adjust > 0) {
 		if (fln_control > gov_control) {

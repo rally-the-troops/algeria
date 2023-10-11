@@ -583,6 +583,13 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 	else if (text.match(/^\.h2/)) {
 		text = text.substring(4)
 		p.className = 'h2'
+		if (text.match(/^FLN /)) {
+			p.classList.add("fln")
+		} else if (text.match(/^Government /)) {
+			p.classList.add("gov")
+		} else {
+			p.classList.add("both")
+		}
 	}
 	else if (text.match(/^\.h3/)) {
 		text = text.substring(4)
