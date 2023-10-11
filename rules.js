@@ -80,30 +80,6 @@ function set_active_player() {
 	}
 }
 
-function set_passive_player() {
-	clear_undo()
-	let nonphasing = (game.phasing === GOV_NAME ? FLN_NAME : GOV_NAME)
-	if (game.active !== nonphasing) {
-		game.active = nonphasing
-		update_aliases()
-	}
-}
-
-function set_enemy_player() {
-	if (is_active_player())
-		set_passive_player()
-	else
-		set_active_player()
-}
-
-function is_active_player() {
-	return game.active === game.phasing
-}
-
-function is_passive_player() {
-	return game.active !== game.phasing
-}
-
 function is_gov_player() {
 	return game.active === GOV_NAME
 }
@@ -844,21 +820,6 @@ function has_fln_not_neutralized_mobile_unit_in_algeria() {
 	return false
 }
 
-function has_non_neutralized_police_in_loc(x) {
-	for (let u = 0; u <= unit_count; ++u)
-		if (unit_loc(u) === x && unit_type(u) === POL && is_unit_not_neutralized(u))
-			return true
-	return false
-}
-
-function has_friendly_unit_in_locs(xs) {
-	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
-		for (let x of xs)
-			if (unit_loc(u) === x)
-				return true
-	return false
-}
-
 function has_unit_type_in_loc(t, x) {
 	for (let u = 0; u <= unit_count; ++u)
 		if (unit_loc(u) === x && unit_type(u) === t)
@@ -1303,11 +1264,10 @@ states.scenario_setup = {
 			}
 		}
 
-		if (!count) {
-			gen_action('end_deployment')
-		}
+		view.actions.end_deployment = !count
 	},
 	quick_setup() {
+		push_undo()
 		for_each_friendly_unit(u => {
 			free_unit(u)
 		})
@@ -1410,11 +1370,6 @@ states.random_event = {
 			throw Error("Invalid random value, out of range (11-66)")
 		}
 	}
-}
-
-function goto_restart() {
-	// XXX debug only
-	exports.setup(game.seed, game.scenario)
 }
 
 function goto_no_event() {
