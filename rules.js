@@ -369,6 +369,10 @@ function is_area_france(l) {
 	return l === FRANCE
 }
 
+function is_area_morocco_or_tunisia(l) {
+	return l === MOROCCO || l === TUNISIA
+}
+
 function is_area_urban(l) {
 	return areas[l].type === URBAN
 }
@@ -504,6 +508,24 @@ function is_unit_eliminated(u) {
 
 function free_unit(u) {
 	game.units[u] = 0
+}
+
+function activate_oas() {
+	log("Gov. PSL<=30: OAS Active")
+	game.oas = 1
+	let roll = roll_1d6()
+	if (roll <= 3) {
+		game.oas_control = FLN
+	} else {
+		game.oas_control = GOV
+	}
+	log(`>Controlled by ${player_name(game.oas_control)}`)
+}
+
+function remove_oas() {
+	log("Gov. PSL>=70: OAS Removed")
+	game.oas = 0
+	game.oas_control = -1
 }
 
 // #endregion
@@ -1002,6 +1024,8 @@ exports.setup = function (seed, scenario, options) {
 		helo_avail: 0,
 		helo_max: 0,
 		naval: 0,
+		oas: 0,
+		oas_control: -1,
 
 		is_morocco_tunisia_independent: false,
 		border_zone_active: false,
@@ -1159,6 +1183,7 @@ function setup_scenario(scenario_name) {
 	let deployment = SCENARIO_DEPLOYMENT[scenario_name]
 	setup_units(deployment.fln)
 	setup_units(deployment.gov)
+	ensure_front_in_independent_morocco_tunisia()
 
 	game.phasing = GOV_NAME
 }
@@ -1404,15 +1429,17 @@ function goto_fln_foreign_arms_shipment() {
 
 function goto_jealousy_and_paranoia() {
 	log_h3("Jealousy and Paranoia.")
+	log("FLN units may not Move domestically this turn only")
 	// FLN units may not Move across wilaya borders this turn only (they may move across international borders)
 	game.events.jealousy_and_paranoia = true
 	end_random_event()
 }
 
 function goto_elections_in_france() {
-	log_h3("Elections in France. TODO")
+	log_h3("Elections in France")
 	// Government player rolls on the Coup Table (no DRM) and adds or subtracts
 	// the number of PSP indicated: no units are mobilized or removed.
+	roll_coup_table()
 	end_random_event()
 }
 
@@ -1430,15 +1457,17 @@ function goto_fln_factional_purge() {
 }
 
 function goto_morocco_tunisia_independence() {
-	log_h3("Morocco & Tunisia Gains Independence. TODO")
+	log_h3("Morocco & Tunisia Gains Independence.")
 	log_br()
 
 	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
 		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
 		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
 		// (represents infiltration of small numbers of weapons and troops through the borders).
-
-		// TODO
+		log("Infiltration through borders.")
+		let [result, _effect] = roll_mst()
+		if (result)
+			raise_fln_ap(result)
 
 		end_random_event()
 		return
@@ -1449,11 +1478,12 @@ function goto_morocco_tunisia_independence() {
 	raise_fln_psl(fln_roll)
 
 	let gov_roll = roll_d6(2)
-	raise_fln_psl(gov_roll)
+	raise_gov_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
 	// and Government may begin to mobilize the Border Zone. See 11.22.
 	game.is_morocco_tunisia_independent = true
+	ensure_front_in_independent_morocco_tunisia()
 	end_random_event()
 }
 
@@ -1482,9 +1512,9 @@ function goto_suez_crisis() {
 }
 
 function goto_amnesty() {
-	log_h3("Amnesty. TODO")
-	// The French government offers "the peace of the brave" to FLN rebels.
-	// TODO All Government Civil Affairs or Suppression missions get a +1 DRM this turn.
+	log_h3("Amnesty")
+	log('The French government offers "the peace of the brave" to FLN rebels.')
+	log("All Government Civil Affairs or Suppression missions get a +1 DRM this turn.")
 	game.events.amnesty = true
 	end_random_event()
 }
@@ -1500,7 +1530,10 @@ function end_random_event() {
 	if (check_victory())
 		return
 
-	// TODO see who controls OAS
+	// See who controls OAS
+	if (game.oas) {
+		activate_oas()
+	}
 	goto_gov_reinforcement_phase()
 }
 
@@ -1510,6 +1543,12 @@ function goto_gov_reinforcement_phase() {
 	log_h2(`${game.active} Reinforcement`)
 	game.state = "gov_reinforcement"
 	game.selected = []
+
+	if (!game.oas && game.gov_psl <= 30) {
+		activate_oas()
+	} else if (game.oas && game.gov.psl >= 70) {
+		remove_oas()
+	}
 
 	// Make sure all available units can be deployed
 	for_each_friendly_unit_in_loc(FREE, u => {
@@ -1521,6 +1560,8 @@ function goto_gov_reinforcement_phase() {
 	for_each_friendly_unit_on_map_of_type(AL_X, u => {
 		set_unit_box(u, OPS)
 	})
+
+	// TODO In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
 }
 
 const COST_AIR_POINT = 2
@@ -1602,7 +1643,6 @@ states.gov_reinforcement = {
 				gen_action("select_all_inactive")
 
 			// activate border
-			// TODO consider making marker selectable
 			if (game.border_zone_drm && !game.border_zone_active && game.gov_psl > COST_ACTIVATE_BORDER_ZONE) {
 				gen_action("activate_border_zone")
 			}
@@ -1798,6 +1838,20 @@ function give_fln_ap() {
 	raise_fln_ap(psl_ap)
 }
 
+function ensure_front_in_independent_morocco_tunisia() {
+	// If Morocco & Tunisia are independent, make sure we have a Front there
+	if (game.is_morocco_tunisia_independent) {
+		if (!has_unit_type_in_loc(FRONT, MOROCCO)) {
+			let u = find_free_unit_by_type(FRONT)
+			deploy_unit(u, MOROCCO)
+		}
+		if (!has_unit_type_in_loc(FRONT, TUNISIA)) {
+			let u = find_free_unit_by_type(FRONT)
+			deploy_unit(u, TUNISIA)
+		}
+	}
+}
+
 function goto_fln_reinforcement_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
@@ -1810,10 +1864,13 @@ function goto_fln_reinforcement_phase() {
 		free_unit(u)
 	})
 
-	// TODO If Morocco & Tunisia are independent, make sure we have a Front there
+	// If Morocco & Tunisia are independent, make sure we have a Front there
+	ensure_front_in_independent_morocco_tunisia()
 
 	give_fln_ap()
 	log_br()
+
+	// TODO In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
 }
 
 const BUILD_COST = 3
@@ -2061,8 +2118,8 @@ states.fln_deployment = {
 		view.prompt = "Deploy units to OPS in same area"
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map(u => {
-				// TODO handle units in Morocco and Tunisia
-				if (unit_box(u) === OPS || unit_box(u) === UG)
+				let loc = unit_loc(u)
+				if ((unit_box(u) === OPS || unit_box(u) === UG) && !is_area_morocco_or_tunisia(loc))
 					gen_action_unit(u)
 			})
 		} else {
@@ -2133,6 +2190,12 @@ states.fln_deployment = {
 }
 
 function end_deployment() {
+	// automatically deploy mobile units in Morocco & Tunisia
+	for_each_friendly_unit_in_locs([MOROCCO, TUNISIA], u => {
+		if (is_mobile_unit(u))
+			set_unit_box(u, OPS)
+	})
+
 	goto_operations_phase()
 }
 
@@ -2177,6 +2240,10 @@ states.fln_operations = {
 				view.actions.raid = 1
 			if (is_harass_unit(u))
 				view.actions.harass = 1
+		})
+		for_each_friendly_unit_in_locs([MOROCCO, TUNISIA], u => {
+			if (is_mobile_unit(u) && unit_box(u) === OPS)
+				view.actions.move = 1
 		})
 
 		gen_action("gov_mission")
@@ -2556,6 +2623,10 @@ states.fln_move = {
 				if (is_movable_unit(u)) {
 					gen_action_unit(u)
 				}
+			})
+			for_each_friendly_unit_in_locs([MOROCCO, TUNISIA], u => {
+				if (is_mobile_unit(u) && unit_box(u) === OPS)
+					gen_action_unit(u)
 			})
 		} else {
 			view.prompt = "Move: Select area to move to"
@@ -3602,48 +3673,59 @@ function unit_redeployment() {
 	// log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
 }
 
-function coup_attempt() {
-	log_h3("Coup attempt")
-	let coup = roll_nd6(2)
+function roll_coup_table(drm=0) {
+	let coup = roll_nd6(2, drm)
+	let delta_psp = 0
 
 	if (coup === 2) {
-		log("Wild success: +3d6 PSP, mobilize 2d6 PSP of units for free")
+		log("Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free")
 		// TODO mobilize
-		let delta_psp = roll_nd6(3)
+		delta_psp = roll_nd6(3, drm)
 		raise_gov_psl(delta_psp)
 	} else if (coup <= 4) {
-		log("Big success: +2d6 PSP, mobilize 1d6 PSP of units for free")
+		log("Big success") //: +2d6 PSP, mobilize 1d6 PSP of units for free")
 		// TODO mobilize
-		let delta_psp = roll_nd6(2)
+		delta_psp = roll_nd6(2, drm)
 		raise_gov_psl(delta_psp)
 	} else if (coup <= 6) {
-		log("Success: +1d6 PSP")
-		let delta_psp = roll_d6()
+		log("Success") //: +1d6 PSP")
+		delta_psp = roll_d6(drm)
 		raise_gov_psl(delta_psp)
 	} else if (coup === 7) {
-		log("Fizzle: -1d6 PSP")
-		let delta_psp = roll_d6()
+		log("Fizzle") //: -1d6 PSP")
+		delta_psp = roll_d6(drm)
 		lower_gov_psl(delta_psp)
 	} else if (coup <= 9) {
-		log("Failure: -2d6 PSP, remove 1 elite unit from the game")
+		log("Failure") //: -2d6 PSP, remove 1 elite unit from the game")
 		// TODO remove elite
-		let delta_psp = roll_nd6(2)
+		delta_psp = roll_nd6(2, drm)
 		lower_gov_psl(delta_psp)
 	} else {
-		log("Abject failure: -3d6 PSP, remove 1d6 elite units from the game")
+		log("Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game")
 		// TODO remove elite
-		let delta_psp = roll_nd6(3)
+		delta_psp = roll_nd6(3, drm)
 		lower_gov_psl(delta_psp)
 	}
+}
+
+function coup_attempt() {
+	log_h3("Coup attempt")
+	let drm = 0
+	// DRM +1 = if OAS is deployed in France)
+	if (is_area_france(game.oas)) drm += 1
+	roll_coup_table(drm)
+
+	// TODO mobilize / remove units
 }
 
 function final_psl_adjustment() {
 	log_h3("Final PSL Adjustment")
 
-	if (game.gov_psl < 30) {
+	if (game.gov_psl <= 30) {
 		log_br()
-		log("Gov. PSL<30: Checking for Coup d'etat")
-		let drm = 0 // TODO +1 if OAS is deployed in France
+		log("Gov. PSL<=30: Checking for Coup d'etat")
+		let drm = 0 // +1 if OAS is deployed in France
+		if (is_area_france(game.oas)) drm += 1
 		let roll = roll_1d6(drm)
 		if (roll === 6) {
 			coup_attempt()
@@ -3654,10 +3736,15 @@ function final_psl_adjustment() {
 		}
 	}
 
-	// TODO OAS deployed in Algeria: -1
-	// TODO OAS deployed in France: -2
+	if (is_area_algerian(game.oas)) {
+		log("OAS deployed in Algeria")
+		lower_gov_psl(1)
+	} else if (is_area_france(game.oas)) {
+		log("OAS deployed in France")
+		lower_gov_psl(2)
+	}
 
-	// TODO for each area currently Terrorized or ever Resettled
+	// for each area currently Terrorized or ever Resettled
 	let gov_area_adjust = 0
 	for_each_algerian_map_area(loc => {
 		if (is_area_terrorized(loc) || is_area_resettled(loc)) {
@@ -3883,20 +3970,20 @@ function roll_1d6(drm=0) {
 	return net_roll
 }
 
-function roll_nd6(n) {
+function roll_nd6(n, drm=0) {
 	clear_undo()
-	let result = 0
+	let result = drm
 	for (let i = 0; i < n; ++i) {
 		result += roll_d6()
 	}
-	log(`>Rolled ${n}d6=${result}`)
+	log(`>Rolled ${n}d6${add_sign(drm)}=${result}`)
 	return result
 }
 
 const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
 const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
 
-function roll_mst(drm) {
+function roll_mst(drm=0) {
 	let roll = clamp(roll_1d6(drm), -1, 8)
 	let result = MST[roll + 1]
 	let effect = MST_EFFECT[roll + 1]
