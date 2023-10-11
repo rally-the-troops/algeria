@@ -361,7 +361,6 @@ function on_init() {
 
 			if (type !== COUNTRY) {
 				// Area markers
-				// TODO better placement
 				create_area_markers(i, area_id)
 
 				// Unit Boxes
