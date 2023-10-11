@@ -559,13 +559,13 @@ function unit_type(u) {
 function is_propaganda_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === FRONT || type === CADRE) && !is_area_propagandized(loc) && !is_area_remote(loc)
+	return (type === FRONT || type === CADRE) && is_unit_not_neutralized(u) && !is_area_propagandized(loc) && !is_area_remote(loc)
 }
 
 function is_strike_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === FRONT) && !is_area_struck(loc) && is_area_urban(loc)
+	return (type === FRONT) && is_unit_not_neutralized(u) && !is_area_struck(loc) && is_area_urban(loc)
 }
 
 function can_cross_border(u) {
@@ -581,7 +581,7 @@ function can_cross_border(u) {
 }
 
 function is_movable_unit(u) {
-	if (!is_mobile_unit(u))
+	if (!is_mobile_unit(u) || is_unit_neutralized(u))
 		return false
 	if (!game.events.jealousy_and_paranoia)
 		return true
@@ -591,19 +591,19 @@ function is_movable_unit(u) {
 function is_raid_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === BAND || type === FAILEK) && !is_area_raided(loc) && !is_area_remote(loc)
+	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && !is_area_raided(loc) && !is_area_remote(loc)
 }
 
 function is_harass_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === BAND || type === FAILEK) && has_enemy_unit_in_loc(loc)
+	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc(loc)
 }
 
 function is_flush_unit(u) {
 	let loc = unit_loc(u)
 	// TODO airmobile && division
-	return is_mobile_unit(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
+	return is_mobile_unit(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
 }
 
 function is_intelligence_unit(u) {
@@ -3181,7 +3181,51 @@ function goto_gov_civil_affairs_mission() {
 states.gov_civil_affairs = {
 	inactive: "to do Civil Affairs mission",
 	prompt() {
-		view.prompt = "Civil Affairs: TODO"
+		if (game.selected.length === 0) {
+			view.prompt = "Civil Affairs: Select police unit"
+			for_each_friendly_unit_on_map_of_type(POL, u => {
+				if (is_civil_affairs_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+		} else {
+			view.prompt = "Civil Affairs: Execute mission"
+			let first_unit = game.selected[0]
+
+			// Allow deselect
+			gen_action_unit(first_unit)
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	roll() {
+		let unit = pop_selected()
+		let loc = unit_loc(unit)
+		push_undo()
+
+		log(`>in ${areas[loc].name}`)
+		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST)
+		set_area_civil_affaired(loc)
+
+		// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
+		// A DRM of +1 is applied if the "Amnesty" random event is in effect.
+		let drm = 0
+		if (game.events.amnesty) drm += 1
+		let [result, effect] = roll_mst(drm)
+
+		// PSP from successful Civil Affairs missions are subtracted from the FLN PSL (note this is different from the FLN Propaganda mission).
+		lower_fln_psl(result)
+		// The Police units remain in the PTL box regardless of the result.
+
+		// remove Terror marker on a @ or +.
+		if (is_area_terrorized(loc) && (effect === '+' || effect === '@')) {
+			log(">Terror marker removed")
+			clear_area_terrorized(loc)
+		}
+		end_gov_mission()
 	}
 }
 
@@ -3394,19 +3438,18 @@ function unit_redeployment() {
 		let loc = unit_loc(u)
 		let box = unit_box(u)
 		if (is_fln_unit(u) && box !== UG) {
-			log(`>${units[u].name} in ${areas[loc].name} to UG`)
+			// log(`>${units[u].name} in ${areas[loc].name} to UG`)
 			set_unit_box(u, UG)
 		} else if (is_gov_unit(u) && is_mobile_unit(u)) {
 			if (box !== OC) {
-				log(`>${units[u].name} in ${areas[loc].name} to OC`)
+				// log(`>${units[u].name} in ${areas[loc].name} to OC`)
 				set_unit_box(u, OC)
 			}
 			if (is_unit_airmobile(u)) {
-				log(`>flipped airmobile back`)
+				// log(`>flipped airmobile back`)
 				clear_unit_airmobile(u)
 			}
 		}
-		// TODO check that Police works okay
 	})
 
 	game.air_avail = game.air_max
@@ -3512,7 +3555,7 @@ function final_psl_adjustment() {
 
 	// Side that Controls more areas gets PSP equal to HALF the difference between them (round fractions down)
 	log_br()
-	log("Side that Controls more areas gets PSP equal to HALF the difference")
+	// log("Side that Controls more areas gets PSP equal to HALF the difference")
 	let fln_control = 0
 	let gov_control = 0
 	for_each_algerian_map_area(loc => {
@@ -3522,7 +3565,7 @@ function final_psl_adjustment() {
 			gov_control += 1
 		}
 	})
-	log(`FLN=${fln_control} Government=${gov_control}`)
+	log(`Area control FLN=${fln_control} Government=${gov_control}`)
 	let control_adjust = Math.floor(Math.abs(fln_control - gov_control) / 2)
 	if (control_adjust > 0) {
 		if (fln_control > gov_control) {
