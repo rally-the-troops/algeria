@@ -2201,6 +2201,7 @@ states.fln_operations = {
 	},
 	gov_mission() {
 		game.passes = 0
+		log("Lets Government do a Mission")
 		goto_gov_operations_phase()
 	},
 	pass() {
@@ -3600,7 +3601,7 @@ function unit_redeployment() {
 
 	game.air_avail = game.air_max
 	game.helo_avail = game.helo_max
-	log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
+	// log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
 }
 
 function coup_attempt() {
