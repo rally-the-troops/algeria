@@ -840,10 +840,10 @@ function has_unit_type_in_loc(t, x) {
 	return false
 }
 
-function count_unit_type_in_loc(t, x) {
+function count_not_neutralized_unit_type_in_loc(t, x) {
 	let result = 0
 	for (let u = 0; u <= unit_count; ++u)
-		if (unit_loc(u) === x && unit_type(u) === t)
+		if (unit_loc(u) === x && unit_type(u) === t && is_unit_not_neutralized(u))
 			result += 1
 	return result
 }
@@ -3278,7 +3278,7 @@ states.gov_suppression = {
 		let loc = unit_loc(unit)
 		push_undo()
 
-		let assist = count_unit_type_in_loc(loc, EL_X)
+		let assist = count_not_neutralized_unit_type_in_loc(EL_X, loc)
 		if (assist) {
 			log(`>in ${areas[loc].name} (with ${assist} Elite)`)
 		} else {
@@ -3308,7 +3308,7 @@ states.gov_suppression = {
 
 		// TODO FLN player chooses which exact units are neutralized)
 		shuffle(targets)
-		for(let u of targets.slice(result)) {
+		for(let u of targets.slice(0, result)) {
 			log(`>${units[u].name} neutralized`)
 			set_unit_neutralized(u)
 			set_unit_box(u, OC)
