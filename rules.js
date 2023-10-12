@@ -2255,6 +2255,12 @@ states.fln_operations = {
 			if (is_harass_unit(u))
 				view.actions.harass = 1
 		})
+		if (game.fln_ap >= FLN_PROPAGANDA_COST) {
+			for_each_friendly_unit_in_loc(FRANCE, u => {
+				if (is_propaganda_unit(u))
+					view.actions.propaganda = 1
+			})
+		}
 		for_each_friendly_unit_in_locs([MOROCCO, TUNISIA], u => {
 			if (is_mobile_unit(u) && unit_box(u) === OPS)
 				view.actions.move = 1
@@ -2325,6 +2331,11 @@ states.fln_propaganda = {
 		if (game.selected.length === 0) {
 			view.prompt = "Propaganda: Select Front or Cadre"
 			for_each_friendly_unit_on_map_box(OPS, u => {
+				if (is_propaganda_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+			for_each_friendly_unit_in_loc(FRANCE, u => {
 				if (is_propaganda_unit(u)) {
 					gen_action_unit(u)
 				}
