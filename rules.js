@@ -608,7 +608,6 @@ function is_flush_unit(u) {
 }
 
 function is_react_unit(u) {
-	let loc = unit_loc(u)
 	// TODO airmobile && division
 	return is_mobile_unit(u) && is_unit_not_neutralized(u)
 }
@@ -1916,6 +1915,9 @@ function build_fln_unit(type, where) {
 	let cost = build_cost(type, where)
 	game.fln_ap -= cost
 	log(`>Paid ${cost} AP`)
+	if (game.fln_ap < 0) {
+		throw new Error("ASSERT game.fln_ap < 0")
+	}
 }
 
 function convert_fln_unit(u, type) {
@@ -1928,6 +1930,9 @@ function convert_fln_unit(u, type) {
 	let cost = convert_cost(type)
 	game.fln_ap -= cost
 	log(`>Paid ${cost} AP`)
+	if (game.fln_ap < 0) {
+		throw new Error("ASSERT game.fln_ap < 0")
+	}
 }
 
 states.fln_reinforcement = {

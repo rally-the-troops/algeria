@@ -586,37 +586,37 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("reset", "Reset")
 }
 
-function on_focus_area_tip(x) {
+function on_focus_area_tip(x) { // eslint-disable-line no-unused-vars
 	ui.areas[x].classList.add("tip")
 }
 
-function on_blur_area_tip(x) {
+function on_blur_area_tip(x) { // eslint-disable-line no-unused-vars
 	ui.areas[x].classList.remove("tip")
 }
 
-function on_click_area_tip(x) {
+function on_click_area_tip(x) { // eslint-disable-line no-unused-vars
 	ui.areas[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
 }
 
-function sub_area_name(match, p1, offset, string) {
+function sub_area_name(_match, p1, _offset, _string) {
 	let x = p1 | 0
 	let n = data.areas[x].name
 	return `<span class="tip" onmouseenter="on_focus_area_tip(${x})" onmouseleave="on_blur_area_tip(${x})" onclick="on_click_area_tip(${x})">${n}</span>`
 }
 
-function on_focus_unit_tip(x) {
+function on_focus_unit_tip(x) { // eslint-disable-line no-unused-vars
 	ui.units[x].classList.add("tip")
 }
 
-function on_blur_unit_tip(x) {
+function on_blur_unit_tip(x) { // eslint-disable-line no-unused-vars
 	ui.units[x].classList.remove("tip")
 }
 
-function on_click_unit_tip(x) {
+function on_click_unit_tip(x) { // eslint-disable-line no-unused-vars
 	ui.units[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
 }
 
-function sub_unit_name(match, p1, offset, string) {
+function sub_unit_name(_match, p1, _offset, _string) {
 	let x = p1 | 0
 	let n = data.units[x].name
 	return `<span class="tip" onmouseenter="on_focus_unit_tip(${x})" onmouseleave="on_blur_unit_tip(${x})" onclick="on_click_unit_tip(${x})">${n}</span>`
