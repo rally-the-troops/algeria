@@ -199,10 +199,6 @@ function is_area_gov_control(l) {
 	return (game.areas[l] & AREA_GOV_CONTROL_MASK) === AREA_GOV_CONTROL_MASK
 }
 
-function is_area_contested(l) {
-	return !(is_area_fln_control(l) || is_area_gov_control(l))
-}
-
 function set_area_fln_control(l) {
 	game.areas[l] |= AREA_FLN_CONTROL_MASK
 	game.areas[l] &= ~AREA_GOV_CONTROL_MASK
@@ -471,15 +467,13 @@ function move_unit(u, to) {
 function eliminate_unit(u) {
 	let loc = unit_loc(u)
 	log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
-	if (is_fln_unit(u))
+	if (is_fln_unit(u)) {
 		game.distribute_gov_psl += 1
+		set_delete(game.contacted, u)
+	}
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
 	set_unit_box(u, OC)
-}
-
-function is_unit_eliminated(u) {
-	return unit_loc(u) === ELIMINATED
 }
 
 function free_unit(u) {
@@ -697,12 +691,6 @@ function for_each_friendly_unit_on_map_boxes(boxes, fn) {
 			fn(u)
 }
 
-function for_each_enemy_unit_in_loc_box(loc, box, fn) {
-	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
-		if (unit_loc(u) === loc && unit_box(u) === box)
-			fn(u)
-}
-
 function for_each_enemy_unit_in_loc_boxes(loc, boxes, fn) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === loc && boxes.includes(unit_box(u)))
@@ -835,6 +823,14 @@ function count_not_neutralized_unit_type_in_loc(t, x) {
 	return result
 }
 
+function count_patrol_units_in_loc(loc) {
+	let result = 0
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) === loc && unit_box(u) === PTL && is_unit_not_neutralized(u))
+			result += 1
+	return result
+}
+
 // #endregion
 
 // #region PUBLIC FUNCTIONS
@@ -896,6 +892,7 @@ exports.view = function(state, player) {
 
 		units: game.units,
 		areas: game.areas,
+		contacted: game.contacted,
 	}
 
 	if (player === game.active)
@@ -1004,6 +1001,7 @@ exports.setup = function (seed, scenario, options) {
 		// transient state
 		passes: 0,
 		combat: {},
+		contacted: [],
 		distribute: {},
 		distribute_gov_psl: 0,
 
@@ -2205,6 +2203,8 @@ function goto_fln_operations_phase() {
 	set_active_player()
 	log_h2(`${game.active} Operations`)
 	game.state = "fln_operations"
+
+	set_clear(game.contacted)
 }
 
 const FLN_PROPAGANDA_COST = 1
@@ -2292,6 +2292,8 @@ function reduce_unit(u, type) {
 	if (is_fln_unit) {
 		raise_gov_psl(2)
 		lower_fln_psl(1)
+		set_delete(game.contacted, u)
+		set_add(game.contacted, n)
 	}
 	set_unit_loc(n, loc)
 	set_unit_box(n, box)
@@ -2334,10 +2336,7 @@ states.fln_propaganda = {
 		set_area_propagandized(loc)
 		set_unit_box(unit, OC)
 
-		let drm = 0
-		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
-			drm -= 1
-		})
+		let drm = -count_patrol_units_in_loc(loc)
 		if (is_area_terrorized(loc))
 			drm -= 1
 		let [result, effect] = roll_mst(drm)
@@ -2346,12 +2345,14 @@ states.fln_propaganda = {
 			result *= 2
 		}
 
+		set_add(game.contacted, unit)
+
 		if (effect === '+') {
 			// bad effect: eliminate Cadre or reduce Front
 			if (unit_type(unit) === CADRE) {
 				eliminate_unit(unit)
 			} else {
-				reduce_unit(unit, CADRE)
+				unit = reduce_unit(unit, CADRE)
 			}
 		}
 
@@ -2380,6 +2381,9 @@ function end_fln_mission() {
 }
 
 function goto_distribute_psp(who, psp, reason) {
+	// XXX ensure no remaining PSL to distribute
+	if (game.distribute_gov_psl)
+		game.distribute_gov_psl = 0
 	game.distribute = {
 		who, psp, reason
 	}
@@ -2549,16 +2553,14 @@ states.fln_strike = {
 		set_area_struck(loc)
 		for (let u of list) {
 			set_unit_box(u, OC)
+			set_add(game.contacted, u)
 		}
 
 		let drm = assist
-		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
-			drm -= 1
-		})
+		drm -= count_patrol_units_in_loc(loc)
 		if (is_area_terrorized(loc))
 			drm -= 1
 		let [result, effect] = roll_mst(drm)
-		game.distribute_gov_psl = 0
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
@@ -2658,14 +2660,14 @@ states.fln_move = {
 		let loc = unit_loc(unit)
 		push_undo()
 
-		let drm = 0
-		for_each_enemy_unit_in_loc_box(to, PTL, _u => {
-			drm -= 1
-		})
+		let drm = -count_patrol_units_in_loc(loc)
 		if (is_border_crossing(loc, to)) {
 			drm += game.border_zone_drm
 		}
 		let [_result, effect] = roll_mst(drm)
+
+		// XXX doublecheck that Move mission also automatically contacts
+		set_add(game.contacted, unit)
 		if (effect === '+') {
 			eliminate_unit(unit)
 		} else {
@@ -2730,12 +2732,11 @@ states.fln_raid = {
 		set_area_raided(loc)
 		for (let u of list) {
 			set_unit_box(u, OC)
+			set_add(game.contacted, u)
 		}
 
 		let drm = assist
-		for_each_enemy_unit_in_loc_box(loc, PTL, _u => {
-			drm -= 1
-		})
+		drm -= count_patrol_units_in_loc(loc)
 		let [result, effect] = roll_mst(drm)
 		if (result > 0) {
 			if (is_area_urban(loc)) {
@@ -2832,6 +2833,7 @@ states.fln_harass = {
 			gov_units: [],
 			half_firepower: 1
 		}
+		// XXX doublecheck that Harass does NOT automatically contact units (and allows for React)
 		for (let u of list) {
 			if (is_gov_unit(u)) {
 				set_add(game.combat.gov_units, u)
@@ -2844,6 +2846,8 @@ states.fln_harass = {
 }
 
 function goto_combat() {
+
+	// TODO replace contacted / fln_units
 	// game.combat = {fln_units: [], gov_units: [], half_firepower: false}
 	// game.combat = {hits_on_fln: 0, hits_on_gov: 0, distribute_gov_psl: 0}
 
@@ -2885,7 +2889,6 @@ function goto_combat() {
 function continue_combat_after_hits_on_gov() {
 	// Step 3: FLN to distribute losses
 	if (game.combat.hits_on_fln) {
-		game.distribute_gov_psl = 0
 		game.combat.distribute_fln_hits = game.combat.hits_on_fln
 		goto_combat_fln_losses()
 	} else {
@@ -3149,7 +3152,6 @@ states.gov_flush = {
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
 
-		let contacted = []
 		for_each_enemy_unit_in_loc_boxes(loc, [OPS, OC], u => {
 			log(`${units[u].name}`)
 			let drm = base_drm
@@ -3160,16 +3162,16 @@ states.gov_flush = {
 			let roll = roll_1d6(drm)
 			if (roll <= contact_ratings) {
 				log(">Contact")
-				set_add(contacted, u)
+				set_add(game.contacted, u)
 			} else {
 				log(">No contact")
 			}
 		})
 
-		if (contacted.length) {
+		if (game.contacted.length) {
 			// Contacted FLN units then fire on the Combat Results Table, and the Government units return fire.
 			game.combat = {
-				fln_units: contacted,
+				fln_units: game.contacted,
 				gov_units: list
 			}
 			goto_combat()
