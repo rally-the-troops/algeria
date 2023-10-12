@@ -1,6 +1,6 @@
 "use strict"
 
-/* global view, player, data, send_action, action_button, scroll_with_middle_mouse */
+/* global view, data, send_action, action_button, scroll_with_middle_mouse */
 
 const SCALE = 1.8033333333333332
 
@@ -109,10 +109,6 @@ function is_area_gov_control(l) {
 	return (view.areas[l] & AREA_GOV_CONTROL_MASK) === AREA_GOV_CONTROL_MASK
 }
 
-function is_area_contested(l) {
-	return !(is_area_fln_control(l) || is_area_gov_control(l))
-}
-
 // terrorized
 
 function is_area_terrorized(l) {
@@ -172,8 +168,12 @@ function is_unit_dispersed(u) {
 	return (view.units[u] & UNIT_DISPERSED_MASK) === UNIT_DISPERSED_MASK
 }
 
-function is_unit_moved(u) {
-	return set_has(view.moved, u)
+function is_unit_contacted(u) {
+	return set_has(view.contacted, u)
+}
+
+function is_unit_eliminated(u) {
+	return unit_loc(u) === ELIMINATED
 }
 
 function is_unit_action(unit) {
@@ -217,7 +217,7 @@ function on_focus_unit(evt) {
 	document.getElementById("status").textContent = data.units[evt.target.unit].name
 }
 
-function on_blur(evt) {
+function on_blur(_evt) {
 	document.getElementById("status").textContent = ""
 }
 
@@ -396,8 +396,8 @@ function update_unit(e, u) {
 	e.classList.toggle("fr_xx_dispersed", is_unit_dispersed(u))
 	e.classList.toggle("action", !view.battle && is_unit_action(u))
 	e.classList.toggle("selected", !view.battle && is_unit_selected(u))
-	e.classList.toggle("moved", is_unit_moved(u))
-	e.classList.toggle("eliminated", unit_loc(u) === ELIMINATED)
+	e.classList.toggle("contacted", is_unit_contacted(u))
+	e.classList.toggle("eliminated", is_unit_eliminated(u))
 }
 
 Node.prototype.appendChildAnimated = function(e) {
@@ -416,10 +416,10 @@ Node.prototype.appendChildAnimated = function(e) {
 	e.animate([
 		{ transform: transformFrom },
 		{ transform: transformTo },
-	  ], {
+      ], {
 		duration: 1000,
 		easing: 'ease',
-	  })
+	})
 }
 
 function update_map() {
@@ -578,6 +578,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("end_turn", "End Turn")
 	action_button("done", "Done")
 	action_button("undo", "Undo")
+
 	// XXX debug
     action_button("restart", "Restart")
 	action_button("reset", "Reset")

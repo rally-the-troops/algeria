@@ -135,8 +135,18 @@ main { background-color: dimgray }
 	box-shadow: 0 0 0 2px grey;
 }
 
+.counter.contacted {
+	box-shadow: 0 0 0 2px indianred;
+}
+
 .counter.selected {
 	box-shadow: 0 0 0 2px yellow;
+}
+
+.counter.neutralized {
+    background-color: rgba(255,255,255,0.6);
+    background-blend-mode: lighten;
+	border-color:grey;
 }
 
 .counter.turn_now{background-position:0% 0%}
@@ -189,12 +199,6 @@ main { background-color: dimgray }
 .counter.fln_cadre{background-position:22.22222222222222% 55.55555555555556%}
 .counter.fln_front{background-position:33.33333333333333% 55.55555555555556%}
 /* .counter.neut{background-position:44.44444444444444% 55.55555555555556%} */
-
-.counter.neutralized {
-    background-color: rgba(255,255,255,0.6);
-    background-blend-mode: lighten;
-	border-color:grey;
-}
 
 .panel {
 	max-width: 900px;
