@@ -559,6 +559,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("population_resettlement", "Population Resettlement")
 
 	action_button("gov_mission", "Government Mission")
+	action_button("no_react", "No React")
 	action_button("pass", "Pass")
 
 	action_button("add_fln_psl", "+1 FLN PSL")

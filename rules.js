@@ -476,6 +476,11 @@ function eliminate_unit(u) {
 	set_unit_box(u, OC)
 }
 
+function evade_unit(u) {
+	set_unit_box(u, UG)
+	set_delete(game.contacted, u)
+}
+
 function free_unit(u) {
 	game.units[u] = 0
 }
@@ -600,6 +605,12 @@ function is_flush_unit(u) {
 	let loc = unit_loc(u)
 	// TODO airmobile && division
 	return is_mobile_unit(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
+}
+
+function is_react_unit(u) {
+	let loc = unit_loc(u)
+	// TODO airmobile && division
+	return is_mobile_unit(u) && is_unit_not_neutralized(u)
 }
 
 function is_intelligence_unit(u) {
@@ -825,10 +836,17 @@ function count_not_neutralized_unit_type_in_loc(t, x) {
 
 function count_patrol_units_in_loc(loc) {
 	let result = 0
-	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
 		if (unit_loc(u) === loc && unit_box(u) === PTL && is_unit_not_neutralized(u))
 			result += 1
 	return result
+}
+
+function has_gov_react_units_in_loc(loc) {
+	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
+		if (unit_loc(u) === loc && is_react_unit(u) && (unit_box(u) === PTL || unit_box(u) === OPS))
+			return true
+	return false
 }
 
 // #endregion
@@ -2204,7 +2222,7 @@ function goto_fln_operations_phase() {
 	log_h2(`${game.active} Operations`)
 	game.state = "fln_operations"
 
-	set_clear(game.contacted)
+	clear_combat()
 }
 
 const FLN_PROPAGANDA_COST = 1
@@ -2376,13 +2394,20 @@ function continue_fln_propaganda() {
 function end_fln_mission() {
 	if (check_victory())
 		return
-	// TODO Gov can React
-	goto_fln_operations_phase()
+	// Gov can React
+	if (can_gov_react()) {
+		goto_gov_react_mission()
+	} else {
+		check_mandatory_react()
+		if (check_victory())
+			return
+		goto_fln_operations_phase()
+	}
 }
 
 function goto_distribute_psp(who, psp, reason) {
 	// XXX ensure no remaining PSL to distribute
-	if (game.distribute_gov_psl)
+	if (who === GOV && game.distribute_gov_psl)
 		game.distribute_gov_psl = 0
 	game.distribute = {
 		who, psp, reason
@@ -2475,6 +2500,9 @@ function end_distribute_psp() {
 		continue_fln_strike()
 		break
 	case 'strike_distribute_gov_psl':
+		end_fln_mission()
+		break
+	case 'move_distribute_gov_psl':
 		end_fln_mission()
 		break
 	case 'combat_hits_on_gov':
@@ -2581,6 +2609,10 @@ states.fln_strike = {
 			})
 		}
 
+		// Government must react with atleast one unit, otherwise -1d6 PSP
+		// XXX move to mission?
+		game.events.must_react = 1
+
 		if (result) {
 			let strike_result = roll_nd6(result)
 			goto_distribute_psp(FLN, strike_result, 'strike_result')
@@ -2597,7 +2629,6 @@ function continue_fln_strike() {
 	} else {
 		end_fln_mission()
 	}
-	// TODO Government must react with one unit, otherwise -1d6 PSP
 }
 
 function goto_fln_move_mission() {
@@ -2673,7 +2704,12 @@ states.fln_move = {
 		} else {
 			move_unit(unit, to)
 		}
-		end_fln_mission()
+
+		if (game.distribute_gov_psl) {
+			goto_distribute_psp(GOV, game.distribute_gov_psl, 'move_distribute_gov_psl')
+		} else {
+			end_fln_mission()
+		}
 	}
 }
 
@@ -2846,7 +2882,6 @@ states.fln_harass = {
 }
 
 function goto_combat() {
-
 	// TODO replace contacted / fln_units
 	// game.combat = {fln_units: [], gov_units: [], half_firepower: false}
 	// game.combat = {hits_on_fln: 0, hits_on_gov: 0, distribute_gov_psl: 0}
@@ -2931,10 +2966,8 @@ function end_combat() {
 			set_unit_box(u, OC)
 	}
 
-	// TODO allow React on Harass mission
-
-	game.combat = {}
-	goto_fln_operations_phase()
+	// TODO allow React on Harass mission?
+	end_gov_mission()
 }
 
 function goto_combat_fln_losses() {
@@ -3089,6 +3122,14 @@ function goto_gov_flush_mission() {
 	game.state = "gov_flush"
 }
 
+function can_gov_react() {
+	if (!game.contacted.length)
+		return false
+	let loc = unit_loc(game.contacted[0])
+	// TODO airmobile
+	return has_gov_react_units_in_loc(loc)
+}
+
 states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
@@ -3135,7 +3176,7 @@ states.gov_flush = {
 		game.selected = []
 		let first_unit = list[0]
 		let loc = unit_loc(first_unit)
-		push_undo()
+		clear_undo()
 
 		log(`>in ${areas[loc].name}`)
 		// Total the Contact Ratings of Government units participating in the mission.
@@ -3180,6 +3221,101 @@ states.gov_flush = {
 				if (is_mobile_unit(u))
 					set_unit_box(u, OC)
 			}
+			end_gov_mission()
+		}
+	}
+}
+
+function goto_gov_react_mission() {
+	game.phasing = GOV_NAME
+	set_active_player()
+	log_h3(`React Mission`)
+	game.state = "gov_react"
+}
+
+states.gov_react = {
+	inactive: "to do React mission",
+	prompt() {
+		if (game.selected.length === 0) {
+			view.prompt = "React: Select mobile unit(s) or No React"
+
+			let loc = unit_loc(game.contacted[0])
+
+			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+				// TODO airmobile
+				// TODO air points
+				if (unit_loc(u) === loc && is_mobile_unit(u)) {
+					gen_action_unit(u)
+				}
+			})
+
+			gen_action("no_react")
+		} else {
+			view.prompt = "React: Execute mission"
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+
+			// TODO airmobile
+			// TODO air points
+			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
+				// any combination when division present
+				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+					if (unit_loc(u) === first_unit_loc && is_mobile_unit(u)) {
+						gen_action_unit(u)
+					}
+				})
+			} else if (is_elite_unit(first_unit)) {
+				// all elite
+				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
+					if (unit_loc(u) === first_unit_loc && is_elite_unit(u)) {
+						gen_action_unit(u)
+					}
+				})
+			} else {
+				// Allow deselect
+				gen_action_unit(first_unit)
+			}
+
+			gen_action("roll")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	no_react() {
+		log("Gov. doesn't React")
+		end_gov_mission()
+	},
+	roll() {
+		let list = game.selected
+		game.selected = []
+		let first_unit = list[0]
+		let loc = unit_loc(first_unit)
+		clear_undo()
+
+		log(`>in ${areas[loc].name}`)
+		delete game.events.must_react
+
+		// FLN player has a chance to evade to the UG box.
+		// Units roll 1d6 individually, and move to the UG box if they roll equal to or less than their Evasion Rating.
+		log("FLN unit evasion")
+		for (let u of game.contacted) {
+			log(`${units[u].name}`)
+			let roll = roll_1d6()
+			if (roll <= unit_evasion(u)) {
+				log(">Evades to UG")
+				evade_unit(u)
+			}
+		}
+
+		if (game.contacted.length) {
+			// Contacted FLN units then fire on the Combat Results Table, and the Government units return fire.
+			game.combat = {
+				fln_units: game.contacted,
+				gov_units: list
+			}
+			goto_combat()
+		} else {
 			end_gov_mission()
 		}
 	}
@@ -3469,14 +3605,32 @@ states.gov_population_resettlement = {
 	}
 }
 
+function check_mandatory_react() {
+	if (game.events.must_react) {
+		log("Penality for not Reacting")
+		// Government must react with at least 1 unit, otherwise -1d6 PSP
+		let roll = roll_1d6()
+		lower_gov_psl(roll)
+	}
+}
+
 function end_gov_mission() {
+	check_mandatory_react()
 	if (check_victory())
 		return
 	goto_fln_operations_phase()
 }
 
+function clear_combat() {
+	game.combat = {}
+	set_clear(game.contacted)
+	game.distribute_gov_psl = 0
+	delete game.events.must_react
+}
+
 function end_operations_phase() {
 	game.passes = 0
+	clear_combat()
 	goto_turn_interphase()
 }
 
