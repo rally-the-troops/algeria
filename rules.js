@@ -2359,6 +2359,7 @@ states.fln_propaganda = {
 	roll() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
+		clear_undo()
 
 		log(`>by U${unit} in A${loc}`)
 
@@ -2582,6 +2583,7 @@ states.fln_strike = {
 		let front_unit = list[0]
 		let loc = unit_loc(front_unit)
 		let assist = list.length - 1
+		clear_undo()
 
 		if (assist) {
 			log(`>by Front (with ${assist} Cadre) in A${loc}`)
@@ -2769,6 +2771,7 @@ states.fln_raid = {
 		let first_unit = list[0]
 		let loc = unit_loc(first_unit)
 		let assist = list.length - 1
+		clear_undo()
 
 		if (assist) {
 			log(`(with ${assist} assist) in A${loc}`)
@@ -2877,7 +2880,7 @@ states.fln_harass = {
 	roll() {
 		let list = game.selected
 		game.selected = []
-		push_undo()
+		clear_undo()
 		game.combat = {
 			fln_units: [],
 			gov_units: [],
@@ -3374,7 +3377,7 @@ states.gov_intelligence = {
 		game.selected = []
 		let first_unit = list[0]
 		let loc = unit_loc(first_unit)
-		push_undo()
+		clear_undo()
 
 		log(`>in A${loc}`)
 
@@ -3444,7 +3447,7 @@ states.gov_civil_affairs = {
 	roll() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
-		push_undo()
+		clear_undo()
 
 		log(`>in A${loc}`)
 		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST)
@@ -3501,7 +3504,7 @@ states.gov_suppression = {
 	roll() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
-		push_undo()
+		clear_undo()
 
 		let assist = count_not_neutralized_unit_type_in_loc(EL_X, loc)
 		if (assist) {
@@ -3598,7 +3601,7 @@ states.gov_population_resettlement = {
 	roll() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
-		push_undo()
+		clear_undo()
 
 		log(`>in A${loc}`)
 		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST)
