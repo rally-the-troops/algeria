@@ -1912,12 +1912,9 @@ function build_fln_unit(type, where) {
 	log(`Built U${u} in A${where}`)
 	set_unit_loc(u, where)
 	set_unit_box(u, UG)
-	let cost = build_cost(type, where)
+	let cost = build_cost(where)
 	game.fln_ap -= cost
 	log(`>Paid ${cost} AP`)
-	if (game.fln_ap < 0) {
-		throw new Error("ASSERT game.fln_ap < 0")
-	}
 }
 
 function convert_fln_unit(u, type) {
@@ -1930,9 +1927,6 @@ function convert_fln_unit(u, type) {
 	let cost = convert_cost(type)
 	game.fln_ap -= cost
 	log(`>Paid ${cost} AP`)
-	if (game.fln_ap < 0) {
-		throw new Error("ASSERT game.fln_ap < 0")
-	}
 }
 
 states.fln_reinforcement = {
