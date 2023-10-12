@@ -12,6 +12,12 @@
 <script defer src="play.js"></script>
 <style>
 
+:root {
+	--highlight-color: yellow;
+	--selected-color: blue;
+	--tip-color: red;
+}
+
 main { background-color: dimgray }
 
 #role_FLN .role_name { background-color: #C1E1C1;}
@@ -60,12 +66,12 @@ main { background-color: dimgray }
 
 /* SPACES */
 
-.space{position:absolute;box-sizing:border-box;border:4px solid transparent}
-.space.loc{border-radius:50%}
-.space.action{border-color:lemonchiffon;}
-.space.loc.action{border-color:lemonchiffon;}
-.space.selected{border-color:yellow;}
-.space.tip { border-color: white; }
+.space{position:absolute;box-sizing:border-box;border:4px solid transparent;}
+.space.loc{border-radius:50%;}
+.space.action{border-color:var(--highlight-color);}
+.space.loc.action{border-color:var(--highlight-color);}
+.space.selected{border-color:var(--selected-color);}
+.space.tip { border-color: var(--tip-color);}
 
 .stack {
   display:  grid;
@@ -132,15 +138,20 @@ main { background-color: dimgray }
 } */
 
 .counter.action {
-	box-shadow: 0 0 0 2px grey;
+	/* box-shadow: 0 0 0 2px grey; */
+	box-shadow: 0 0 0 2px var(--highlight-color);
 }
 
 .counter.contacted {
 	box-shadow: 0 0 0 2px indianred;
 }
 
+.counter.tip {
+	box-shadow: 0 0 0 2px var(--tip-color);
+}
+
 .counter.selected {
-	box-shadow: 0 0 0 2px yellow;
+	box-shadow: 0 0 0 2px var(--selected-color);
 }
 
 .counter.neutralized {

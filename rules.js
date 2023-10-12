@@ -459,14 +459,14 @@ function clear_unit_dispersed(u) {
 }
 
 function move_unit(u, to) {
-	log(`>Moved ${units[u].name} to ${areas[to].name}`)
+	log(`>Moved U${u} to A${to}`)
 	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 }
 
 function eliminate_unit(u) {
 	let loc = unit_loc(u)
-	log(`Eliminated ${units[u].name} in ${areas[loc].name}`)
+	log(`Eliminated U${u} in A${loc}`)
 	if (is_fln_unit(u)) {
 		game.distribute_gov_psl += 1
 		set_delete(game.contacted, u)
@@ -1315,7 +1315,7 @@ states.scenario_setup = {
 		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
 		for (let x of keys) {
 			if (game.summary[x] > 0)
-				log(`>${game.summary[x]} at ${areas[x].name}`)
+				log(`>${game.summary[x]} at A${x}`)
 		}
 		game.summary = null
 
@@ -1560,7 +1560,7 @@ states.place_oas = {
 	loc(to) {
 		push_undo()
 		game.oas = to
-		log(`OAS placed in ${areas[to].name}`)
+		log(`OAS placed in A${to}`)
 
 		// TODO OAS automatic missions
 
@@ -1622,7 +1622,7 @@ function mobilize_unit(u, to) {
 		set_unit_box(u, OPS)
 	}
 
-	log(`>${units[u].name} into ${areas[to].name}`)
+	log(`>U${u} into A${to}`)
 }
 
 states.gov_reinforcement = {
@@ -1741,7 +1741,7 @@ states.gov_reinforcement = {
 		log("Activated:")
 		for (let u of list) {
 			let loc = unit_loc(u)
-			log(`>${units[u].name} in ${areas[loc].name}`)
+			log(`>U${u} in A${loc}`)
 			set_unit_box(u, OPS)
 		}
 		let cost = Math.ceil(activation_cost(list))
@@ -1755,7 +1755,7 @@ states.gov_reinforcement = {
 		log("Removed:")
 		for (let u of list) {
 			let loc = unit_loc(u)
-			log(`>${units[u].name} from ${areas[loc].name}`)
+			log(`>U${u} from A${loc}`)
 			set_unit_loc(u, DEPLOY)
 			set_unit_box(u, OC)
 		}
@@ -1833,7 +1833,7 @@ function give_fln_ap() {
 		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
 		if (is_area_terrorized(loc)) control_ap -= 1
 		if (control_ap > 0) {
-			log(`${areas[loc].name}`)
+			log(`A${loc}`)
 			raise_fln_ap(control_ap)
 		}
 	})
@@ -1909,7 +1909,7 @@ function convert_cost(type) {
 
 function build_fln_unit(type, where) {
 	let u = find_free_unit_by_type(type)
-	log(`Built ${units[u].name} in ${areas[where].name}`)
+	log(`Built U${u} in A${where}`)
 	set_unit_loc(u, where)
 	set_unit_box(u, UG)
 	let cost = build_cost(type, where)
@@ -1920,7 +1920,7 @@ function build_fln_unit(type, where) {
 function convert_fln_unit(u, type) {
 	let loc = unit_loc(u)
 	let n = find_free_unit_by_type(type)
-	log(`Converted ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
+	log(`Converted U${u} to U${n} in A${loc}`)
 	set_unit_loc(n, loc)
 	set_unit_box(n, UG)
 	free_unit(u)
@@ -2086,14 +2086,14 @@ states.gov_deployment = {
 			let loc = unit_loc(u)
 			if (loc === to) {
 				if (unit_box(u) === PTL) {
-					log(`>${units[u].name} in ${areas[loc].name}`)
+					log(`>U${u} in A${loc}`)
 					set_unit_box(u, OPS)
 				} else {
-					log(`>${units[u].name} in ${areas[loc].name} on PTL`)
+					log(`>U${u} in A${loc} on PTL`)
 					set_unit_box(u, PTL)
 				}
 			} else {
-				log(`>${units[u].name} in ${areas[loc].name}`)
+				log(`>U${u} in A${loc}`)
 				set_unit_loc(u, to)
 				set_unit_box(u, OPS)
 			}
@@ -2104,10 +2104,10 @@ states.gov_deployment = {
 		let loc = unit_loc(u)
 		push_undo()
 		if (is_unit_dispersed(u)) {
-			log(`${units[u].name} in ${areas[loc].name} switched to Concentrated mode`)
+			log(`U${u} in A${loc} switched to Concentrated mode`)
 			clear_unit_dispersed(u)
 		} else {
-			log(`${units[u].name} in ${areas[loc].name} switched to Dispersed mode`)
+			log(`U${u} in A${loc} switched to Dispersed mode`)
 			set_unit_dispersed(u)
 		}
 	},
@@ -2162,7 +2162,7 @@ states.fln_deployment = {
 				}
 			}
 
-			if (first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE)) {
+			if (first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE) && !is_area_urban(first_unit_loc)) {
 				view.prompt = "Deploy units to OPS in same area (or Cadre to France)"
 				// deploy single Cadre to France
 				gen_action_loc(FRANCE)
@@ -2183,14 +2183,14 @@ states.fln_deployment = {
 		for (let u of list) {
 			let loc = unit_loc(u)
 			if (loc === to) {
-				log(`>${units[u].name} in ${areas[loc].name}`)
+				log(`>U${u} in A${loc}`)
 				if (unit_box(u) === UG) {
 					set_unit_box(u, OPS)
 				} else {
 					set_unit_box(u, UG)
 				}
 			} else {
-				log(`>${units[u].name} to ${areas[to].name}`)
+				log(`>U${u} to A${to}`)
 				set_unit_loc(u, to)
 				set_unit_box(u, UG)
 			}
@@ -2213,6 +2213,9 @@ function end_deployment() {
 
 function goto_operations_phase() {
 	game.passes = 0
+
+	// TODO In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
+	// Whatever the result of the mission, it will automatically cause a Terror marker to be placed in the Area (if there isn't one there already).
 	goto_fln_operations_phase()
 }
 
@@ -2312,7 +2315,7 @@ function reduce_unit(u, type) {
 	let loc = unit_loc(u)
 	let box = unit_box(u)
 	let n = find_free_unit_by_type(type)
-	log(`Reduced ${units[u].name} to ${units[n].name} in ${areas[loc].name}`)
+	log(`Reduced U${u} to U${n} in A${loc}`)
 	if (is_fln_unit) {
 		raise_gov_psl(2)
 		lower_fln_psl(1)
@@ -2357,7 +2360,7 @@ states.fln_propaganda = {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
 
-		log(`>by ${units[unit].name} in ${areas[loc].name}`)
+		log(`>by U${unit} in A${loc}`)
 
 		// pay cost & update flags
 		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
@@ -2581,9 +2584,9 @@ states.fln_strike = {
 		let assist = list.length - 1
 
 		if (assist) {
-			log(`>by Front (with ${assist} Cadre) in ${areas[loc].name}`)
+			log(`>by Front (with ${assist} Cadre) in A${loc}`)
 		} else {
-			log(`>by Front in ${areas[loc].name}`)
+			log(`>by Front in A${loc}`)
 		}
 
 		// pay cost & update flags
@@ -2612,7 +2615,7 @@ states.fln_strike = {
 			}
 		} else if (effect === '@') {
 			// good result: all Police units neutralized
-			log(`all Police units in ${areas[loc].name} neutralized`)
+			log(`all Police units in A${loc} neutralized`)
 			for_each_enemy_unit_in_loc(loc, u => {
 				if (is_police_unit(u)) {
 					set_unit_neutralized(u)
@@ -2768,9 +2771,9 @@ states.fln_raid = {
 		let assist = list.length - 1
 
 		if (assist) {
-			log(`(with ${assist} assist) in ${areas[loc].name}`)
+			log(`(with ${assist} assist) in A${loc}`)
 		} else {
-			log(`>in ${areas[loc].name}`)
+			log(`>in A${loc}`)
 		}
 
 		// pay cost & update flags
@@ -2795,7 +2798,7 @@ states.fln_raid = {
 
 		if (effect === '+') {
 			// bad effect: 1 Band/Failek neutralized, area is Terrorized
-			log(`Neutralized ${units[first_unit].name}`)
+			log(`Neutralized U${first_unit}`)
 			set_unit_neutralized(first_unit)
 			log(">Area terrorized")
 			set_area_terrorized(loc)
@@ -2804,7 +2807,7 @@ states.fln_raid = {
 			let done = false
 			for_each_enemy_unit_in_loc(loc, u => {
 				if (!done && is_police_unit(u)) {
-					log(`Police in ${areas[loc].name} neutralized`)
+					log(`Police in A${loc} neutralized`)
 					set_unit_neutralized(u)
 					done = true
 				}
@@ -2899,7 +2902,7 @@ function goto_combat() {
 
 	let loc = unit_loc(game.combat.fln_units[0])
 
-	log_h3(`Combat in ${areas[loc].name}`)
+	log_h3(`Combat in A${loc}`)
 	// Result is the number of 'hits' on enemy units.
 
 	let fln_firepower = 0
@@ -3189,7 +3192,7 @@ states.gov_flush = {
 		let loc = unit_loc(first_unit)
 		clear_undo()
 
-		log(`>in ${areas[loc].name}`)
+		log(`>in A${loc}`)
 		// Total the Contact Ratings of Government units participating in the mission.
 		let contact_ratings = 0
 		for (let u of list) {
@@ -3205,7 +3208,7 @@ states.gov_flush = {
 		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
 
 		for_each_enemy_unit_in_loc_boxes(loc, [OPS, OC], u => {
-			log(`${units[u].name}`)
+			log(`U${u}`)
 			let drm = base_drm
 			if (unit_evasion(u) > contact_ratings) drm += 1
 
@@ -3304,14 +3307,14 @@ states.gov_react = {
 		let loc = unit_loc(first_unit)
 		clear_undo()
 
-		log(`>in ${areas[loc].name}`)
+		log(`>in A${loc}`)
 		delete game.events.must_react
 
 		// FLN player has a chance to evade to the UG box.
 		// Units roll 1d6 individually, and move to the UG box if they roll equal to or less than their Evasion Rating.
 		log("FLN unit evasion")
 		for (let u of game.contacted) {
-			log(`${units[u].name}`)
+			log(`U${u}`)
 			let roll = roll_1d6()
 			if (roll <= unit_evasion(u)) {
 				log(">Evades to UG")
@@ -3373,7 +3376,7 @@ states.gov_intelligence = {
 		let loc = unit_loc(first_unit)
 		push_undo()
 
-		log(`>in ${areas[loc].name}`)
+		log(`>in A${loc}`)
 
 		//  The Government player pays 1 PSP, indicates the area, totals the Contact Ratings of the non-neutralized Police units there
 		lower_gov_psl(GOV_INTELLIGENCE_COST)
@@ -3391,7 +3394,7 @@ states.gov_intelligence = {
 		// or mission is in a Remote area, or if a Terror marker is present; -1 if mission is in an Urban area).
 
 		for_each_enemy_unit_in_loc_boxes(loc, [UG], u => {
-			log(`${units[u].name}`)
+			log(`U${u}`)
 			let drm = base_drm
 			if (unit_evasion(u) > contact_ratings) drm += 1
 			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
@@ -3443,7 +3446,7 @@ states.gov_civil_affairs = {
 		let loc = unit_loc(unit)
 		push_undo()
 
-		log(`>in ${areas[loc].name}`)
+		log(`>in A${loc}`)
 		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST)
 		set_area_civil_affaired(loc)
 
@@ -3502,9 +3505,9 @@ states.gov_suppression = {
 
 		let assist = count_not_neutralized_unit_type_in_loc(EL_X, loc)
 		if (assist) {
-			log(`>in ${areas[loc].name} (with ${assist} Elite)`)
+			log(`>in A${loc} (with ${assist} Elite)`)
 		} else {
-			log(`>in ${areas[loc].name}`)
+			log(`>in A${loc}`)
 		}
 
 		lower_gov_psl(GOV_SUPPRESSION_COST)
@@ -3531,7 +3534,7 @@ states.gov_suppression = {
 		// TODO FLN player chooses which exact units are neutralized)
 		shuffle(targets)
 		for(let u of targets.slice(0, result)) {
-			log(`>${units[u].name} neutralized`)
+			log(`>U${u} neutralized`)
 			set_unit_neutralized(u)
 			set_unit_box(u, OC)
 		}
@@ -3545,7 +3548,7 @@ states.gov_suppression = {
 			for_each_enemy_unit_in_loc(loc, u => {
 				let type = unit_type(u)
 				if (type === FRONT || type === CADRE) {
-					log(`>${units[u].name} neutralized`)
+					log(`>U${u} neutralized`)
 					set_unit_neutralized(u)
 					set_unit_box(u, OC)
 				}
@@ -3553,7 +3556,7 @@ states.gov_suppression = {
 			log(">Area terrorized")
 			set_area_terrorized(loc)
 		} else if (effect === '+') {
-			log(">Mission backfired, area terrorized")
+			log(">Backfired, area terrorized")
 			let roll = roll_1d6()
 			lower_gov_psl(roll)
 			set_area_terrorized(loc)
@@ -3597,7 +3600,7 @@ states.gov_population_resettlement = {
 		let loc = unit_loc(unit)
 		push_undo()
 
-		log(`>in ${areas[loc].name}`)
+		log(`>in A${loc}`)
 		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST)
 		set_area_remote(loc)
 		set_area_terrorized(loc)
@@ -3675,7 +3678,7 @@ function determine_control() {
 			return
 		}
 
-		log(`${areas[loc].name}`)
+		log(`A${loc}`)
 		log(`>FLN ${fln_pts[loc]} vs Gov ${gov_pts[loc]}`)
 
 		if (fln_pts[loc] >= 2 * gov_pts[loc]) {
@@ -3782,7 +3785,7 @@ function unit_and_area_recovery() {
 	log_h3("Recovery of Neutralized Units")
 	for_each_neutralized_unit_in_algeria(u => {
 		let loc = unit_loc(u)
-		log(`>${units[u].name} in ${areas[loc].name}`)
+		log(`>U${u} in A${loc}`)
 		let drm = 0
 		if (is_fln_unit(u) && game.fln_psl <= 30) drm -= 1
 		if (is_fln_unit(u) && game.fln_psl >= 70) drm += 1
@@ -3799,7 +3802,7 @@ function unit_and_area_recovery() {
 	log_h3("Recovery of Terrorized Areas")
 	for_each_algerian_map_area(loc => {
 		if (is_area_terrorized(loc)) {
-			log(`${areas[loc].name}`)
+			log(`A${loc}`)
 			let drm = 0
 			if (!has_fln_not_neutralized_unit_in_loc(loc)) drm += 1
 			let roll = roll_1d6(drm)
@@ -3817,11 +3820,11 @@ function unit_redeployment() {
 		// let loc = unit_loc(u)
 		let box = unit_box(u)
 		if (is_fln_unit(u) && box !== UG) {
-			// log(`>${units[u].name} in ${areas[loc].name} to UG`)
+			// log(`>U${u} in A${loc} to UG`)
 			set_unit_box(u, UG)
 		} else if (is_gov_unit(u) && is_mobile_unit(u)) {
 			if (box !== OC) {
-				// log(`>${units[u].name} in ${areas[loc].name} to OC`)
+				// log(`>U${u} in A${loc} to OC`)
 				set_unit_box(u, OC)
 			}
 			if (is_unit_airmobile(u)) {
@@ -4156,7 +4159,7 @@ function roll_mst(drm=0) {
 	let effect_str = ''
 	if (effect === '+') effect_str = ' (bad)'
 	if (effect === '@') effect_str = ' (good)'
-	log(`>Mission Success: ${result}${effect}${effect_str}`)
+	log(`>Mission Result: ${result}${effect}${effect_str}`)
 
 	return [result, effect]
 }

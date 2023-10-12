@@ -585,6 +585,41 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("reset", "Reset")
 }
 
+function on_focus_area_tip(x) {
+	ui.areas[x].classList.add("tip")
+}
+
+function on_blur_area_tip(x) {
+	ui.areas[x].classList.remove("tip")
+}
+
+function on_click_area_tip(x) {
+	ui.areas[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
+}
+
+function sub_area_name(match, p1, offset, string) {
+	let x = p1 | 0
+	let n = data.areas[x].name
+	return `<span class="tip" onmouseenter="on_focus_area_tip(${x})" onmouseleave="on_blur_area_tip(${x})" onclick="on_click_area_tip(${x})">${n}</span>`
+}
+
+function on_focus_unit_tip(x) {
+	ui.units[x].classList.add("tip")
+}
+
+function on_blur_unit_tip(x) {
+	ui.units[x].classList.remove("tip")
+}
+
+function on_click_unit_tip(x) {
+	ui.units[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
+}
+
+function sub_unit_name(match, p1, offset, string) {
+	let x = p1 | 0
+	let n = data.units[x].name
+	return `<span class="tip" onmouseenter="on_focus_unit_tip(${x})" onmouseleave="on_blur_unit_tip(${x})" onclick="on_click_unit_tip(${x})">${n}</span>`
+}
 
 function on_log(text) { // eslint-disable-line no-unused-vars
 	let p = document.createElement("div")
@@ -593,6 +628,12 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 		text = text.substring(1)
 		p.className = "i"
 	}
+
+	text = text.replace(/&/g, "&amp;")
+	text = text.replace(/</g, "&lt;")
+	text = text.replace(/>/g, "&gt;")
+	text = text.replace(/U(\d+)/g, sub_unit_name)
+	text = text.replace(/A(\d+)/g, sub_area_name)
 
 	if (text.match(/^\.h1/)) {
 		text = text.substring(4)
