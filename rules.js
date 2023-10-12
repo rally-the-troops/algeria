@@ -1022,6 +1022,7 @@ exports.setup = function (seed, scenario, options) {
 		contacted: [],
 		distribute: {},
 		distribute_gov_psl: 0,
+		mission_air_pts: 0,
 
 		// logging
 		summary: null,
@@ -2926,6 +2927,11 @@ function goto_combat() {
 		gov_firepower = Math.ceil(gov_firepower / 2)
 		half_str = " (half)"
 	}
+	if (game.mission_air_pts) {
+		log(`>Using ${game.mission_air_pts} Air Points`)
+		let roll = roll_nd6(game.mission_air_pts)
+		gov_firepower += roll
+	}
 	log(`>Gov. firepower ${gov_firepower}${half_str}`)
 	game.combat.hits_on_fln = roll_crt(gov_firepower)
 	log(`Hits on FLN ${game.combat.hits_on_fln}`)
@@ -3067,6 +3073,8 @@ function goto_gov_operations_phase() {
 	set_active_player()
 	log_h2(`${game.active} Operations`)
 	game.state = "gov_operations"
+
+	clear_combat()
 }
 
 const GOV_INTELLIGENCE_COST = 1
@@ -3158,9 +3166,15 @@ states.gov_flush = {
 				}
 			})
 		} else {
-			view.prompt = "Flush: Execute mission"
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
+
+			if (is_area_urban(first_unit_loc) || !game.air_max) {
+				view.prompt = "Flush: Execute mission"
+			} else {
+				view.prompt = `Flush: Execute mission (using ${game.mission_air_pts} Air Point(s))`
+				view.actions.use_air_point = game.air_avail > 0
+			}
 
 			// TODO airmobile
 			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
@@ -3184,6 +3198,12 @@ states.gov_flush = {
 
 			gen_action("roll")
 		}
+	},
+	use_air_point() {
+		push_undo()
+		log("Using Air Point")
+		game.air_avail -= 1
+		game.mission_air_pts += 1
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -3268,12 +3288,17 @@ states.gov_react = {
 
 			gen_action("no_react")
 		} else {
-			view.prompt = "React: Execute mission"
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 
+			if (is_area_urban(first_unit_loc) || !game.air_max) {
+				view.prompt = "React: Execute mission"
+			} else {
+				view.prompt = `React: Execute mission (using ${game.mission_air_pts} Air Point(s))`
+				view.actions.use_air_point = game.air_avail > 0
+			}
+
 			// TODO airmobile
-			// TODO air points
 			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
 				// any combination when division present
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
@@ -3296,10 +3321,17 @@ states.gov_react = {
 			gen_action("roll")
 		}
 	},
+	use_air_point() {
+		push_undo()
+		log(">using Air Point")
+		game.air_avail -= 1
+		game.mission_air_pts += 1
+	},
 	unit(u) {
 		set_toggle(game.selected, u)
 	},
 	no_react() {
+		clear_undo()
 		log("Gov. doesn't React")
 		end_gov_mission()
 	},
@@ -3642,6 +3674,7 @@ function clear_combat() {
 	game.combat = {}
 	set_clear(game.contacted)
 	game.distribute_gov_psl = 0
+	game.mission_air_pts = 0
 	delete game.events.must_react
 }
 
@@ -3752,6 +3785,8 @@ function gov_depreciation() {
 		if (roll <= loss) {
 			game.air_max = Math.max(game.air_max - loss, 0)
 			log(`>Air Max -${loss}`)
+		} else {
+			log(">no change")
 		}
 	}
 	if (game.helo_max) {
@@ -3762,6 +3797,8 @@ function gov_depreciation() {
 		if (roll <= loss) {
 			game.helo_max = Math.max(game.helo_max - loss, 0)
 			log(`>Helo Max -${loss}`)
+		} else {
+			log(">no change")
 		}
 	}
 }
