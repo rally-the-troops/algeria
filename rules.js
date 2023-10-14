@@ -1246,7 +1246,7 @@ states.scenario_setup = {
 			})
 
 			if (current_player_quick_setup()) {
-				gen_action("quick_setup")
+				view.actions.quick_setup = !game.quick_setup
 			}
 		} else {
 			// subsequent units must be on the same map location (or also on DEPLOY)
@@ -1274,7 +1274,8 @@ states.scenario_setup = {
 				let first_unit_zone = area_zone(first_unit_loc)
 
 				for_each_map_area_in_zone(first_unit_zone, loc => {
-					gen_action_loc(loc)
+					if (loc !== first_unit_loc)
+						gen_action_loc(loc)
 				})
 			}
 		}
@@ -1290,6 +1291,7 @@ states.scenario_setup = {
 		log("Loading quick setup")
 		let deployment = current_player_quick_setup()
 		setup_units(deployment)
+		game.quick_setup = true
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -1307,6 +1309,7 @@ states.scenario_setup = {
 		for (let u of list) {
 			deploy_unit(u, to)
 		}
+		delete game.quick_setup
 	},
 	end_deployment() {
 		log(`Deployed`)
@@ -1317,6 +1320,7 @@ states.scenario_setup = {
 				log(`>${game.summary[x]} at A${x}`)
 		}
 		game.summary = null
+		delete game.quick_setup
 
 		end_scenario_setup()
 	}
