@@ -647,6 +647,8 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 			p.classList.add("fln")
 		} else if (text.match(/^Government /)) {
 			p.classList.add("gov")
+		} else if (text.match(/^OAS /)) {
+			p.classList.add("oas")
 		} else {
 			p.classList.add("both")
 		}

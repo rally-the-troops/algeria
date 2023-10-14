@@ -1566,8 +1566,6 @@ states.place_oas = {
 		game.oas = to
 		log(`OAS placed in A${to}`)
 
-		// TODO OAS automatic missions
-
 		if (is_gov_player()) {
 			game.state = "gov_reinforcement"
 		} else {
@@ -2237,8 +2235,23 @@ function end_deployment() {
 function goto_operations_phase() {
 	game.passes = 0
 
-	// TODO In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
-	// Whatever the result of the mission, it will automatically cause a Terror marker to be placed in the Area (if there isn't one there already).
+	// In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
+	if (is_area_algerian(game.oas)) {
+		log_h2("OAS Operation")
+		let loc = game.oas
+		log_h3(`Suppression Mission in A${loc}`)
+		do_suppression(loc)
+
+		// Whatever the result of the mission, it will automatically cause a Terror marker to be placed in the Area (if there isn't one there already).
+		if (!is_area_terrorized(loc)) {
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		}
+
+		if (check_victory())
+			return
+	}
+
 	goto_fln_operations_phase()
 }
 
@@ -3548,6 +3561,69 @@ function goto_gov_suppression_mission() {
 	game.state = "gov_suppression"
 }
 
+function do_suppression(loc, assist=0) {
+	// can also be initiated by OAS
+	set_area_suppressed(loc)
+
+	// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
+	// Elite units may assist in this mission, each one yielding a +1 DRM.
+	// A DRM of +1 is applied if the "Amnesty" random event is in effect.
+	let drm = assist
+	if (game.events.amnesty) drm += 1
+	let [result, effect] = roll_mst(drm)
+
+	// rolls the die and a number of FLN Bands/Faileks in the area equal to the result on the Mission Success Table are neutralized,
+	// no matter what box they are in (FLN player chooses which exact units are neutralized).
+
+	let targets = []
+	for_each_enemy_unit_in_loc(loc, u => {
+		let type = unit_type(u)
+		if (type === BAND || type === FAILEK) {
+			targets.push(u)
+		}
+	})
+
+	if (!targets.length) {
+		log(">No Bands/Faileks to neutralize")
+	}
+
+	// TODO FLN player chooses which exact units are neutralized)
+	shuffle(targets)
+	for(let u of targets.slice(0, result)) {
+		log(`>U${u} neutralized`)
+		set_unit_neutralized(u)
+		set_unit_box(u, OC)
+	}
+
+	// On a '@' result, all Cadre and Front units in the area are neutralized as well
+	// and the area is Terrorized (place a Terror marker).
+	// On a '+' result, the mission backfired somehow and the Government player loses 1d6 PSP,
+	// as well as having to place a Terror marker.
+
+	if (effect === '@') {
+		for_each_enemy_unit_in_loc(loc, u => {
+			let type = unit_type(u)
+			if (type === FRONT || type === CADRE) {
+				log(`>U${u} neutralized`)
+				set_unit_neutralized(u)
+				set_unit_box(u, OC)
+			}
+		})
+		if (!is_area_terrorized(loc)) {
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		}
+	} else if (effect === '+') {
+		log(">Backfired")
+		let roll = roll_1d6()
+		lower_gov_psl(roll)
+		if (!is_area_terrorized(loc)) {
+			log(">Area terrorized")
+			set_area_terrorized(loc)
+		}
+	}
+}
+
 states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
@@ -3584,60 +3660,7 @@ states.gov_suppression = {
 		}
 
 		lower_gov_psl(GOV_SUPPRESSION_COST)
-		set_area_suppressed(loc)
-
-		// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
-		// Elite units may assist in this mission, each one yielding a +1 DRM.
-		// A DRM of +1 is applied if the "Amnesty" random event is in effect.
-		let drm = assist
-		if (game.events.amnesty) drm += 1
-		let [result, effect] = roll_mst(drm)
-
-		// rolls the die and a number of FLN Bands/Faileks in the area equal to the result on the Mission Success Table are neutralized,
-		// no matter what box they are in (FLN player chooses which exact units are neutralized).
-
-		let targets = []
-		for_each_enemy_unit_in_loc(loc, u => {
-			let type = unit_type(u)
-			if (type === BAND || type === FAILEK) {
-				targets.push(u)
-			}
-		})
-
-		if (!targets.length) {
-			log(">No Bands/Faileks to neutralize")
-		}
-
-		// TODO FLN player chooses which exact units are neutralized)
-		shuffle(targets)
-		for(let u of targets.slice(0, result)) {
-			log(`>U${u} neutralized`)
-			set_unit_neutralized(u)
-			set_unit_box(u, OC)
-		}
-
-		// On a '@' result, all Cadre and Front units in the area are neutralized as well
-		// and the area is Terrorized (place a Terror marker).
-		// On a '+' result, the mission backfired somehow and the Government player loses 1d6 PSP,
-		// as well as having to place a Terror marker.
-
-		if (effect === '@') {
-			for_each_enemy_unit_in_loc(loc, u => {
-				let type = unit_type(u)
-				if (type === FRONT || type === CADRE) {
-					log(`>U${u} neutralized`)
-					set_unit_neutralized(u)
-					set_unit_box(u, OC)
-				}
-			})
-			log(">Area terrorized")
-			set_area_terrorized(loc)
-		} else if (effect === '+') {
-			log(">Backfired, area terrorized")
-			let roll = roll_1d6()
-			lower_gov_psl(roll)
-			set_area_terrorized(loc)
-		}
+		do_suppression(loc, assist)
 		end_gov_mission()
 	}
 }
