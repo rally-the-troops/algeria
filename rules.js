@@ -3384,6 +3384,11 @@ states.gov_react = {
 			}
 			goto_combat()
 		} else {
+			// React Gov units go to OC if all FLN units evade and there isn't actually any combat
+			for (let u of list) {
+				if (is_mobile_unit(u))
+					set_unit_box(u, OC)
+			}
 			end_gov_mission()
 		}
 	}
