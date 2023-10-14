@@ -1999,27 +1999,33 @@ states.fln_reinforcement = {
 	build_cadre() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
+		push_undo()
 		build_fln_unit(CADRE, loc)
 	},
 	build_band() {
 		let unit = pop_selected()
 		let loc = unit_loc(unit)
+		push_undo()
 		build_fln_unit(BAND, loc)
 	},
 	convert_front_to_cadre() {
 		let unit = pop_selected()
+		push_undo()
 		convert_fln_unit(unit, CADRE)
 	},
 	convert_cadre_to_front() {
 		let unit = pop_selected()
+		push_undo()
 		convert_fln_unit(unit, FRONT)
 	},
 	convert_cadre_to_band() {
 		let unit = pop_selected()
+		push_undo()
 		convert_fln_unit(unit, BAND)
 	},
 	convert_band_to_failek() {
 		let unit = pop_selected()
+		push_undo()
 		convert_fln_unit(unit, FAILEK)
 	},
 	end_reinforcement() {
