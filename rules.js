@@ -3576,6 +3576,10 @@ states.gov_suppression = {
 			}
 		})
 
+		if (!targets.length) {
+			log(">No Bands/Faileks to neutralize")
+		}
+
 		// TODO FLN player chooses which exact units are neutralized)
 		shuffle(targets)
 		for(let u of targets.slice(0, result)) {
