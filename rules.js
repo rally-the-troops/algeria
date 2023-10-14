@@ -2904,7 +2904,7 @@ states.fln_harass = {
 		game.combat = {
 			fln_units: [],
 			gov_units: [],
-			half_firepower: 1
+			harass: 1
 		}
 		for (let u of list) {
 			if (is_gov_unit(u)) {
@@ -2920,7 +2920,7 @@ states.fln_harass = {
 
 function goto_combat() {
 	// TODO merge contacted / fln_units
-	// game.combat = {fln_units: [], gov_units: [], half_firepower: false}
+	// game.combat = {fln_units: [], gov_units: [], harass: false}
 	// game.combat = {hits_on_fln: 0, hits_on_gov: 0, distribute_gov_psl: 0}
 
 	let loc = unit_loc(game.combat.fln_units[0])
@@ -2941,7 +2941,7 @@ function goto_combat() {
 		gov_firepower += unit_firepower(u)
 	}
 	let half_str = ''
-	if (game.combat.half_firepower) {
+	if (game.combat.harass) {
 		// When units fire at half Firepower Rating, round fractions up.
 		gov_firepower = Math.ceil(gov_firepower / 2)
 		half_str = " (half)"
@@ -3008,7 +3008,17 @@ function end_combat() {
 			set_unit_box(u, OC)
 	}
 
-	// TODO allow React on Harass mission?
+	// allow React on Harass mission
+	if (game.combat.harass) {
+		if (check_victory())
+			return
+		// Gov can React
+		delete game.combat.harass
+		if (can_gov_react()) {
+			goto_gov_react_mission()
+			return
+		}
+	}
 	end_gov_mission()
 }
 
