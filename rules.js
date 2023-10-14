@@ -1730,6 +1730,7 @@ states.gov_reinforcement = {
 		// log(`Paid ${cost} PSP`)
 	},
 	select_all_inactive() {
+		push_undo()
 		for_each_friendly_unit_on_map_box(OC, u => {
 			set_toggle(game.selected, u)
 		})
