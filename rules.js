@@ -894,7 +894,7 @@ exports.view = function(state, player) {
 		turn: game.turn,
 		fln_ap: game.fln_ap,
 		fln_psl: game.fln_psl,
-		gov_psl: game.gov_psl,
+		gov_psl: Math.floor(game.gov_psl), // activation cost can be fraction
 		air_avail: game.air_avail,
 		air_max: game.air_max,
 		helo_avail: game.helo_avail,
@@ -1695,7 +1695,8 @@ states.gov_reinforcement = {
 					gen_action_unit(u)
 				})
 
-				if (game.gov_psl > cost) {
+				// don't allow PSL to go <= 0
+				if (Math.floor(game.gov_psl - cost) > 0) {
 					for_each_algerian_map_area(loc => {
 						gen_action_loc(loc)
 					})
@@ -1708,8 +1709,8 @@ states.gov_reinforcement = {
 					gen_action_unit(u)
 				})
 
-				// Fractions rounded up
-				if (game.gov_psl >  Math.ceil(cost)) {
+				// don't allow PSL to go <= 0
+				if (Math.floor(game.gov_psl - cost) > 0) {
 					gen_action("activate")
 				}
 			}
@@ -1731,7 +1732,6 @@ states.gov_reinforcement = {
 		}
 		let cost = mobilization_cost(list)
 		lower_gov_psl(cost)
-		// log(`Paid ${cost} PSP`)
 	},
 	select_all_inactive() {
 		push_undo()
@@ -1749,9 +1749,9 @@ states.gov_reinforcement = {
 			log(`>U${u} in A${loc}`)
 			set_unit_box(u, OPS)
 		}
-		let cost = Math.ceil(activation_cost(list))
+		// cost can be fraction
+		let cost = activation_cost(list)
 		lower_gov_psl(cost)
-		// log(`Paid ${cost} PSP`)
 	},
 	remove() {
 		let list = game.selected
@@ -1811,6 +1811,9 @@ states.gov_reinforcement = {
 		game.border_zone_drm -= 1
 	},
 	end_reinforcement() {
+		// PSL rounded down as cost can be fractions
+		game.gov_psl = Math.floor(game.gov_psl)
+
 		goto_fln_reinforcement_phase()
 	}
 }
