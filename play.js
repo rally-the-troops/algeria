@@ -517,6 +517,8 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("quick_setup", "Quick Setup")
 	action_button("end_deployment", "End deployment")
 	action_button("roll", "Roll")
+	action_button("raise_fln_psl_1d6", "+1d6 FLN PSL")
+	action_button("lower_gov_psl_1d6", "-1d6 Government PSL")
 
 	// gov reinforcement
 	action_button("mobilization", "Mobilization")

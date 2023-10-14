@@ -62,7 +62,6 @@ function player_name(player) {
 	}
 }
 
-
 function set_next_player() {
 	if (game.phasing === GOV_NAME)
 		game.phasing = FLN_NAME
@@ -1358,7 +1357,12 @@ states.random_event = {
 	inactive: "to do random event",
 	prompt() {
 		view.prompt = "Roll for a random event."
+		// gen_action("reset") // XXX debug
 		gen_action("roll")
+	},
+	reset() {
+		// XXX DEBUG
+		// goto_un_debate()
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
@@ -1424,9 +1428,35 @@ function goto_elections_in_france() {
 }
 
 function goto_un_debate() {
-	log_h3("UN debates Algerian Independence. TODO")
+	log_h3("UN debates Algerian Independence.")
 	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
-	end_random_event()
+
+	if (game.gov_psl <= game.fln_psl) {
+		game.phasing = FLN_NAME
+	} else {
+		game.phasing = GOV_NAME
+	}
+	set_active_player()
+	game.state = "random_event_un_debate"
+}
+
+states.random_event_un_debate = {
+	inactive: "to do UN debate",
+	prompt() {
+		view.prompt = "Random Event: UN Debate"
+		gen_action("raise_fln_psl_1d6")
+		gen_action("lower_gov_psl_1d6")
+	},
+	raise_fln_psl_1d6() {
+		let roll = roll_1d6()
+		raise_fln_psl(roll)
+		end_random_event()
+	},
+	lower_gov_psl_1d6() {
+		let roll = roll_1d6()
+		lower_gov_psl(roll)
+		end_random_event()
+	}
 }
 
 function goto_fln_factional_purge() {
@@ -1512,6 +1542,7 @@ function end_random_event() {
 
 	// See who controls OAS
 	if (game.oas) {
+		log_br()
 		log("OAS Active")
 		roll_oas_control()
 	}
