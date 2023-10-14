@@ -1017,6 +1017,7 @@ exports.setup = function (seed, scenario, options) {
 		// transient state
 		passes: 0,
 		combat: {},
+		deployed: [],
 		contacted: [],
 		distribute: {},
 		distribute_gov_psl: 0,
@@ -2045,6 +2046,7 @@ function goto_gov_deployment_phase() {
 	log_h2(`${game.active} Deployment`)
 	game.state = "gov_deployment"
 	game.selected = []
+	game.deployed = []
 }
 
 states.gov_deployment = {
@@ -2053,7 +2055,7 @@ states.gov_deployment = {
 		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map(u => {
-				if (unit_box(u) === OPS || (!is_police_unit(u) && unit_box(u) === PTL) || is_division_unit(u))
+				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || is_division_unit(u))
 					gen_action_unit(u)
 			})
 		} else {
@@ -2073,12 +2075,12 @@ states.gov_deployment = {
 			}
 
 			for_each_friendly_unit_in_loc(first_unit_loc, u => {
-				if (unit_box(u) === first_unit_box && is_mobile_unit(u)) {
+				if (unit_box(u) === first_unit_box && is_mobile_unit(u) && (!set_has(game.deployed, u) || u === first_unit)) {
 					gen_action_unit(u)
 				}
 			})
 
-			if (is_unit_not_neutralized(first_unit)) {
+			if (is_unit_not_neutralized(first_unit) && !set_has(game.deployed, first_unit)) {
 				for_each_algerian_map_area(loc => {
 					gen_action_loc(loc)
 				})
@@ -2110,6 +2112,7 @@ states.gov_deployment = {
 				set_unit_loc(u, to)
 				set_unit_box(u, OPS)
 			}
+			set_add(game.deployed, u)
 		}
 	},
 	change_division_mode() {
@@ -2125,6 +2128,7 @@ states.gov_deployment = {
 		}
 	},
 	end_deployment() {
+		game.deployed = []
 		goto_fln_deployment_phase()
 	}
 }
