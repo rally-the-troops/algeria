@@ -1126,10 +1126,9 @@ const SCENARIO_DEPLOYMENT = {
 			"Morocco": [BAND, BAND, BAND, BAND],
 			"Tunisia": [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK]
 		},
-		// XXX RULE only 6 Algerian X counters provided, scenario requires 7.
 		gov: {
 			"I": [FR_XX, FR_XX, AL_X],
-			"II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, /*AL_X,*/ POL, POL],
+			"II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, POL, POL],
 			"III": [FR_XX, FR_XX, FR_X, AL_X],
 			"IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
 			"V": [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL]
@@ -2145,7 +2144,7 @@ states.fln_deployment = {
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map(u => {
 				let loc = unit_loc(u)
-				if ((unit_box(u) === OPS || unit_box(u) === UG) && !is_area_morocco_or_tunisia(loc))
+				if ((unit_box(u) === OPS || unit_box(u) === UG) && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
 					gen_action_unit(u)
 			})
 		} else {
@@ -2163,9 +2162,9 @@ states.fln_deployment = {
 
 			if (is_area_algerian(first_unit_loc)) {
 				gen_action_loc(first_unit_loc)
-			} else if (is_area_france(first_unit_loc)) {
+			} else if (is_area_france(first_unit_loc) && !game.deploy_cadre_france) {
 				// The Cadre unit in France may be deployed to any Area where there is a Front unit.
-				// XXX RULE this allows free movement when deploying to France and then again in the same turn elsewhere
+				// you either send 1 Cadre there, in the Deployment Phase, or remove it. Not Both
 				let has_front = false
 				for_each_friendly_unit_on_map_of_type(FRONT, u => {
 					gen_action_loc(unit_loc(u))
@@ -2176,7 +2175,7 @@ states.fln_deployment = {
 				}
 			}
 
-			if (first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE) && !is_area_urban(first_unit_loc)) {
+			if (!game.deploy_cadre_france && first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE) && !is_area_urban(first_unit_loc)) {
 				view.prompt = "Deploy units to OPS in same area (or Cadre to France)"
 				// deploy single Cadre to France
 				gen_action_loc(FRANCE)
@@ -2194,6 +2193,8 @@ states.fln_deployment = {
 		game.selected = []
 		push_undo()
 		log("Deployed:")
+		if (is_area_france(to))
+			game.deploy_cadre_france = true
 		for (let u of list) {
 			let loc = unit_loc(u)
 			if (loc === to) {
@@ -2208,6 +2209,8 @@ states.fln_deployment = {
 				set_unit_loc(u, to)
 				set_unit_box(u, UG)
 			}
+			if (is_area_france(loc))
+				game.deploy_cadre_france = true
 		}
 	},
 	end_deployment() {
@@ -2221,6 +2224,8 @@ function end_deployment() {
 		if (is_mobile_unit(u))
 			set_unit_box(u, OPS)
 	})
+
+	delete game.deploy_cadre_france
 
 	goto_operations_phase()
 }
@@ -2900,11 +2905,11 @@ states.fln_harass = {
 			gov_units: [],
 			half_firepower: 1
 		}
-		// XXX doublecheck that Harass does NOT automatically contact units (and allows for React)
 		for (let u of list) {
 			if (is_gov_unit(u)) {
 				set_add(game.combat.gov_units, u)
 			} else {
+				set_add(game.contacted, u)
 				set_add(game.combat.fln_units, u)
 			}
 		}
@@ -2913,7 +2918,7 @@ states.fln_harass = {
 }
 
 function goto_combat() {
-	// TODO replace contacted / fln_units
+	// TODO merge contacted / fln_units
 	// game.combat = {fln_units: [], gov_units: [], half_firepower: false}
 	// game.combat = {hits_on_fln: 0, hits_on_gov: 0, distribute_gov_psl: 0}
 
@@ -3955,7 +3960,7 @@ function final_psl_adjustment() {
 			if (check_victory())
 				return
 		} else {
-			log("> Nothing happened.")
+			log("> No Coup attempt.")
 		}
 	}
 
