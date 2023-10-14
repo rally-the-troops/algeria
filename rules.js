@@ -2288,7 +2288,8 @@ states.fln_operations = {
 				view.actions.move = 1
 		})
 
-		gen_action("gov_mission")
+		// Only allow to Government to take a mission if they didn't just pass.
+		view.actions.gov_mission = !game.passes
 		gen_action("pass")
 	},
 	propaganda() {
