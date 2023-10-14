@@ -2,7 +2,6 @@
 
 const FLN_NAME = "FLN"
 const GOV_NAME = "Government"
-const BOTH = "Both"
 
 const area_count = 31
 const unit_count = 120
@@ -917,7 +916,7 @@ exports.view = function(state, player) {
 
 	if (game.state === "game_over") {
 		view.prompt = game.victory
-	} else if (player !== game.active && game.active !== BOTH) {
+	} else if (player !== game.active) {
 		let inactive = states[game.state].inactive || game.state
 		view.prompt = `Waiting for ${game.active} \u2014 ${inactive}...`
 	} else {
@@ -1346,12 +1345,13 @@ function begin_game() {
 }
 
 function goto_random_event() {
-	game.active = BOTH
+	// current player gets to do the random event roll
 	game.state = "random_event"
 	log_h2("Random Event")
 }
 
 states.random_event = {
+	inactive: "to do random event",
 	prompt() {
 		view.prompt = "Roll for a random event."
 		gen_action("roll")
@@ -1626,7 +1626,7 @@ function mobilize_unit(u, to) {
 }
 
 states.gov_reinforcement = {
-	inactive: "to do reinforcement",
+	inactive: "to do Reinforcement",
 	prompt() {
 		if (game.selected.length === 0) {
 			view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
@@ -1930,7 +1930,7 @@ function convert_fln_unit(u, type) {
 }
 
 states.fln_reinforcement = {
-	inactive: "to do reinforcement",
+	inactive: "to do Reinforcement",
 	prompt() {
 		if (game.selected.length === 0) {
 			view.prompt = "Reinforcement: Build & Augment units"
@@ -2035,7 +2035,7 @@ function goto_gov_deployment_phase() {
 }
 
 states.gov_deployment = {
-	inactive: "to do deployment",
+	inactive: "to do Deployment",
 	prompt() {
 		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 		if (game.selected.length === 0) {
@@ -2125,7 +2125,7 @@ function goto_fln_deployment_phase() {
 }
 
 states.fln_deployment = {
-	inactive: "to do deployment",
+	inactive: "to do Deployment",
 	prompt() {
 		view.prompt = "Deploy units to OPS in same area"
 		if (game.selected.length === 0) {
@@ -2233,7 +2233,7 @@ const FLN_STRIKE_COST = 3
 const FLN_RAID_COST = 1
 
 states.fln_operations = {
-	inactive: "to do operations",
+	inactive: "to do Operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass"
 
@@ -3082,7 +3082,7 @@ const GOV_SUPPRESSION_COST = 1
 const GOV_POPULATION_RESETTLEMENT_COST = 1
 
 states.gov_operations = {
-	inactive: "to do operations",
+	inactive: "to do Operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission, or Pass."
 
@@ -4019,8 +4019,8 @@ function final_psl_adjustment() {
 }
 
 function goto_turn_interphase() {
+	// current player gets to do the interphrase
 	// clear_undo()
-	game.active = BOTH
 	game.state = "turn_interphase"
 
 	// XXX debug
@@ -4041,6 +4041,7 @@ function goto_turn_interphase() {
 }
 
 states.turn_interphase = {
+	inactive: "to do Turn Interphase",
 	prompt() {
 		view.prompt = "Turn Interphase"
 		gen_action("end_turn")
