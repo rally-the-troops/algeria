@@ -991,7 +991,7 @@ function goto_game_over(result, victory) {
 	game.result = result
 	game.victory = victory
 	log("")
-	log(game.result + " won!")
+	log(victory)
 	return true
 }
 
@@ -1381,7 +1381,7 @@ states.random_event = {
 	},
 	reset() {
 		// XXX DEBUG
-		// goto_un_debate()
+		// goto_fln_factional_purge()
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
