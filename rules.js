@@ -2190,7 +2190,7 @@ states.fln_deployment = {
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map(u => {
 				let loc = unit_loc(u)
-				if ((unit_box(u) === OPS || unit_box(u) === UG) && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
+				if (unit_box(u) === UG && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
 					gen_action_unit(u)
 			})
 		} else {
