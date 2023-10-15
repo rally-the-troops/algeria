@@ -1346,9 +1346,8 @@ states.scenario_setup = {
 }
 
 function end_scenario_setup() {
-	set_next_player()
-
-	if (has_friendly_unit_in_loc(DEPLOY)) {
+	if (has_enemy_unit_in_loc(DEPLOY)) {
+		set_next_player()
 		goto_scenario_setup()
 	} else {
 		begin_game()
