@@ -713,6 +713,12 @@ function for_each_friendly_unit_on_map_boxes(boxes, fn) {
 			fn(u)
 }
 
+function for_each_friendly_unit_in_loc_box(loc, box, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) === loc && unit_box(u) === box)
+			fn(u)
+}
+
 function for_each_enemy_unit_in_loc_boxes(loc, boxes, fn) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === loc && boxes.includes(unit_box(u)))
@@ -2638,8 +2644,8 @@ states.fln_strike = {
 			let first_unit_loc = unit_loc(first_unit)
 			let can_assist = false
 
-			for_each_friendly_unit_on_map_box(OPS, u => {
-				if (unit_loc(u) === first_unit_loc && unit_type(u) === CADRE) {
+			for_each_friendly_unit_in_loc_box(first_unit_loc, OPS, u => {
+				if (unit_type(u) === CADRE) {
 					gen_action_unit(u)
 					can_assist = true
 				}
@@ -2834,7 +2840,7 @@ states.fln_raid = {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 
-			for_each_friendly_unit_in_loc(first_unit_loc, u => {
+			for_each_friendly_unit_in_loc_box(first_unit_loc, OPS, u => {
 				if (is_raid_unit(u)) {
 					gen_action_unit(u)
 				}
@@ -2937,7 +2943,7 @@ states.fln_harass = {
 				gen_action("roll")
 			}
 
-			for_each_friendly_unit_on_map_box(OPS, u => {
+			for_each_friendly_unit_in_loc_box(first_unit_loc, OPS, u => {
 				if (is_harass_unit(u)) {
 					if (set_has(game.selected, u)) {
 						gen_action_unit(u)
