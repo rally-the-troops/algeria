@@ -10,5 +10,7 @@ Read more about the game on [boardgamegeek.com](https://boardgamegeek.com/boardg
 This game is implemented with the generous permission of Brian Train.
 
 Rules are Copyright 2015 Brian Train.
+Counter art is Copyright 2015 Brian Train and 2023 Mischa Untaga.
+Map & Covert art is Copyright 2023 Mischa Untaga.
 
 Source code to this digital implementation is Copyright 2023 Mischa Untaga.
