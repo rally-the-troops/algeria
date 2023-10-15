@@ -519,6 +519,12 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("roll", "Roll")
 	action_button("raise_fln_psl_1d6", "+1d6 FLN PSL")
 	action_button("lower_gov_psl_1d6", "-1d6 Government PSL")
+	action_button("zone_I", "I")
+	action_button("zone_II", "II")
+	action_button("zone_III", "III")
+	action_button("zone_IV", "IV")
+	action_button("zone_V", "V")
+	action_button("zone_VI", "VI")
 
 	// gov reinforcement
 	action_button("mobilization", "Mobilization")

@@ -752,6 +752,21 @@ function count_friendly_unit_in_loc(x) {
 	return count
 }
 
+function count_friendly_units_in_zone(z) {
+	let count = 0
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (is_unit_not_neutralized(u) && area_zone(unit_loc(u)) === z)
+			count++
+
+	return count
+}
+
+function for_each_friendly_unit_in_zone(z, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (is_unit_not_neutralized(u) && area_zone(unit_loc(u)) === z)
+			fn(u)
+}
+
 function for_each_friendly_unit_in_locs(xs, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		for (let x of xs)
@@ -1479,10 +1494,88 @@ states.random_event_un_debate = {
 }
 
 function goto_fln_factional_purge() {
-	log_h3("FLN Factional Purge. TODO")
+	log_h3("FLN Factional Purge")
 	// The Government player chooses one wilaya and rolls 1d6, neutralizing
 	// that number of FLN units there (the FLN player's choice which ones).
-	end_random_event()
+	game.phasing = GOV_NAME
+	set_active_player()
+	game.state = "event_fln_factional_purge_select_zone"
+}
+
+states.event_fln_factional_purge_select_zone = {
+	inactive: "to do FLN Factional Purge",
+	prompt() {
+		view.prompt = "FLN Factional Purge: Choose one wilaya (zone) where to neutralize 1d6 FLN units"
+		gen_action("zone_I")
+		gen_action("zone_II")
+		gen_action("zone_III")
+		gen_action("zone_IV")
+		gen_action("zone_V")
+		gen_action("zone_VI")
+	},
+	zone_I() {
+		game.events.fln_purge_zone = "I"
+		continue_fln_factional_purge()
+	},
+	zone_II() {
+		game.events.fln_purge_zone = "II"
+		continue_fln_factional_purge()
+	},
+	zone_III() {
+		game.events.fln_purge_zone = "III"
+		continue_fln_factional_purge()
+	},
+	zone_IV() {
+		game.events.fln_purge_zone = "IV"
+		continue_fln_factional_purge()
+	},
+	zone_V() {
+		game.events.fln_purge_zone = "V"
+		continue_fln_factional_purge()
+	},
+	zone_VI() {
+		game.events.fln_purge_zone = "VI"
+		continue_fln_factional_purge()
+	}
+}
+
+function continue_fln_factional_purge() {
+	log(`in wilaya (zone) ${game.events.fln_purge_zone}`)
+
+	game.phasing = FLN_NAME
+	set_active_player()
+
+	let roll = roll_1d6()
+	game.selected = []
+	game.events.fln_purge_num = Math.min(roll, count_friendly_units_in_zone(game.events.fln_purge_zone))
+	game.state = "event_fln_factional_purge_select_units"
+}
+
+states.event_fln_factional_purge_select_units = {
+	inactive: "to do FLN Factional Purge",
+	prompt() {
+		view.prompt = `FLN Factional Purge: Select ${game.events.fln_purge_num} unit(s) in wilaya (zone) ${game.events.fln_purge_zone} to neutralize`
+
+		for_each_friendly_unit_in_zone(game.events.fln_purge_zone, u => {
+			gen_action_unit(u)
+		})
+
+		if (game.selected.length === game.events.fln_purge_num) {
+			gen_action("done")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	done() {
+		for (let u of game.selected) {
+			neutralize_unit(u)
+		}
+
+		delete game.events.fln_purge_zone
+		delete game.events.fln_purge_num
+		end_random_event()
+	}
 }
 
 function goto_morocco_tunisia_independence() {
