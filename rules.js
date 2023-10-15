@@ -472,6 +472,13 @@ function eliminate_unit(u) {
 	game.units[u] = 0
 	set_unit_loc(u, ELIMINATED)
 	set_unit_box(u, OC)
+	clear_unit_neutralized(u)
+}
+
+function remove_unit(u) {
+	set_unit_loc(u, DEPLOY)
+	set_unit_box(u, OC)
+	clear_unit_neutralized(u)
 }
 
 function evade_unit(u) {
@@ -1790,8 +1797,7 @@ states.gov_reinforcement = {
 		for (let u of list) {
 			let loc = unit_loc(u)
 			log(`>U${u} from A${loc}`)
-			set_unit_loc(u, DEPLOY)
-			set_unit_box(u, OC)
+			remove_unit(u)
 		}
 	},
 	acquire_air_point() {
