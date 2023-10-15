@@ -475,6 +475,13 @@ function eliminate_unit(u) {
 	clear_unit_neutralized(u)
 }
 
+function neutralize_unit(u) {
+	log(`>U${u} neutralized`)
+	set_unit_neutralized(u)
+	if (!is_police_unit(u))
+		set_unit_box(u, OC)
+}
+
 function remove_unit(u) {
 	set_unit_loc(u, DEPLOY)
 	set_unit_box(u, OC)
@@ -2694,7 +2701,7 @@ states.fln_strike = {
 			log(`all Police units in A${loc} neutralized`)
 			for_each_enemy_unit_in_loc(loc, u => {
 				if (is_police_unit(u)) {
-					set_unit_neutralized(u)
+					neutralize_unit(u)
 				}
 			})
 		}
@@ -2875,8 +2882,7 @@ states.fln_raid = {
 
 		if (effect === '+') {
 			// bad effect: 1 Band/Failek neutralized, area is Terrorized
-			log(`Neutralized U${first_unit}`)
-			set_unit_neutralized(first_unit)
+			neutralize_unit(first_unit)
 			log(">Area terrorized")
 			set_area_terrorized(loc)
 		} else if (effect === '@') {
@@ -2884,8 +2890,7 @@ states.fln_raid = {
 			let done = false
 			for_each_enemy_unit_in_loc(loc, u => {
 				if (!done && is_police_unit(u)) {
-					log(`Police in A${loc} neutralized`)
-					set_unit_neutralized(u)
+					neutralize_unit(u)
 					done = true
 				}
 			})
@@ -3045,12 +3050,12 @@ function end_combat() {
 	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
 		log(`>Gov. units neutralized`)
 		for (let u of game.combat.gov_units) {
-			set_unit_neutralized(u)
+			neutralize_unit(u)
 		}
 	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln && game.combat.fln_units.length) {
 		log(`>FLN units neutralized`)
 		for (let u of game.combat.fln_units) {
-			set_unit_neutralized(u)
+			neutralize_unit(u)
 		}
 	}
 	// After taking any combat results, all remaining involved units are placed in the OC box.
@@ -3627,9 +3632,7 @@ function do_suppression(loc, assist=0) {
 	// TODO FLN player chooses which exact units are neutralized)
 	shuffle(targets)
 	for(let u of targets.slice(0, result)) {
-		log(`>U${u} neutralized`)
-		set_unit_neutralized(u)
-		set_unit_box(u, OC)
+		neutralize_unit(u)
 	}
 
 	// On a '@' result, all Cadre and Front units in the area are neutralized as well
@@ -3641,9 +3644,7 @@ function do_suppression(loc, assist=0) {
 		for_each_enemy_unit_in_loc(loc, u => {
 			let type = unit_type(u)
 			if (type === FRONT || type === CADRE) {
-				log(`>U${u} neutralized`)
-				set_unit_neutralized(u)
-				set_unit_box(u, OC)
+				neutralize_unit(u)
 			}
 		})
 		if (!is_area_terrorized(loc)) {
