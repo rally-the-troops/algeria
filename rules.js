@@ -2194,20 +2194,19 @@ states.fln_deployment = {
 	prompt() {
 		view.prompt = "Deploy units to OPS in same area"
 		if (game.selected.length === 0) {
-			for_each_friendly_unit_on_map(u => {
+			for_each_friendly_unit_on_map_box(UG, u => {
 				let loc = unit_loc(u)
-				if (unit_box(u) === UG && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
+				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
 					gen_action_unit(u)
 			})
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
-			let first_unit_box = unit_box(first_unit)
 			let first_unit_type = unit_type(first_unit)
 
 			// Allow deselect && more units in same box
-			for_each_friendly_unit_in_loc(first_unit_loc, u => {
-				if (unit_box(u) === first_unit_box) {
+			for_each_friendly_unit_in_loc_box(first_unit_loc, UG, u => {
+				if (is_unit_not_neutralized(u)) {
 					gen_action_unit(u)
 				}
 			})
