@@ -2024,7 +2024,7 @@ states.fln_reinforcement = {
 					gen_action("build_cadre")
 				if (has_free_unit_by_type(BAND) && game.fln_ap >= build_cost(first_unit_loc))
 					gen_action("build_band")
-				if (has_free_unit_by_type(CADRE))
+				if (has_free_unit_by_type(CADRE) && !is_area_morocco_or_tunisia(first_unit_loc))
 					gen_action("convert_front_to_cadre")
 
 			} else if (first_unit_type === CADRE) {
