@@ -1487,7 +1487,7 @@ function goto_morocco_tunisia_independence() {
 	let fln_roll = roll_nd6(2)
 	raise_fln_psl(fln_roll)
 
-	let gov_roll = roll_d6(2)
+	let gov_roll = roll_nd6(2)
 	raise_gov_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
