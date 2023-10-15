@@ -3190,16 +3190,16 @@ states.gov_operations = {
 			if (is_flush_unit(u)) {
 				view.actions.flush = 1
 			}
-			if (game.gov_psl >= GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
+			if (game.gov_psl > GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
 				view.actions.intelligence = 1
 			}
-			if (game.gov_psl >= GOV_CIVIL_AFFAIRS_COST && is_civil_affairs_unit(u)) {
+			if (game.gov_psl > GOV_CIVIL_AFFAIRS_COST && is_civil_affairs_unit(u)) {
 				view.actions.civil_affairs = 1
 			}
-			if (game.gov_psl >= GOV_SUPPRESSION_COST && is_suppression_unit(u)) {
+			if (game.gov_psl > GOV_SUPPRESSION_COST && is_suppression_unit(u)) {
 				view.actions.suppression = 1
 			}
-			if (game.gov_psl >= GOV_POPULATION_RESETTLEMENT_COST && is_population_resettlement_unit(u)) {
+			if (game.gov_psl > GOV_POPULATION_RESETTLEMENT_COST && is_population_resettlement_unit(u)) {
 				view.actions.population_resettlement = 1
 			}
 		})
