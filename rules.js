@@ -507,8 +507,10 @@ function neutralize_unit(u) {
 		set_unit_box(u, OC)
 }
 
-function remove_unit(u) {
-	set_unit_loc(u, DEPLOY)
+function remove_unit(u, to=DEPLOY) {
+	let loc = unit_loc(u)
+	log(`>U${u} from A${loc}`)
+	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 	clear_unit_neutralized(u)
 }
@@ -766,6 +768,15 @@ function for_each_enemy_unit_in_loc(loc, fn) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === loc)
 			fn(u)
+}
+
+function count_friendly_units_on_map_of_type(type) {
+	let count = 0
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+	if (unit_loc(u) > 2 && unit_type(u) === type)
+			count++
+
+	return count
 }
 
 function count_friendly_unit_in_loc(x) {
@@ -1451,6 +1462,16 @@ function goto_random_event() {
 	// current player gets to do the random event roll
 	game.state = "random_event"
 	log_h2("Random Event")
+
+	if (game.events.gov_remobilize) {
+		log("Units may remobilize this turn:")
+		for (let u of game.events.gov_remobilize) {
+			log(`>U${u}`)
+			set_unit_loc(u, DEPLOY)
+		}
+		delete game.events.gov_remobilize
+		log_br()
+	}
 }
 
 states.random_event = {
@@ -1462,7 +1483,7 @@ states.random_event = {
 	},
 	reset() {
 		// XXX DEBUG
-		// goto_fln_factional_purge()
+		// goto_nato_pressure()
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
@@ -1676,11 +1697,61 @@ function goto_morocco_tunisia_independence() {
 }
 
 function goto_nato_pressure() {
-	log_h3("NATO pressures France to boost European defense. TODO")
+	log_h3("NATO pressures France to boost European defense.")
 	// The Government player rolls 1d6 and must remove that number of French Army brigades
 	// (a division counts as three brigades) from the map.
-	// The units may be re-mobilized at least one turn later.
-	end_random_event()
+	game.phasing = GOV_NAME
+	set_active_player()
+
+	let roll = roll_1d6()
+	game.selected = []
+	let num_fr_x = count_friendly_units_on_map_of_type(FR_X)
+	let num_fr_xx = count_friendly_units_on_map_of_type(FR_XX)
+	game.events.gov_remove_num = Math.min(roll, num_fr_x + 3 * num_fr_xx)
+	game.state = "event_gov_nato_pressure_select_units"
+}
+
+states.event_gov_nato_pressure_select_units = {
+	inactive: "to do NATO pressure",
+	prompt() {
+		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigades (division counts as 3) to remove from the map`
+
+		let target = 0
+		for (let u of game.selected) {
+			if (unit_type(u) === FR_X) {
+				target += 1
+			} else if (unit_type(u) === FR_XX) {
+				target += 3
+			}
+		}
+
+		for_each_friendly_unit_on_map(u => {
+			if ((unit_type(u) === FR_X || unit_type(u) === FR_XX) && (target < game.events.gov_remove_num || set_has(game.selected, u)))
+				gen_action_unit(u)
+		})
+
+		if (target >= game.events.gov_remove_num) {
+			gen_action("done")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	done() {
+		let list = game.selected
+		game.selected = []
+
+		// The units may be re-mobilized at least one turn later.
+		if (!game.events.gov_remobilize)
+			game.events.gov_remobilize = []
+		log("Removed units from map:")
+		for (let u of list) {
+			remove_unit(u, ELIMINATED)
+			game.events.gov_remobilize.push(u)
+		}
+		delete game.events.gov_remove_num
+		end_random_event()
+	}
 }
 
 function goto_suez_crisis() {
@@ -1948,8 +2019,6 @@ states.gov_reinforcement = {
 		push_undo()
 		log("Removed:")
 		for (let u of list) {
-			let loc = unit_loc(u)
-			log(`>U${u} from A${loc}`)
 			remove_unit(u)
 		}
 	},
