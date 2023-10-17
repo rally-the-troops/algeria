@@ -3343,7 +3343,6 @@ function end_combat() {
 
 	// Remaining involved units of the side that received the largest number of 'hits'
 	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
-	let contact_loc = unit_loc(game.contacted[0])
 
 	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
 		log(`>Gov. units neutralized`)
