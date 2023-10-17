@@ -41,6 +41,34 @@ const FRANCE = 3
 const TUNISIA = 4
 const MOROCCO = 5
 
+// maximum values
+
+const MAX_PSL = 99
+const MAX_AP = 99
+
+const MAX_AIR_POINT = 99
+const MAX_HELO_POINT = 99
+const MAX_NAVAL_POINT = 99
+const MAX_BORDER_ZONE_DRM = -3
+
+// costs
+
+const COST_AIR_POINT = 2
+const COST_HELO_POINT = 3
+const COST_NAVAL_POINT = 3
+const COST_BORDER_ZONE = 6
+const COST_ACTIVATE_BORDER_ZONE = 1
+
+const GOV_UNIT_MOBILIZE_COST = {
+	[FR_XX]: 5,
+	[FR_X]: 2,
+	[EL_X]: 3,
+	[AL_X]: 2,
+	[POL]: 1
+}
+
+//
+
 var states = {}
 var game = null
 var view = null
@@ -108,9 +136,6 @@ function load_state(state) {
 }
 
 // If a player's PSL rises to above 99 during the game due to various events, any such "excess" PSP gained for that player are not lost: instead they are SUBTRACTED from the other player's PSL.
-
-const MAX_PSL = 99
-const MAX_AP = 99
 
 function raise_fln_psl(amount) {
 	// can trigger victory
@@ -572,13 +597,13 @@ function unit_type(u) {
 function is_propaganda_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === FRONT || type === CADRE) && is_unit_not_neutralized(u) && !is_area_propagandized(loc) && !is_area_remote(loc)
+	return (type === FRONT || type === CADRE) && is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !is_area_propagandized(loc) && !is_area_remote(loc)
 }
 
 function is_strike_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === FRONT) && is_unit_not_neutralized(u) && !is_area_struck(loc) && is_area_urban(loc)
+	return (type === FRONT) && is_unit_not_neutralized(u) && is_area_algerian(loc) && !is_area_struck(loc) && is_area_urban(loc)
 }
 
 function can_cross_border(u) {
@@ -604,13 +629,13 @@ function is_movable_unit(u) {
 function is_raid_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && !is_area_raided(loc) && !is_area_remote(loc)
+	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && is_area_algerian(loc) && !is_area_raided(loc) && !is_area_remote(loc)
 }
 
 function is_harass_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
-	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc(loc)
+	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && is_area_algerian(loc) && has_enemy_unit_in_loc(loc)
 }
 
 function is_flush_unit(u) {
@@ -913,6 +938,47 @@ exports.action = function (state, player, action, arg) {
 	else
 		throw new Error("Invalid action: " + action)
 	return game
+}
+
+// JSON Schema for view data
+exports.VIEW_SCHEMA = {
+	type: "object",
+    properties: {
+		log: {type: "array", items: {type: "string"}},
+		prompt: {type: "string"},
+		scenario: {type: "string"},
+		active: {type: "string"},
+		phasing: {type: "string"},
+
+		turn: {type: "integer", minimum: 0},
+		fln_ap: {type: "integer", minimum: 0, maximum: MAX_AP},
+		fln_psl: {type: "integer", minimum: 0, maximum: MAX_PSL},
+		gov_psl: {type: "integer", minimum: 0, maximum: MAX_PSL},
+		air_avail: {type: "integer", minimum: 0, maximum: MAX_AIR_POINT},
+		air_max: {type: "integer", minimum: 0, maximum: MAX_AIR_POINT},
+		helo_avail: {type: "integer", minimum: 0, maximum: MAX_HELO_POINT},
+		helo_max: {type: "integer", minimum: 0, maximum: MAX_HELO_POINT},
+		naval: {type: "integer", minimum: 0, maximum: MAX_NAVAL_POINT},
+		oas: {type: "integer", minimum: 0, maximum: area_count},
+
+		is_morocco_tunisia_independent: {type: "boolean"},
+		border_zone_active: {type: "boolean"},
+		border_zone_drm: {type: "integer", "nullable": true, minimum: -3, maximum: 0},
+
+		units: {type: "array", minItems: unit_count, maxItems: unit_count, items: {type: "integer"}},
+		areas: {type: "array", minItems: area_count, maxItems: area_count, items: {type: "integer"}},
+		contacted: {type: "array", items: {type: "integer", maximum: unit_count}},
+
+		actions: {type: "object"},
+		selected: {type: ["array", "integer"]}
+    },
+    required: [
+		"log", "prompt", "scenario", "active", "phasing",
+		"turn", "fln_ap", "fln_psl", "gov_psl", "air_avail", "air_max", "helo_avail", "helo_max", "naval", "oas",
+		"is_morocco_tunisia_independent", "border_zone_active", "border_zone_drm",
+		"units", "areas", "contacted"
+	],
+    additionalProperties: false
 }
 
 exports.view = function(state, player) {
@@ -1715,24 +1781,6 @@ states.place_oas = {
 			game.state = "fln_reinforcement"
 		}
 	}
-}
-
-const COST_AIR_POINT = 2
-const COST_HELO_POINT = 3
-const COST_NAVAL_POINT = 3
-const COST_BORDER_ZONE = 6
-const COST_ACTIVATE_BORDER_ZONE = 1
-const MAX_AIR_POINT = 99
-const MAX_HELO_POINT = 99
-const MAX_NAVAL_POINT = 99
-const MAX_BORDER_ZONE_DRM = -3
-
-const GOV_UNIT_MOBILIZE_COST = {
-	[FR_XX]: 5,
-	[FR_X]: 2,
-	[EL_X]: 3,
-	[AL_X]: 2,
-	[POL]: 1
 }
 
 function mobilization_cost(units) {
