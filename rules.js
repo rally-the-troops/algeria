@@ -3727,7 +3727,6 @@ states.gov_airmobilize_select_units = {
 	inactive: "to Airmobilize",
 	prompt() {
 		let cost = airmobilize_cost(game.selected)
-		console.log("COST", cost, game.helo_avail)
 
 		for_each_friendly_unit_on_map(u => {
 			if (can_airmobilize_unit(u) && (set_has(game.selected, u) || (cost + airmobilize_cost([u]) <= game.helo_avail)))
