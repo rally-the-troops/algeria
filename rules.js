@@ -4269,35 +4269,32 @@ function roll_coup_table(drm=0) {
 	let delta_psp = 0
 
 	if (coup === 2) {
-		log("Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free
+		log("Coup: Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free
 		delta_psp = roll_nd6(3, drm)
 		raise_gov_psl(delta_psp)
 		return 'wild_success'
 	} else if (coup <= 4) {
 		log("Big success") //: +2d6 PSP, mobilize 1d6 PSP of units for free
-		// TODO mobilize
 		delta_psp = roll_nd6(2, drm)
 		raise_gov_psl(delta_psp)
 		return 'big_success'
 	} else if (coup <= 6) {
-		log("Success") //: +1d6 PSP
+		log("Coup: Success") //: +1d6 PSP
 		delta_psp = roll_d6(drm)
 		raise_gov_psl(delta_psp)
 		return 'success'
 	} else if (coup === 7) {
-		log("Fizzle") //: -1d6 PSP
+		log("Coup: Fizzle") //: -1d6 PSP
 		delta_psp = roll_d6(drm)
 		lower_gov_psl(delta_psp)
 		return 'fizzle'
 	} else if (coup <= 9) {
-		log("Failure") //: -2d6 PSP, remove 1 elite unit from the game
-		// TODO remove elite
+		log("Coup: Failure") //: -2d6 PSP, remove 1 elite unit from the game
 		delta_psp = roll_nd6(2, drm)
 		lower_gov_psl(delta_psp)
 		return 'failure'
 	} else {
-		log("Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game
-		// TODO remove elite
+		log("Coup: Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game
 		delta_psp = roll_nd6(3, drm)
 		lower_gov_psl(delta_psp)
 		return 'abject_failure'
@@ -4313,29 +4310,93 @@ function coup_attempt() {
 	if (check_victory())
 		return
 
-	// TODO mobilize / remove units
+	// mobilize / remove units
 	switch (result) {
 	case 'wild_success':
-		// mobilize 2d6 PSP of units for free
-		// let mobilize = roll_nd6(2)
+		log("mobilize 2d6 PSP of units for free")
+		goto_coup_attempt_free_mobilize(roll_nd6(2))
 		break
 	case 'big_success':
-		// mobilize 1d6 PSP of units for free
-		// let mobilize = roll_1d6()
+		log("mobilize 1d6 PSP of units for free")
+		goto_coup_attempt_free_mobilize(roll_1d6())
 		break
 	case 'success':
 	case 'fizzle':
+		continue_final_psl_adjustment()
 		break
 	case 'failure':
-		// remove 1 elite unit from the game
+		log("remove 1 elite unit from the game")
 		goto_coup_attempt_remove_elite(1)
 		break
 	case 'abject_failure':
-		// remove 1d6 elite units from the game
+		log("remove 1d6 elite units from the game")
 		goto_coup_attempt_remove_elite(roll_1d6())
 		break
 	default:
 		throw Error("Unknown coup result: " + result)
+	}
+}
+
+function goto_coup_attempt_free_mobilize(value) {
+	game.phasing = GOV_NAME
+	set_active_player()
+
+	game.selected = []
+	game.events.gov_free_mobilize = value
+	game.state = "gov_coup_attempt_free_mobilize"
+}
+
+states.gov_coup_attempt_free_mobilize = {
+	inactive: "to do Coup Attempt",
+	prompt() {
+		view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free`
+
+		if (game.selected.length === 0) {
+			// first unit can be any unit in DEPLOY or on map
+			for_each_friendly_unit_in_loc(DEPLOY, u => {
+				if (mobilization_cost([u]) <= game.events.gov_free_mobilize)
+					gen_action_unit(u)
+			})
+		} else {
+			let first_unit = game.selected[0]
+			let first_unit_loc = unit_loc(first_unit)
+			if (first_unit_loc === DEPLOY) {
+				let cost = mobilization_cost(game.selected)
+				view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free (selected ${cost} PSP)`
+
+				for_each_friendly_unit_in_loc(DEPLOY, u => {
+					if (set_has(game.selected, u) || (cost + mobilization_cost([u]) <= game.events.gov_free_mobilize))
+						gen_action_unit(u)
+				})
+
+				// don't allow free PSP to go <= 0
+				if (Math.floor(game.events.gov_free_mobilize - cost) >= 0) {
+					for_each_algerian_map_area(loc => {
+						gen_action_loc(loc)
+					})
+				}
+			}
+		}
+
+		gen_action("done")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	loc(to) {
+		let list = game.selected
+		game.selected = []
+		push_undo()
+		log("Mobilized for free:")
+		for (let u of list) {
+			mobilize_unit(u, to)
+		}
+		let cost = mobilization_cost(list)
+		game.events.gov_free_mobilize -= cost
+	},
+	done() {
+		delete game.events.gov_free_mobilize
+		continue_final_psl_adjustment()
 	}
 }
 
@@ -4347,6 +4408,7 @@ function goto_coup_attempt_remove_elite(num) {
 	let to_remove = Math.min(num, num_el_x)
 
 	if (to_remove) {
+		game.selected = []
 		game.events.gov_remove_num = num
 		game.state = "gov_coup_attempt_select_units"
 	} else {
