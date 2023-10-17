@@ -974,7 +974,7 @@ exports.VIEW_SCHEMA = {
 
 		is_morocco_tunisia_independent: {type: "boolean"},
 		border_zone_active: {type: "boolean"},
-		border_zone_drm: {type: "integer", "nullable": true, minimum: -3, maximum: 0},
+		border_zone_drm: {type: "integer", "nullable": true, minimum: MAX_BORDER_ZONE_DRM, maximum: 0},
 
 		units: {type: "array", minItems: unit_count, maxItems: unit_count, items: {type: "integer"}},
 		areas: {type: "array", minItems: area_count, maxItems: area_count, items: {type: "integer"}},
@@ -1472,6 +1472,16 @@ function goto_random_event() {
 		delete game.events.gov_remobilize
 		log_br()
 	}
+
+	if (game.events.gov_return) {
+		log("Units returned:")
+		for (const [u, loc] of Object.entries(game.events.gov_return)) {
+			log(`>U${u} to A${loc}`)
+			deploy_unit(u, loc)
+		}
+		delete game.events.gov_return
+		log_br()
+	}
 }
 
 states.random_event = {
@@ -1483,7 +1493,7 @@ states.random_event = {
 	},
 	reset() {
 		// XXX DEBUG
-		// goto_nato_pressure()
+		// goto_suez_crisis()
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
@@ -1707,14 +1717,20 @@ function goto_nato_pressure() {
 	game.selected = []
 	let num_fr_x = count_friendly_units_on_map_of_type(FR_X)
 	let num_fr_xx = count_friendly_units_on_map_of_type(FR_XX)
-	game.events.gov_remove_num = Math.min(roll, num_fr_x + 3 * num_fr_xx)
-	game.state = "event_gov_nato_pressure_select_units"
+	let to_remove = Math.min(roll, num_fr_x + 3 * num_fr_xx)
+	if (to_remove) {
+		game.events.gov_remove_num = to_remove
+		game.state = "event_gov_nato_pressure_select_units"
+	} else {
+		log("No French Army brigades to remove")
+		end_random_event()
+	}
 }
 
 states.event_gov_nato_pressure_select_units = {
 	inactive: "to do NATO pressure",
 	prompt() {
-		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigades (division counts as 3) to remove from the map`
+		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map`
 
 		let target = 0
 		for (let u of game.selected) {
@@ -1744,7 +1760,7 @@ states.event_gov_nato_pressure_select_units = {
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_remobilize)
 			game.events.gov_remobilize = []
-		log("Removed units from map:")
+		log("Removed from map:")
 		for (let u of list) {
 			remove_unit(u, ELIMINATED)
 			game.events.gov_remobilize.push(u)
@@ -1755,19 +1771,71 @@ states.event_gov_nato_pressure_select_units = {
 }
 
 function goto_suez_crisis() {
-	log_h3("Suez Crisis. TODO")
+	log_h3("Suez Crisis.")
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
 		log("No Event.")
 		end_random_event()
 		return
 	}
-	// The Government player must remove 1d6 elite units from the map, up to the number actually available:
-	// they will return in the Reinforcement Phase of the next turn automatically
-	// - they do not need to be mobilized again but do need to be activated.
-
+	game.phasing = GOV_NAME
+	set_active_player()
 	game.events.suez_crisis = true
-	end_random_event()
+
+	// The Government player must remove 1d6 elite units from the map, up to the number actually available
+	let roll = roll_1d6()
+	game.selected = []
+	let num_el_x = count_friendly_units_on_map_of_type(EL_X)
+	let to_remove = Math.min(roll, num_el_x)
+	if (to_remove) {
+		game.events.gov_remove_num = to_remove
+		game.state = "event_gov_suez_crisis_select_units"
+	} else {
+		log("No French elite units to remove")
+		end_random_event()
+	}
+}
+
+states.event_gov_suez_crisis_select_units = {
+	inactive: "to do Suez Crisis",
+	prompt() {
+		view.prompt = `Suez Crisis: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map`
+
+		let target = 0
+		for (let u of game.selected) {
+			if (unit_type(u) === EL_X) target += 1
+		}
+
+		for_each_friendly_unit_on_map(u => {
+			if (unit_type(u) === EL_X && (target < game.events.gov_remove_num || set_has(game.selected, u)))
+				gen_action_unit(u)
+		})
+
+		if (target >= game.events.gov_remove_num) {
+			gen_action("done")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	done() {
+		let list = game.selected
+		game.selected = []
+
+		// they will return in the Random Event Phase of the next turn automatically
+		// - they do not need to be mobilized again but do need to be activated.
+		// The units may be re-mobilized at least one turn later.
+		if (!game.events.gov_return)
+			game.events.gov_return = {}
+		log("Removed from map:")
+		for (let u of list) {
+			let loc = unit_loc(u)
+			remove_unit(u, ELIMINATED)
+			game.events.gov_return[u] = loc
+		}
+		delete game.events.gov_remove_num
+		end_random_event()
+	}
 }
 
 function goto_amnesty() {
