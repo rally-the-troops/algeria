@@ -568,6 +568,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 
 	action_button("gov_mission", "Government Mission")
 	action_button("use_air_point", "Air Point")
+	action_button("airmobilize", "Airmobilize")
 	action_button("no_react", "No React")
 	action_button("pass", "Pass")
 

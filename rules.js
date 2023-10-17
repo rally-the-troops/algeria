@@ -67,6 +67,19 @@ const GOV_UNIT_MOBILIZE_COST = {
 	[POL]: 1
 }
 
+const GOV_UNIT_ACTIVATION_COST = {
+	[FR_XX]: 1,
+	[FR_X]: .5,
+	[EL_X]: .5,
+	[AL_X]: 0
+}
+
+const GOV_UNIT_AIRMOBILIZE_COST = {
+	[EL_X]: 1,
+	[FR_X]: 2,
+	[AL_X]: 2
+}
+
 //
 
 var states = {}
@@ -451,10 +464,6 @@ function is_unit_airmobile(u) {
 	return (game.units[u] & UNIT_AIRMOBILE_MASK) === UNIT_AIRMOBILE_MASK
 }
 
-function is_unit_not_airmobile(u) {
-	return (game.units[u] & UNIT_AIRMOBILE_MASK) !== UNIT_AIRMOBILE_MASK
-}
-
 function set_unit_airmobile(u) {
 	game.units[u] |= UNIT_AIRMOBILE_MASK
 }
@@ -467,10 +476,6 @@ function clear_unit_airmobile(u) {
 
 function is_unit_dispersed(u) {
 	return (game.units[u] & UNIT_DISPERSED_MASK) === UNIT_DISPERSED_MASK
-}
-
-function is_unit_not_dispersed(u) {
-	return (game.units[u] & UNIT_DISPERSED_MASK) !== UNIT_DISPERSED_MASK
 }
 
 function set_unit_dispersed(u) {
@@ -576,6 +581,10 @@ function is_algerian_unit(u) {
 	return units[u].type === AL_X
 }
 
+function can_airmobilize_unit(u) {
+	return !is_unit_airmobile(u) && ([FR_X, EL_X, AL_X].includes(unit_type(u)))
+}
+
 function is_division_unit(u) {
 	return units[u].type === FR_XX
 }
@@ -642,12 +651,13 @@ function is_harass_unit(u) {
 
 function is_flush_unit(u) {
 	let loc = unit_loc(u)
-	// TODO airmobile && division
 	return is_mobile_unit(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc_boxes(loc, [OPS, OC])
 }
 
+// An airmobilized unit may travel any distance to participate in a Flush or React Mission if it is an Elite unit,
+// or if a Division in either mode is present in the area where the mission is occurring.
+
 function is_react_unit(u) {
-	// TODO airmobile && division
 	return is_mobile_unit(u) && is_unit_not_neutralized(u)
 }
 
@@ -911,9 +921,12 @@ function count_patrol_units_in_loc(loc) {
 }
 
 function has_gov_react_units_in_loc(loc) {
+	let has_division = has_unit_type_in_loc(FR_XX, loc)
 	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
-		if (unit_loc(u) === loc && is_react_unit(u) && (unit_box(u) === PTL || unit_box(u) === OPS))
-			return true
+		if (is_react_unit(u) && (unit_box(u) === PTL || unit_box(u) === OPS)) {
+			if (unit_loc(u) === loc || (is_unit_airmobile(u) && (has_division || is_elite_unit(u))))
+				return true
+		}
 	return false
 }
 
@@ -1930,13 +1943,6 @@ function mobilization_cost(units) {
 	return cost
 }
 
-const GOV_UNIT_ACTIVATION_COST = {
-	[FR_XX]: 1,
-	[FR_X]: .5,
-	[EL_X]: .5,
-	[AL_X]: 0
-}
-
 function activation_cost(units) {
 	let cost = 0
 	for (let u of units) {
@@ -2412,7 +2418,14 @@ states.gov_deployment = {
 			}
 		}
 
+		if (game.helo_avail)
+			gen_action("airmobilize")
+
 		gen_action("end_deployment")
+	},
+	airmobilize() {
+		push_undo()
+		goto_gov_airmobilize()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -3076,7 +3089,6 @@ states.fln_move = {
 		}
 		let [_result, effect] = roll_mst(drm)
 
-		// XXX doublecheck that Move mission also automatically contacts
 		set_add(game.contacted, unit)
 		if (effect === '+') {
 			eliminate_unit(unit)
@@ -3280,6 +3292,9 @@ function goto_combat() {
 	let gov_firepower = 0
 	for (let u of game.combat.gov_units) {
 		gov_firepower += unit_firepower(u)
+		// move airmobile units to combat
+		if (is_unit_airmobile(u) && unit_loc(u) !== loc)
+			set_unit_loc(u, loc)
 	}
 	let half_str = ''
 	if (game.combat.harass) {
@@ -3328,6 +3343,7 @@ function end_combat() {
 
 	// Remaining involved units of the side that received the largest number of 'hits'
 	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
+	let contact_loc = unit_loc(game.contacted[0])
 
 	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
 		log(`>Gov. units neutralized`)
@@ -3521,13 +3537,13 @@ function can_gov_react() {
 	if (!game.contacted.length)
 		return false
 	let loc = unit_loc(game.contacted[0])
-	// TODO airmobile
 	return has_gov_react_units_in_loc(loc)
 }
 
 states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
+
 		if (game.selected.length === 0) {
 			view.prompt = "Flush: Select mobile unit(s)"
 			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
@@ -3546,18 +3562,18 @@ states.gov_flush = {
 				view.actions.use_air_point = game.air_avail > 0
 			}
 
-			// TODO airmobile
+			// airmobile
 			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
 				// any combination when division present
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (unit_loc(u) === first_unit_loc && is_mobile_unit(u)) {
+					if (is_mobile_unit(u) && (unit_loc(u) === first_unit_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
 			} else if (is_elite_unit(first_unit)) {
 				// all elite
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (unit_loc(u) === first_unit_loc && is_elite_unit(u)) {
+					if (is_elite_unit(u) && (unit_loc(u) === first_unit_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
@@ -3568,6 +3584,13 @@ states.gov_flush = {
 
 			gen_action("roll")
 		}
+
+		if (game.helo_avail)
+			gen_action("airmobilize")
+	},
+	airmobilize() {
+		push_undo()
+		goto_gov_airmobilize()
 	},
 	use_air_point() {
 		push_undo()
@@ -3633,6 +3656,60 @@ states.gov_flush = {
 	}
 }
 
+function goto_gov_airmobilize() {
+	game.selected = []
+	game.from_state = game.state
+	game.state = "gov_airmobilize_select_units"
+}
+
+function airmobilize_cost(units) {
+	let cost = 0
+	for (let u of units) {
+		cost += GOV_UNIT_AIRMOBILIZE_COST[unit_type(u)]
+	}
+	return cost
+}
+
+states.gov_airmobilize_select_units = {
+	inactive: "to Airmobilize",
+	prompt() {
+		let cost = airmobilize_cost(game.selected)
+		console.log("COST", cost, game.helo_avail)
+
+		for_each_friendly_unit_on_map(u => {
+			if (can_airmobilize_unit(u) && (set_has(game.selected, u) || (cost + airmobilize_cost([u]) <= game.helo_avail)))
+				gen_action_unit(u)
+		})
+
+		if (!game.selected.length) {
+			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize`
+		} else {
+			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize (cost ${cost} Helo PTS)`
+		}
+
+		gen_action("done")
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	done() {
+		let list = game.selected
+		game.selected = []
+
+		push_undo()
+		let cost = airmobilize_cost(list)
+		game.helo_avail -= cost
+		log(`Airmobilized (using ${cost} Helo PTS):`)
+		for (let u of list) {
+			let loc = unit_loc(u)
+			log(`>U${u} in A${loc}`)
+			set_unit_airmobile(u)
+		}
+		game.state = game.from_state
+		delete game.from_state
+	}
+}
+
 function goto_gov_react_mission() {
 	game.phasing = GOV_NAME
 	set_active_player()
@@ -3649,9 +3726,7 @@ states.gov_react = {
 			let loc = unit_loc(game.contacted[0])
 
 			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-				// TODO airmobile
-				// TODO air points
-				if (unit_loc(u) === loc && is_mobile_unit(u)) {
+				if (is_mobile_unit(u) && (unit_loc(u) === loc || is_unit_airmobile(u))) {
 					gen_action_unit(u)
 				}
 			})
@@ -3659,27 +3734,27 @@ states.gov_react = {
 			gen_action("no_react")
 		} else {
 			let first_unit = game.selected[0]
-			let first_unit_loc = unit_loc(first_unit)
+			let contact_loc = unit_loc(game.contacted[0])
 
-			if (is_area_urban(first_unit_loc) || !game.air_max) {
+			if (is_area_urban(contact_loc) || !game.air_max) {
 				view.prompt = "React: Execute mission"
 			} else {
 				view.prompt = `React: Execute mission (using ${game.mission_air_pts} Air Point(s))`
 				view.actions.use_air_point = game.air_avail > 0
 			}
 
-			// TODO airmobile
-			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
+			// airmobile
+			if (has_unit_type_in_loc(FR_XX, contact_loc)) {
 				// any combination when division present
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (unit_loc(u) === first_unit_loc && is_mobile_unit(u)) {
+					if (is_mobile_unit(u) && (unit_loc(u) === contact_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
 			} else if (is_elite_unit(first_unit)) {
 				// all elite
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (unit_loc(u) === first_unit_loc && is_elite_unit(u)) {
+					if (is_elite_unit(u) && (unit_loc(u) === contact_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
@@ -3690,6 +3765,12 @@ states.gov_react = {
 
 			gen_action("roll")
 		}
+		if (game.helo_avail)
+			gen_action("airmobilize")
+	},
+	airmobilize() {
+		push_undo()
+		goto_gov_airmobilize()
 	},
 	use_air_point() {
 		push_undo()
@@ -3708,8 +3789,7 @@ states.gov_react = {
 	roll() {
 		let list = game.selected
 		game.selected = []
-		let first_unit = list[0]
-		let loc = unit_loc(first_unit)
+		let loc = unit_loc(game.contacted[0])
 		clear_undo()
 
 		log(`>in A${loc}`)
@@ -3739,6 +3819,9 @@ states.gov_react = {
 			for (let u of list) {
 				if (is_mobile_unit(u))
 					set_unit_box(u, OC)
+				// move airmobile units to combat zone anyway
+				if (is_unit_airmobile(u) && unit_loc(u) !== loc)
+					set_unit_loc(u, loc)
 			}
 			end_gov_mission()
 		}
@@ -4569,7 +4652,6 @@ function goto_turn_interphase() {
 	unit_redeployment()
 	final_psl_adjustment()
 
-	// TODO check if we need to mobilize / remove any units
 	if (check_victory())
 		return
 }
