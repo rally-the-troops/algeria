@@ -1760,7 +1760,7 @@ states.event_gov_nato_pressure_select_units = {
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_remobilize)
 			game.events.gov_remobilize = []
-		log("Removed from map:")
+		log("Removed from map (can re-mobilize next turn):")
 		for (let u of list) {
 			remove_unit(u, ELIMINATED)
 			game.events.gov_remobilize.push(u)
@@ -1827,7 +1827,7 @@ states.event_gov_suez_crisis_select_units = {
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_return)
 			game.events.gov_return = {}
-		log("Removed from map:")
+		log("Removed from map (will return):")
 		for (let u of list) {
 			let loc = unit_loc(u)
 			remove_unit(u, ELIMINATED)
@@ -4269,33 +4269,38 @@ function roll_coup_table(drm=0) {
 	let delta_psp = 0
 
 	if (coup === 2) {
-		log("Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free")
-		// TODO mobilize
+		log("Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free
 		delta_psp = roll_nd6(3, drm)
 		raise_gov_psl(delta_psp)
+		return 'wild_success'
 	} else if (coup <= 4) {
-		log("Big success") //: +2d6 PSP, mobilize 1d6 PSP of units for free")
+		log("Big success") //: +2d6 PSP, mobilize 1d6 PSP of units for free
 		// TODO mobilize
 		delta_psp = roll_nd6(2, drm)
 		raise_gov_psl(delta_psp)
+		return 'big_success'
 	} else if (coup <= 6) {
-		log("Success") //: +1d6 PSP")
+		log("Success") //: +1d6 PSP
 		delta_psp = roll_d6(drm)
 		raise_gov_psl(delta_psp)
+		return 'success'
 	} else if (coup === 7) {
-		log("Fizzle") //: -1d6 PSP")
+		log("Fizzle") //: -1d6 PSP
 		delta_psp = roll_d6(drm)
 		lower_gov_psl(delta_psp)
+		return 'fizzle'
 	} else if (coup <= 9) {
-		log("Failure") //: -2d6 PSP, remove 1 elite unit from the game")
+		log("Failure") //: -2d6 PSP, remove 1 elite unit from the game
 		// TODO remove elite
 		delta_psp = roll_nd6(2, drm)
 		lower_gov_psl(delta_psp)
+		return 'failure'
 	} else {
-		log("Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game")
+		log("Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game
 		// TODO remove elite
 		delta_psp = roll_nd6(3, drm)
 		lower_gov_psl(delta_psp)
+		return 'abject_failure'
 	}
 }
 
@@ -4304,9 +4309,86 @@ function coup_attempt() {
 	let drm = 0
 	// DRM +1 = if OAS is deployed in France)
 	if (is_area_france(game.oas)) drm += 1
-	roll_coup_table(drm)
+	let result = roll_coup_table(drm)
+	if (check_victory())
+		return
 
 	// TODO mobilize / remove units
+	switch (result) {
+	case 'wild_success':
+		// mobilize 2d6 PSP of units for free
+		// let mobilize = roll_nd6(2)
+		break
+	case 'big_success':
+		// mobilize 1d6 PSP of units for free
+		// let mobilize = roll_1d6()
+		break
+	case 'success':
+	case 'fizzle':
+		break
+	case 'failure':
+		// remove 1 elite unit from the game
+		goto_coup_attempt_remove_elite(1)
+		break
+	case 'abject_failure':
+		// remove 1d6 elite units from the game
+		goto_coup_attempt_remove_elite(roll_1d6())
+		break
+	default:
+		throw Error("Unknown coup result: " + result)
+	}
+}
+
+function goto_coup_attempt_remove_elite(num) {
+	game.phasing = GOV_NAME
+	set_active_player()
+
+	let num_el_x = count_friendly_units_on_map_of_type(EL_X)
+	let to_remove = Math.min(num, num_el_x)
+
+	if (to_remove) {
+		game.events.gov_remove_num = num
+		game.state = "gov_coup_attempt_select_units"
+	} else {
+		log("No French elite units to remove")
+		log_br()
+		continue_final_psl_adjustment()
+	}
+}
+
+states.gov_coup_attempt_select_units = {
+	inactive: "to do Coup Attempt",
+	prompt() {
+		view.prompt = `Coup Attempt: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map`
+
+		let target = 0
+		for (let u of game.selected) {
+			if (unit_type(u) === EL_X) target += 1
+		}
+
+		for_each_friendly_unit_on_map(u => {
+			if (unit_type(u) === EL_X && (target < game.events.gov_remove_num || set_has(game.selected, u)))
+				gen_action_unit(u)
+		})
+
+		if (target >= game.events.gov_remove_num) {
+			gen_action("done")
+		}
+	},
+	unit(u) {
+		set_toggle(game.selected, u)
+	},
+	done() {
+		let list = game.selected
+		game.selected = []
+
+		log("Removed from map & disbanded:")
+		for (let u of list) {
+			remove_unit(u, ELIMINATED)
+		}
+		delete game.events.gov_remove_num
+		continue_final_psl_adjustment()
+	}
 }
 
 function final_psl_adjustment() {
@@ -4320,12 +4402,16 @@ function final_psl_adjustment() {
 		let roll = roll_1d6(drm)
 		if (roll === 6) {
 			coup_attempt()
-			if (check_victory())
-				return
+			return
 		} else {
 			log("> No Coup attempt.")
 		}
 	}
+	continue_final_psl_adjustment()
+}
+
+function continue_final_psl_adjustment() {
+	game.state = "turn_interphase"
 
 	if (game.oas) {
 		log_br()
