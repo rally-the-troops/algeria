@@ -143,9 +143,9 @@ function raise_fln_psl(amount) {
 	log(`>FLN PSL +${amount}`)
 	if (game.fln_psl > MAX_PSL) {
 		let excess_psl = game.fln_psl - MAX_PSL
-		log(`FLN PSL exceeds ${MAX_PSL}; Goverment ${-excess_psl} PSL`)
+		log(`FLN PSL exceeds ${MAX_PSL}`)
 		game.fln_psl = MAX_PSL
-		game.gov_psl -= excess_psl
+		lower_gov_psl(excess_psl)
 	}
 }
 
@@ -155,9 +155,9 @@ function raise_gov_psl(amount) {
 	log(`>Goverment PSL +${amount}`)
 	if (game.gov_psl > MAX_PSL) {
 		let excess_psl = game.gov_psl - MAX_PSL
-		log(`Government PSL exceeds ${MAX_PSL}; FLN ${-excess_psl} PSL`)
+		log(`Government PSL exceeds ${MAX_PSL}`)
 		game.gov_psl = MAX_PSL
-		game.fln_psl -= excess_psl
+		lower_fln_psl(excess_psl)
 	}
 }
 
