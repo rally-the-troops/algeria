@@ -1154,6 +1154,25 @@ exports.setup = function (seed, scenario, options) {
 	game.scenario = scenario
 	setup_scenario(scenario)
 
+	if (scenario === "1954") {
+		if (options.slow_french_reaction) {
+			log("Slow French Reaction.")
+			game.slow_french_reaction = true
+		}
+		if (options.more_deterministic_independence) {
+			// TODO
+			log("More Deterministic Independence.")
+			log("NOT IMPLEMENTED")
+			game.more_deterministic_independence = true
+		}
+	}
+	if (options.shorter_game) {
+		// TODO
+		log("Shorter Game.")
+		log("NOT IMPLEMENTED")
+		game.shorter_game = true
+	}
+
 	goto_scenario_setup()
 
 	return game
@@ -1284,6 +1303,7 @@ function setup_scenario(scenario_name) {
 	game.fln_ap = roll_nd6(2)
 	log(`FLN AP=${game.fln_ap}`)
 	log(`Gov. PSL=${game.gov_psl}`)
+	log_br()
 
 	let deployment = SCENARIO_DEPLOYMENT[scenario_name]
 	setup_units(deployment.fln)
@@ -1903,6 +1923,11 @@ function goto_gov_reinforcement_phase() {
 		set_unit_box(u, OPS)
 	})
 
+	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
+		log("French Reaction: FLN PSL > Gov. PSL")
+		game.events.french_reaction = true
+	}
+
 	//  In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
 	if (game.oas && game.oas_control === GOV) {
 		game.state = "place_oas"
@@ -1963,14 +1988,27 @@ function mobilize_unit(u, to) {
 	log(`>U${u} into A${to}`)
 }
 
+function is_slow_french_reaction() {
+	return game.slow_french_reaction && !game.events.french_reaction
+}
+
 states.gov_reinforcement = {
 	inactive: "to do Reinforcement",
 	prompt() {
+		// when slow french reaction
+		// he may not mobilize more than 1 mobile unit or Point of any type (Air, Helo, or Naval) per turn;
+		let limited = is_slow_french_reaction() && game.events.gov_has_mobilized
+
 		if (game.selected.length === 0) {
-			view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+			if (!is_slow_french_reaction()) {
+				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+			} else {
+				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets (Slow French Reaction)"
+			}
 			// first unit can be any unit in DEPLOY or on map
 			for_each_friendly_unit_in_loc(DEPLOY, u => {
-				gen_action_unit(u)
+				if (!limited || !is_mobile_unit(u))
+					gen_action_unit(u)
 			})
 
 			// activate french mobile units
@@ -1994,11 +2032,11 @@ states.gov_reinforcement = {
 			}
 
 			// asset acquisition
-			if (game.gov_psl > COST_AIR_POINT && game.air_max < MAX_AIR_POINT)
+			if (game.gov_psl > COST_AIR_POINT && game.air_max < MAX_AIR_POINT && !limited)
 				gen_action("acquire_air_point")
-			if (game.gov_psl > COST_HELO_POINT && game.helo_max < MAX_HELO_POINT)
+			if (game.gov_psl > COST_HELO_POINT && game.helo_max < MAX_HELO_POINT && !limited)
 				gen_action("acquire_helo_point")
-			if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT)
+			if (game.gov_psl > COST_NAVAL_POINT && game.naval < MAX_NAVAL_POINT && !limited)
 				gen_action("acquire_naval_point")
 			if (game.gov_psl > COST_BORDER_ZONE && game.is_morocco_tunisia_independent) {
 				// starts at no border zone instead of 0
@@ -2025,9 +2063,16 @@ states.gov_reinforcement = {
 				let cost = mobilization_cost(game.selected)
 				view.prompt = `Reinforcement: Mobilize units (cost ${cost} PSP)`
 
-				for_each_friendly_unit_in_loc(DEPLOY, u => {
-					gen_action_unit(u)
-				})
+				if (!is_slow_french_reaction()) {
+					for_each_friendly_unit_in_loc(DEPLOY, u => {
+						gen_action_unit(u)
+					})
+				} else {
+					for_each_friendly_unit_in_loc(DEPLOY, u => {
+						if (!is_mobile_unit(u) || u === first_unit)
+							gen_action_unit(u)
+					})
+				}
 
 				// don't allow PSL to go <= 0
 				if (Math.floor(game.gov_psl - cost) > 0) {
@@ -2066,6 +2111,8 @@ states.gov_reinforcement = {
 		}
 		let cost = mobilization_cost(list)
 		lower_gov_psl(cost)
+		if (is_slow_french_reaction())
+			game.events.gov_has_mobilized = true
 	},
 	select_all_inactive() {
 		push_undo()
@@ -2103,6 +2150,8 @@ states.gov_reinforcement = {
 		lower_gov_psl(COST_AIR_POINT)
 		game.air_avail += 1
 		game.air_max += 1
+		if (is_slow_french_reaction())
+			game.events.gov_has_mobilized = true
 	},
 	acquire_helo_point() {
 		push_undo()
@@ -2111,6 +2160,8 @@ states.gov_reinforcement = {
 		lower_gov_psl(COST_HELO_POINT)
 		game.helo_avail += 1
 		game.helo_max += 1
+		if (is_slow_french_reaction())
+			game.events.gov_has_mobilized = true
 	},
 	acquire_naval_point() {
 		push_undo()
@@ -2118,6 +2169,8 @@ states.gov_reinforcement = {
 		// log(`Paid  ${COST_NAVAL_POINT} PSP`)
 		lower_gov_psl(COST_NAVAL_POINT)
 		game.naval += 1
+		if (is_slow_french_reaction())
+			game.events.gov_has_mobilized = true
 	},
 	activate_border_zone() {
 		push_undo()
@@ -2144,6 +2197,7 @@ states.gov_reinforcement = {
 	end_reinforcement() {
 		// PSL rounded down as cost can be fractions
 		game.gov_psl = Math.floor(game.gov_psl)
+		delete game.events.gov_has_mobilized
 
 		goto_fln_reinforcement_phase()
 	}
@@ -2395,7 +2449,7 @@ states.gov_deployment = {
 			let first_unit_loc = unit_loc(first_unit)
 			let first_unit_box= unit_box(first_unit)
 
-			if (first_unit_type == FR_XX && game.selected.length === 1) {
+			if (first_unit_type == FR_XX && game.selected.length === 1 && !is_slow_french_reaction()) {
 				if (is_unit_not_neutralized(first_unit)) {
 					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
 				} else {
@@ -3486,13 +3540,13 @@ states.gov_operations = {
 			if (game.gov_psl > GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
 				view.actions.intelligence = 1
 			}
-			if (game.gov_psl > GOV_CIVIL_AFFAIRS_COST && is_civil_affairs_unit(u)) {
+			if (game.gov_psl > GOV_CIVIL_AFFAIRS_COST && is_civil_affairs_unit(u) && !is_slow_french_reaction()) {
 				view.actions.civil_affairs = 1
 			}
-			if (game.gov_psl > GOV_SUPPRESSION_COST && is_suppression_unit(u)) {
+			if (game.gov_psl > GOV_SUPPRESSION_COST && is_suppression_unit(u) && !is_slow_french_reaction()) {
 				view.actions.suppression = 1
 			}
-			if (game.gov_psl > GOV_POPULATION_RESETTLEMENT_COST && is_population_resettlement_unit(u)) {
+			if (game.gov_psl > GOV_POPULATION_RESETTLEMENT_COST && is_population_resettlement_unit(u) && !is_slow_french_reaction()) {
 				view.actions.population_resettlement = 1
 			}
 		})

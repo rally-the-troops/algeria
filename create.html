@@ -1,0 +1,37 @@
+<style>
+    .hide { display: none; }
+</style>
+<p>
+Optional rules:
+<div class="only1954">
+<label>
+<input type="checkbox" name="slow_french_reaction" value="true">
+Slow French Reaction (1954 Scenario)
+</label>
+</div>
+
+<div class="only1954">
+<label>
+<input type="checkbox" name="more_deterministic_independence" value="true">
+More Deterministic Independence (1954 Scenario)
+</label>
+</div>
+
+<div>
+<label>
+<input type="checkbox" name="shorter_game" value="true">
+Shorter Game
+</label>
+</div>
+
+<script>
+let scenario = document.querySelector("select[name='scenario']");
+scenario.onchange = function (evt) {
+    document.querySelectorAll(".only1954").forEach(label => {
+        label.classList.toggle("hide", scenario.value !== "1954")
+        if (scenario.value !== "1954")
+            label.querySelector("input").checked = false
+    })
+}
+scenario.onchange();
+</script>
