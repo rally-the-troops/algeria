@@ -1260,7 +1260,7 @@ const SCENARIO_DEPLOYMENT = {
 			"V": [FR_XX, FR_XX, FR_XX, FR_X, EL_X, AL_X, POL, POL],
 		},
 		gov_quick: {
-			"I-2": [FR_XX],
+			"I-1": [FR_XX],
 			"I-3": [FR_X],
 			"I-4": [FR_XX],
 			"CONSTANTINE": [EL_X, POL, POL],
@@ -1312,7 +1312,52 @@ const SCENARIO_DEPLOYMENT = {
 			"III": [FR_XX, FR_XX, FR_X, AL_X],
 			"IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
 			"V": [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL]
-		}
+		},
+		gov_quick: {
+			// "I": [FR_XX, FR_XX, AL_X],
+			"I-1": [FR_XX],
+			"I-3": [AL_X],
+			"I-4": [FR_XX],
+			// "II": [FR_XX, FR_XX, EL_X, EL_X, EL_X, EL_X, AL_X, POL, POL],
+			"CONSTANTINE": [EL_X, EL_X, POL, POL],
+			"II-1": [AL_X],
+			"II-2": [FR_XX, EL_X],
+			"II-3": [FR_XX, EL_X],
+			// "III": [FR_XX, FR_XX, FR_X, AL_X],
+			"III-1": [FR_XX, FR_X],
+			"III-3": [FR_XX, AL_X],
+			// "IV": [FR_XX, FR_XX, EL_X, EL_X, EL_X, AL_X, AL_X, POL, POL],
+			"ALGIERS": [FR_XX, EL_X, EL_X, EL_X, POL],
+			"IV-1": [FR_XX, AL_X, POL],
+			"IV-2": [AL_X],
+			// "V": [FR_XX, FR_XX, FR_XX, FR_XX, FR_XX, AL_X, POL, POL]
+			"ORAN": [FR_XX, FR_XX, POL],
+			"V-1": [AL_X],
+			"V-2": [FR_X],
+			"V-3": [FR_XX],
+			"V-4": [FR_XX, FR_XX, POL],
+			"V-5": [],
+		},
+		fln_quick: {
+			// "I": [CADRE, CADRE, BAND, BAND],
+			"I-1": [CADRE, BAND, BAND],
+			"I-4": [CADRE],
+			// "II": [FRONT, CADRE, CADRE, BAND, BAND],
+			"II-1": [CADRE],
+			"II-2": [FRONT, BAND, BAND],
+			"II-3": [CADRE],
+			// "III": [FRONT, FRONT, CADRE, CADRE, BAND, BAND],
+			"III-1": [FRONT, CADRE, BAND],
+			"III-3": [FRONT, CADRE, BAND],
+			// "IV": [FRONT, CADRE, BAND],
+			"IV-2": [FRONT, CADRE, BAND],
+			// "V": [CADRE, BAND],
+			"V-2": [BAND],
+			"V-3": [CADRE],
+			"VI-2": [FRONT, CADRE, BAND],
+			"MOROCCO": [BAND, BAND, BAND, BAND],
+			"TUNISIA": [BAND, BAND, BAND, BAND, FAILEK, FAILEK, FAILEK]
+		},
 	}
 }
 
