@@ -3180,7 +3180,6 @@ states.fln_move = {
 		}
 		let [_result, effect] = roll_mst(drm)
 
-		set_add(game.contacted, unit)
 		if (effect === '+') {
 			eliminate_unit(unit)
 		} else {
@@ -3627,6 +3626,8 @@ function can_gov_react() {
 	if (!game.contacted.length)
 		return false
 	let loc = unit_loc(game.contacted[0])
+	if (is_area_france(loc))
+		return false
 	return has_gov_react_units_in_loc(loc)
 }
 
