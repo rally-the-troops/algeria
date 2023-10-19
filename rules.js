@@ -2951,12 +2951,19 @@ function goto_distribute_psp(who, psp, reason) {
 
 function distribute_psl(where, delta) {
 	push_undo()
-	log(`>${player_name(where)} PSL ${add_sign(delta)}`)
 
 	if (where === FLN) {
-		game.fln_psl += delta
+		if (delta > 0) {
+			raise_fln_psl(delta)
+		} else {
+			lower_fln_psl(-delta)
+		}
 	} else {
-		game.gov_psl += delta
+		if (delta > 0) {
+			raise_gov_psl(delta)
+		} else {
+			lower_gov_psl(-delta)
+		}
 	}
 	game.distribute.psp -= Math.abs(delta)
 	if (check_victory())
