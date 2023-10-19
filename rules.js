@@ -151,6 +151,8 @@ function load_state(state) {
 // If a player's PSL rises to above 99 during the game due to various events, any such "excess" PSP gained for that player are not lost: instead they are SUBTRACTED from the other player's PSL.
 
 function raise_fln_psl(amount) {
+	if (amount <= 0)
+		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	// can trigger victory
 	game.fln_psl += amount
 	log(`>FLN PSL +${amount}`)
@@ -163,6 +165,8 @@ function raise_fln_psl(amount) {
 }
 
 function raise_gov_psl(amount) {
+	if (amount <= 0)
+		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	// can trigger victory
 	game.gov_psl += amount
 	log(`>Goverment PSL +${amount}`)
@@ -175,16 +179,22 @@ function raise_gov_psl(amount) {
 }
 
 function lower_fln_psl(amount) {
+	if (amount <= 0)
+		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	log(`>FLN PSL -${amount}`)
 	game.fln_psl = Math.max(0, game.fln_psl - amount)
 }
 
 function lower_gov_psl(amount) {
+	if (amount <= 0)
+		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	log(`>Goverment PSL -${amount}`)
 	game.gov_psl = Math.max(0, game.gov_psl - amount)
 }
 
 function raise_fln_ap(amount) {
+	if (amount <= 0)
+		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	log(`>FLN AP +${amount}`)
 	game.fln_ap = Math.min(MAX_AP, game.fln_ap + amount)
 }
@@ -1653,7 +1663,8 @@ function goto_fln_foreign_arms_shipment() {
 	log(`FLN adds 2d6 AP, -${game.naval} Naval Points`)
 	let roll = roll_nd6(2)
 	let delta_ap = Math.max(roll - game.naval, 0)
-	raise_fln_ap(delta_ap)
+	if (delta_ap)
+		raise_fln_ap(delta_ap)
 	end_random_event()
 }
 
@@ -2317,8 +2328,10 @@ function give_fln_ap() {
 	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
 	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
 	let psl_ap = Math.max(psl_percentage - game.naval, 0)
-	log(`Received 10% of PSL, - ${game.naval} Naval Points`)
-	raise_fln_ap(psl_ap)
+	log(`Received 10% of PSL (- ${game.naval} Naval Points) = ${psl_ap}`)
+	if (psl_ap) {
+		raise_fln_ap(psl_ap)
+	}
 }
 
 function ensure_front_in_independent_morocco_tunisia() {
