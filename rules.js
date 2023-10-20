@@ -1112,6 +1112,29 @@ function check_victory() {
 	return false
 }
 
+function check_shorter_victory() {
+	// If one player would "win" with at least a Substantial Victory (that is, his PSL is 26 or more points ahead of the other player's) two checks running,
+	// the game ends at that point and he wins the game with the level of victory he enjoyed at that moment.
+	let psl_diff = Math.abs(game.gov_psl - game.fln_psl)
+	if (psl_diff >= 26) {
+		let leader = game.gov_psl > game.fln_psl ? GOV : FLN
+		if (game.shorter_victory_leader === GOV && leader === GOV) {
+			let scale = victory_scale()
+			goto_game_over(GOV_NAME, `Government wins: ${scale} Shorter Game victory`)
+			return true
+		} else if (game.shorter_victory_leader === FLN && leader === FLN) {
+			let scale = victory_scale()
+			goto_game_over(FLN_NAME, `FLN wins: ${scale} Shorter Game victory`)
+			return true
+		}
+		game.shorter_victory_leader = leader
+		log(`${player_name(leader)} leads with ${psl_diff} PSL`)
+	} else {
+		game.shorter_victory_leader = -1
+	}
+	return false
+}
+
 function goto_game_over(result, victory) {
 	game.state = "game_over"
 	game.active = "None"
@@ -1191,9 +1214,7 @@ exports.setup = function (seed, scenario, options) {
 		}
 	}
 	if (options.shorter_game) {
-		// TODO
 		log("Shorter Game.")
-		log("NOT IMPLEMENTED")
 		game.shorter_game = true
 	}
 
@@ -4741,7 +4762,7 @@ function goto_coup_attempt_remove_elite(num) {
 
 	if (to_remove) {
 		game.selected = []
-		game.events.gov_remove_num = num
+		game.events.gov_remove_num = to_remove
 		game.state = "gov_coup_attempt_select_units"
 	} else {
 		log("No French elite units to remove")
@@ -4903,6 +4924,14 @@ function goto_turn_interphase() {
 
 	if (check_victory())
 		return
+
+	if (game.shorter_game && !(game.turn % 6)) {
+		// Players can agree to an open-ended game, checking their respective PSLs every 6 turns, at the end of the Turn Interphase.
+		log_br()
+		log("Checking for Shorter Game Victory every 6 turns")
+		if (check_shorter_victory())
+			return
+	}
 }
 
 states.turn_interphase = {
