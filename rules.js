@@ -1106,7 +1106,10 @@ function goto_game_over(result, victory) {
 	game.active = "None"
 	game.result = result
 	game.victory = victory
-	log("")
+	log_h1("Game Over")
+	log(`FLN PSL=${game.fln_psl}`)
+	log(`Gov. PSL=${game.gov_psl}`)
+	log_br()
 	log(victory)
 	return true
 }
