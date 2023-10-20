@@ -2742,6 +2742,8 @@ function end_deployment() {
 
 function goto_operations_phase() {
 	game.passes = 0
+	delete game.fln_auto_pass
+	delete game.gov_auto_pass
 
 	// In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
 	if (is_area_algerian(game.oas)) {
@@ -2767,9 +2769,13 @@ function goto_fln_operations_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
 	log_h2(`${game.active} Operations`)
-	game.state = "fln_operations"
-
 	clear_combat()
+
+	if (game.fln_auto_pass) {
+		fln_pass()
+	} else {
+		game.state = "fln_operations"
+	}
 }
 
 const FLN_PROPAGANDA_COST = 1
@@ -2815,6 +2821,7 @@ states.fln_operations = {
 
 		// Only allow to Government to take a mission if they didn't just pass.
 		view.actions.gov_mission = !game.passes
+		gen_action("auto_pass")
 		gen_action("pass")
 	},
 	propaganda() {
@@ -2838,13 +2845,25 @@ states.fln_operations = {
 		goto_gov_operations_phase()
 	},
 	pass() {
+		fln_pass()
+	},
+	auto_pass() {
+		game.fln_auto_pass = true
+		fln_pass()
+	}
+}
+
+function fln_pass() {
+	if (game.fln_auto_pass) {
+		log("FLN Auto Passes")
+	} else {
 		log("FLN Passes")
-		game.passes += 1
-		if (game.passes >= 2) {
-			end_operations_phase()
-		} else {
-			goto_gov_operations_phase()
-		}
+	}
+	game.passes += 1
+	if (game.passes >= 2) {
+		end_operations_phase()
+	} else {
+		goto_gov_operations_phase()
 	}
 }
 
@@ -3635,9 +3654,13 @@ function goto_gov_operations_phase() {
 	game.phasing = GOV_NAME
 	set_active_player()
 	log_h2(`${game.active} Operations`)
-	game.state = "gov_operations"
-
 	clear_combat()
+
+	if (game.gov_auto_pass) {
+		gov_pass()
+	} else {
+		game.state = "gov_operations"
+	}
 }
 
 const GOV_INTELLIGENCE_COST = 1
@@ -3675,6 +3698,7 @@ states.gov_operations = {
 			}
 		})
 
+		gen_action("auto_pass")
 		gen_action("pass")
 	},
 	flush() {
@@ -3692,14 +3716,26 @@ states.gov_operations = {
 	population_resettlement() {
 		goto_gov_population_resettlement_mission()
 	},
+	auto_pass() {
+		game.gov_auto_pass = true
+		gov_pass()
+	},
 	pass() {
+		gov_pass()
+	}
+}
+
+function gov_pass() {
+	if (game.gov_auto_pass) {
+		log("Government Auto Passes")
+	} else {
 		log("Government Passes")
-		game.passes += 1
-		if (game.passes >= 2) {
-			end_operations_phase()
-		} else {
-			goto_fln_operations_phase()
-		}
+	}
+	game.passes += 1
+	if (game.passes >= 2) {
+		end_operations_phase()
+	} else {
+		goto_fln_operations_phase()
 	}
 }
 
@@ -4340,6 +4376,8 @@ function clear_combat() {
 
 function end_operations_phase() {
 	game.passes = 0
+	delete game.fln_auto_pass
+	delete game.gov_auto_pass
 	clear_combat()
 	goto_turn_interphase()
 }

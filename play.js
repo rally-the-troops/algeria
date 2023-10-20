@@ -577,6 +577,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("use_air_point", "Air Point")
 	action_button("airmobilize", "Airmobilize")
 	action_button("no_react", "No React")
+	action_button("auto_pass", "Auto-Pass")
 	action_button("pass", "Pass")
 
 	action_button("add_fln_psl", "+1 FLN PSL")
