@@ -1186,9 +1186,7 @@ exports.setup = function (seed, scenario, options) {
 			game.slow_french_reaction = true
 		}
 		if (options.more_deterministic_independence) {
-			// TODO
 			log("More Deterministic Independence.")
-			log("NOT IMPLEMENTED")
 			game.more_deterministic_independence = true
 		}
 	}
@@ -1624,6 +1622,18 @@ function goto_random_event() {
 		delete game.events.gov_return
 		log_br()
 	}
+
+	// Instead of waiting for a random event to make Morocco and Tunisia independent,
+	// assume that this will happen some time in the first 6 turns of the 1954 scenario.
+	// Each Random Events Phase, roll 1d6; if the number rolled is less than or equal to the number of the current turn,
+	//the two countries immediately become independent.
+	if (game.more_deterministic_independence && !game.is_morocco_tunisia_independent) {
+		log("More Deterministic Independence?")
+		let roll = roll_1d6()
+		if (roll <= game.turn)
+			grant_morocco_tunisia_independence()
+		log_br()
+	}
 }
 
 states.random_event = {
@@ -1639,7 +1649,7 @@ states.random_event = {
 	},
 	roll() {
 		let rnd = 10 * roll_d6() + roll_d6()
-		log(">Rolled " + rnd)
+		log("Rolled " + rnd)
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -1818,23 +1828,9 @@ states.event_fln_factional_purge_select_units = {
 	}
 }
 
-function goto_morocco_tunisia_independence() {
+function grant_morocco_tunisia_independence() {
 	log_h3("Morocco & Tunisia Gains Independence.")
 	log_br()
-
-	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
-		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
-		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
-		// (represents infiltration of small numbers of weapons and troops through the borders).
-		log("Infiltration through borders.")
-		let [result, _effect] = roll_mst()
-		if (result)
-			raise_fln_ap(result)
-
-		end_random_event()
-		return
-	}
-
 	// Raise both FLN and Government PSL by 2d6;
 	let fln_roll = roll_nd6(2)
 	raise_fln_psl(fln_roll)
@@ -1846,6 +1842,23 @@ function goto_morocco_tunisia_independence() {
 	// and Government may begin to mobilize the Border Zone. See 11.22.
 	game.is_morocco_tunisia_independent = true
 	ensure_front_in_independent_morocco_tunisia()
+}
+
+function goto_morocco_tunisia_independence() {
+	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
+		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
+		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
+		// (represents infiltration of small numbers of weapons and troops through the borders).
+		log_h3("Infiltration through borders.")
+		let [result, _effect] = roll_mst()
+		if (result)
+			raise_fln_ap(result)
+
+		end_random_event()
+		return
+	}
+
+	grant_morocco_tunisia_independence()
 	end_random_event()
 }
 
