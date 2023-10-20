@@ -380,7 +380,7 @@ function is_area_country(l) {
 }
 
 function is_area_algerian(l) {
-	return areas[l].type !== COUNTRY
+	return l > 2 && areas[l].type !== COUNTRY
 }
 
 function is_area_france(l) {
@@ -724,7 +724,7 @@ function for_each_neutralized_unit_in_algeria(fn) {
 	for (let u = first_gov_unit; u <= last_fln_unit; ++u)
 		if (is_unit_neutralized(u)) {
 			let loc = unit_loc(u)
-			if (loc > 2 && is_area_algerian(loc))
+			if (is_area_algerian(loc))
 				fn(u)
 		}
 }
@@ -733,7 +733,7 @@ function for_each_non_neutralized_unit_in_algeria(fn) {
 	for (let u = first_gov_unit; u <= last_fln_unit; ++u)
 		if (is_unit_not_neutralized(u)) {
 			let loc = unit_loc(u)
-			if (loc > 2 && is_area_algerian(loc))
+			if (is_area_algerian(loc))
 				fn(u)
 		}
 }
@@ -902,7 +902,7 @@ function has_fln_not_neutralized_mobile_unit_in_algeria() {
 	for (let u = first_fln_unit; u <= last_fln_unit; ++u)
 		if (is_unit_not_neutralized(u) && is_mobile_unit(u)) {
 			let loc = unit_loc(u)
-			if (loc > 2 && is_area_algerian(loc))
+			if (is_area_algerian(loc))
 				return true
 		}
 	return false
