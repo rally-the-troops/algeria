@@ -2433,7 +2433,7 @@ states.fln_reinforcement = {
 
 			// Cadre can be converted to Front or Band
 			for_each_friendly_unit_on_map_of_type(CADRE, u => {
-				if (is_unit_not_neutralized(u))
+				if (is_unit_not_neutralized(u) && !is_area_france(unit_loc(u)))
 					gen_action_unit(u)
 			})
 
