@@ -186,6 +186,12 @@ function is_unit_selected(unit) {
 	return view.selected === unit
 }
 
+function is_loc_selected(loc) {
+	if (Array.isArray(view.selected_loc))
+		return view.selected_loc.includes(loc)
+	return view.selected_loc === loc
+}
+
 function is_loc_action(x) {
 	return !!(view.actions && view.actions.loc && view.actions.loc.includes(x))
 }
@@ -394,8 +400,8 @@ function update_unit(e, u) {
 	e.classList.toggle("neutralized", is_unit_neutralized(u))
 	e.classList.toggle("airmobile", is_unit_airmobile(u))
 	e.classList.toggle("fr_xx_dispersed", is_unit_dispersed(u))
-	e.classList.toggle("action", !view.battle && is_unit_action(u))
-	e.classList.toggle("selected", !view.battle && is_unit_selected(u))
+	e.classList.toggle("action", is_unit_action(u))
+	e.classList.toggle("selected", is_unit_selected(u))
 	e.classList.toggle("contacted", is_unit_contacted(u))
 	e.classList.toggle("eliminated", is_unit_eliminated(u))
 }
@@ -491,6 +497,7 @@ function update_map() {
 		if (e) {
 			let loc = parseInt(e.dataset.loc)
 			e.classList.toggle("action", is_loc_action(loc))
+			e.classList.toggle("target", is_loc_selected(loc))
 
 			let em = ui.area_markers[i]
 			if (em) {

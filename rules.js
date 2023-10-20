@@ -497,7 +497,6 @@ function clear_unit_dispersed(u) {
 }
 
 function move_unit(u, to) {
-	let loc = unit_loc(u)
 	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 }
@@ -657,6 +656,10 @@ function is_harass_unit(u) {
 	let type = unit_type(u)
 	let loc = unit_loc(u)
 	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && is_area_algerian(loc) && has_enemy_unit_in_loc(loc)
+}
+
+function is_airmobile_flush_unit(u) {
+	return is_unit_airmobile(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_boxes([OPS, OC])
 }
 
 function is_flush_unit(u) {
@@ -876,6 +879,13 @@ function has_enemy_unit_in_loc(x) {
 	return false
 }
 
+function has_enemy_unit_in_boxes(boxes) {
+	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
+		if (unit_loc(u) > 2 && boxes.includes(unit_box(u)))
+			return true
+	return false
+}
+
 function has_enemy_unit_in_loc_boxes(x, boxes) {
 	for (let u = first_enemy_unit; u <= last_enemy_unit; ++u)
 		if (unit_loc(u) === x && boxes.includes(unit_box(u)))
@@ -1004,7 +1014,8 @@ exports.VIEW_SCHEMA = {
 		contacted: {type: "array", items: {type: "integer", maximum: unit_count}},
 
 		actions: {type: "object"},
-		selected: {type: ["array", "integer"]}
+		selected: {type: ["array", "integer"]},
+		selected_loc: {type: ["array", "integer"]}
     },
     required: [
 		"log", "prompt", "scenario", "active", "phasing",
@@ -1047,6 +1058,7 @@ exports.view = function(state, player) {
 
 	if (player === game.active)
 		view.selected = game.selected
+		view.selected_loc = game.selected_loc
 
 	if (game.state === "game_over") {
 		view.prompt = game.victory
@@ -1125,6 +1137,7 @@ exports.setup = function (seed, scenario, options) {
 
 		state: null,
 		selected: -1,
+		selected_loc: -1,
 		phasing: GOV_NAME,
 		active: GOV_NAME,
 
@@ -1477,7 +1490,7 @@ states.scenario_setup = {
 		let count = count_friendly_unit_in_loc(DEPLOY)
 		view.prompt = `Setup: ${game.active} Deployment. ${count} unit(s) remaining.`
 
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			// first unit can be any unit in DEPLOY or on map
 			for_each_friendly_unit(u => {
 				gen_action_unit(u)
@@ -1580,7 +1593,7 @@ function end_scenario_setup() {
 // #region FLOW OF PLAY
 
 function begin_game() {
-	game.selected = -1
+	game.selected = []
 	game.summary = null
 	game.turn = 1
 	log_h1("Turn: " + game.turn)
@@ -2096,7 +2109,7 @@ states.gov_reinforcement = {
 		// he may not mobilize more than 1 mobile unit or Point of any type (Air, Helo, or Naval) per turn;
 		let limited = is_slow_french_reaction() && game.events.gov_has_mobilized
 
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			if (!is_slow_french_reaction()) {
 				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
 			} else {
@@ -2424,7 +2437,7 @@ function convert_fln_unit(u, type) {
 states.fln_reinforcement = {
 	inactive: "to do Reinforcement",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "Reinforcement: Build & Augment units"
 
 			// Front can build Cadres and Bands, or be converted to Cadre
@@ -2538,7 +2551,7 @@ states.gov_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
 		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			for_each_friendly_unit_on_map(u => {
 				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || (is_division_unit(u) && !set_has(game.mode_changed, u) && !is_slow_french_reaction()))
 					gen_action_unit(u)
@@ -2639,7 +2652,7 @@ states.fln_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
 		view.prompt = "Deploy units to OPS in same area"
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(UG, u => {
 				let loc = unit_loc(u)
 				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(game.deploy_cadre_france && is_area_france(loc)))
@@ -2862,7 +2875,7 @@ function reduce_unit(u, type) {
 states.fln_propaganda = {
 	inactive: "to do Propaganda mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "Propaganda: Select Front or Cadre"
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				if (is_propaganda_unit(u)) {
@@ -3081,7 +3094,7 @@ states.fln_strike = {
 	prompt() {
 		view.prompt = "Strike: Select Front in Urban area, Cadres may assist"
 
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				// first unit should be Front
 				if (is_strike_unit(u) && unit_type(u) === FRONT) {
@@ -3195,7 +3208,7 @@ function goto_fln_move_mission() {
 states.fln_move = {
 	inactive: "to do Move mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			if (game.events.jealousy_and_paranoia) {
 				view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)"
 			} else {
@@ -3279,7 +3292,7 @@ states.fln_raid = {
 	prompt() {
 		view.prompt = "Raid: Select Band or Failek units."
 
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				if (is_raid_unit(u)) {
 					gen_action_unit(u)
@@ -3368,7 +3381,7 @@ states.fln_harass = {
 	inactive: "to do Harass mission",
 	prompt() {
 		view.prompt = "Harass: Select Band or Failek unit (may combine if Failek present)"
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				if (is_harass_unit(u)) {
 					gen_action_unit(u)
@@ -3645,7 +3658,7 @@ states.gov_operations = {
 		view.actions.population_resettlement = 0
 
 		for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-			if (is_flush_unit(u)) {
+			if (is_flush_unit(u) || is_airmobile_flush_unit(u)) {
 				view.actions.flush = 1
 			}
 			if (game.gov_psl > GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
@@ -3708,19 +3721,39 @@ function can_gov_react() {
 states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
+		view.prompt = "Flush: Select location"
+		for_each_algerian_map_area(loc => {
+			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]))
+				gen_action_loc(loc)
+		})
 
-		if (game.selected.length === 0) {
-			view.prompt = "Flush: Select mobile unit(s)"
+		if (game.helo_avail)
+			gen_action("airmobilize")
+	},
+	airmobilize() {
+		push_undo()
+		goto_gov_airmobilize()
+	},
+	loc(l) {
+		game.selected_loc = l
+		game.state = "gov_flush_select_units"
+	}
+}
+
+states.gov_flush_select_units = {
+	inactive: "to do Flush mission",
+	prompt() {
+		if (!game.selected.length) {
+			view.prompt = "Flush: Select (air)mobile unit(s)"
 			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-				if (is_flush_unit(u)) {
+				if ((unit_loc(u) === game.selected_loc && is_flush_unit(u)) || is_airmobile_flush_unit(u)) {
 					gen_action_unit(u)
 				}
 			})
 		} else {
 			let first_unit = game.selected[0]
-			let first_unit_loc = unit_loc(first_unit)
 
-			if (is_area_urban(first_unit_loc) || !game.air_max) {
+			if (is_area_urban(game.selected_loc) || !game.air_max) {
 				view.prompt = "Flush: Execute mission"
 			} else {
 				view.prompt = `Flush: Execute mission (using ${game.mission_air_pts} Air Point(s))`
@@ -3728,17 +3761,17 @@ states.gov_flush = {
 			}
 
 			// airmobile
-			if (has_unit_type_in_loc(FR_XX, first_unit_loc)) {
+			if (has_unit_type_in_loc(FR_XX, game.selected_loc)) {
 				// any combination when division present
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (is_mobile_unit(u) && (unit_loc(u) === first_unit_loc || is_unit_airmobile(u))) {
+					if (is_mobile_unit(u) && (unit_loc(u) === game.selected_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
 			} else if (is_elite_unit(first_unit)) {
 				// all elite
 				for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-					if (is_elite_unit(u) && (unit_loc(u) === first_unit_loc || is_unit_airmobile(u))) {
+					if (is_elite_unit(u) && (unit_loc(u) === game.selected_loc || is_unit_airmobile(u))) {
 						gen_action_unit(u)
 					}
 				})
@@ -3768,8 +3801,8 @@ states.gov_flush = {
 	roll() {
 		let list = game.selected
 		game.selected = []
-		let first_unit = list[0]
-		let loc = unit_loc(first_unit)
+		let loc = game.selected_loc
+		game.selected_loc = -1
 		clear_undo()
 
 		log_h3(`Flush in A${loc}`)
@@ -3777,6 +3810,9 @@ states.gov_flush = {
 		let contact_ratings = 0
 		for (let u of list) {
 			contact_ratings += unit_contact(u)
+			// move airmobile units to combat
+			if (is_unit_airmobile(u) && unit_loc(u) !== loc)
+				set_unit_loc(u, loc)
 		}
 		log(`Combined Gov. contact = ${contact_ratings}`)
 
@@ -3882,7 +3918,7 @@ function goto_gov_react_mission() {
 states.gov_react = {
 	inactive: "to do React mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "React: Select mobile unit(s) or No React"
 
 			let loc = unit_loc(game.contacted[0])
@@ -3998,7 +4034,7 @@ function goto_gov_intelligence_mission() {
 states.gov_intelligence = {
 	inactive: "to do Intelligence mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "Intelligence: Select police unit(s)"
 			for_each_friendly_unit_on_map_of_type(POL, u => {
 				if (is_intelligence_unit(u)) {
@@ -4072,7 +4108,7 @@ function goto_gov_civil_affairs_mission() {
 states.gov_civil_affairs = {
 	inactive: "to do Civil Affairs mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "Civil Affairs: Select police unit"
 			for_each_friendly_unit_on_map_of_type(POL, u => {
 				if (is_civil_affairs_unit(u)) {
@@ -4187,7 +4223,7 @@ function do_suppression(loc, assist=0) {
 states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = "Suppression: Select police unit, Elite units may assist"
 			for_each_friendly_unit_on_map_of_type(POL, u => {
 				if (is_suppression_unit(u)) {
@@ -4233,7 +4269,7 @@ function goto_gov_population_resettlement_mission() {
 states.gov_population_resettlement = {
 	inactive: "to do Population Resettlement mission",
 	prompt() {
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			view.prompt = " Population Resettlement: Select police unit"
 			for_each_friendly_unit_on_map_of_type(POL, u => {
 				if (is_population_resettlement_unit(u)) {
@@ -4294,6 +4330,7 @@ function end_gov_mission() {
 }
 
 function clear_combat() {
+	game.selected = []
 	game.combat = {}
 	set_clear(game.contacted)
 	game.distribute_gov_psl = 0
@@ -4595,7 +4632,7 @@ states.gov_coup_attempt_free_mobilize = {
 	prompt() {
 		view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free`
 
-		if (game.selected.length === 0) {
+		if (!game.selected.length) {
 			// first unit can be any unit in DEPLOY or on map
 			for_each_friendly_unit_in_loc(DEPLOY, u => {
 				if (mobilization_cost([u]) <= game.events.gov_free_mobilize)
