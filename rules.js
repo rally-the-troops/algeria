@@ -498,7 +498,6 @@ function clear_unit_dispersed(u) {
 
 function move_unit(u, to) {
 	let loc = unit_loc(u)
-	log(`>Moved U${u} from A${loc} to A${to}`)
 	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 }
@@ -2735,7 +2734,7 @@ function goto_operations_phase() {
 	if (is_area_algerian(game.oas)) {
 		log_h2("OAS Operation")
 		let loc = game.oas
-		log_h3(`Suppression Mission in A${loc}`)
+		log_h3(`Suppression in A${loc}`)
 		do_suppression(loc)
 
 		// Whatever the result of the mission, it will automatically cause a Terror marker to be placed in the Area (if there isn't one there already).
@@ -2839,7 +2838,6 @@ states.fln_operations = {
 function goto_fln_propaganda_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Propaganda Mission`)
 	game.state = "fln_propaganda"
 	game.selected = []
 }
@@ -2894,7 +2892,8 @@ states.fln_propaganda = {
 		let loc = unit_loc(unit)
 		clear_undo()
 
-		log(`>by U${unit} in A${loc}`)
+		log_h3(`Propaganda in A${loc}`)
+		log(`>by U${unit}`)
 
 		// pay cost & update flags
 		log(`>Paid ${FLN_PROPAGANDA_COST} AP`)
@@ -3074,7 +3073,6 @@ function end_distribute_psp() {
 function goto_fln_strike_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Strike Mission`)
 	game.state = "fln_strike"
 }
 
@@ -3125,10 +3123,11 @@ states.fln_strike = {
 		let assist = list.length - 1
 		clear_undo()
 
+		log_h3(`Strike in A${loc}`)
 		if (assist) {
-			log(`>by Front (with ${assist} Cadre) in A${loc}`)
+			log(`>by Front (with ${assist} Cadre)`)
 		} else {
-			log(`>by Front in A${loc}`)
+			log(`>by Front`)
 		}
 
 		// pay cost & update flags
@@ -3190,7 +3189,6 @@ function continue_fln_strike() {
 function goto_fln_move_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Move Mission`)
 	game.state = "fln_move"
 }
 
@@ -3247,6 +3245,8 @@ states.fln_move = {
 		let loc = unit_loc(unit)
 		push_undo()
 
+		log_h3(`Move from A${loc} to A${to}`)
+		log(`> by U${unit}`)
 		// Note that the die roll is modified by the number of Government units on Patrol in the area moved to, not from.
 		let drm = -count_patrol_units_in_loc(to)
 		if (is_border_crossing(loc, to) && game.border_zone_active) {
@@ -3271,7 +3271,6 @@ states.fln_move = {
 function goto_fln_raid_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Raid Mission`)
 	game.state = "fln_raid"
 }
 
@@ -3312,10 +3311,9 @@ states.fln_raid = {
 		let assist = list.length - 1
 		clear_undo()
 
+		log_h3(`Raid in A${loc}`)
 		if (assist) {
-			log(`(with ${assist} assist) in A${loc}`)
-		} else {
-			log(`>in A${loc}`)
+			log(`(with ${assist} assist)`)
 		}
 
 		// pay cost & update flags
@@ -3363,7 +3361,6 @@ states.fln_raid = {
 function goto_fln_harass_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Harass Mission`)
 	game.state = "fln_harass"
 }
 
@@ -3417,7 +3414,11 @@ states.fln_harass = {
 	roll() {
 		let list = game.selected
 		game.selected = []
+		let first_unit = list[0]
+		let loc = unit_loc(first_unit)
 		clear_undo()
+
+		log_h3(`Harass in A${loc}`)
 		game.combat = {
 			fln_units: [],
 			gov_units: [],
@@ -3692,7 +3693,6 @@ states.gov_operations = {
 function goto_gov_flush_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Flush Mission`)
 	game.state = "gov_flush"
 }
 
@@ -3759,7 +3759,6 @@ states.gov_flush = {
 	},
 	use_air_point() {
 		push_undo()
-		log("Using Air Point")
 		game.air_avail -= 1
 		game.mission_air_pts += 1
 	},
@@ -3773,7 +3772,7 @@ states.gov_flush = {
 		let loc = unit_loc(first_unit)
 		clear_undo()
 
-		log(`>in A${loc}`)
+		log_h3(`Flush in A${loc}`)
 		// Total the Contact Ratings of Government units participating in the mission.
 		let contact_ratings = 0
 		for (let u of list) {
@@ -3877,7 +3876,6 @@ states.gov_airmobilize_select_units = {
 function goto_gov_react_mission() {
 	game.phasing = GOV_NAME
 	set_active_player()
-	log_h3(`React Mission`)
 	game.state = "gov_react"
 }
 
@@ -3938,7 +3936,6 @@ states.gov_react = {
 	},
 	use_air_point() {
 		push_undo()
-		log(">using Air Point")
 		game.air_avail -= 1
 		game.mission_air_pts += 1
 	},
@@ -3956,7 +3953,7 @@ states.gov_react = {
 		let loc = unit_loc(game.contacted[0])
 		clear_undo()
 
-		log(`>in A${loc}`)
+		log_h3(`React in A${loc}`)
 		delete game.events.must_react
 
 		// FLN player has a chance to evade to the UG box.
@@ -3995,7 +3992,6 @@ states.gov_react = {
 function goto_gov_intelligence_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Intelligence Mission`)
 	game.state = "gov_intelligence"
 }
 
@@ -4033,8 +4029,7 @@ states.gov_intelligence = {
 		let loc = unit_loc(first_unit)
 		clear_undo()
 
-		log(`>in A${loc}`)
-
+		log_h3(`Intelligence in A${loc}`)
 		//  The Government player pays 1 PSP, indicates the area, totals the Contact Ratings of the non-neutralized Police units there
 		lower_gov_psl(GOV_INTELLIGENCE_COST)
 		let contact_ratings = 0
@@ -4071,7 +4066,6 @@ states.gov_intelligence = {
 function goto_gov_civil_affairs_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Civil Affairs Mission`)
 	game.state = "gov_civil_affairs"
 }
 
@@ -4103,7 +4097,7 @@ states.gov_civil_affairs = {
 		let loc = unit_loc(unit)
 		clear_undo()
 
-		log(`>in A${loc}`)
+		log_h3(`Civil Affairs in A${loc}`)
 		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST)
 		set_area_civil_affaired(loc)
 
@@ -4128,7 +4122,6 @@ states.gov_civil_affairs = {
 function goto_gov_suppression_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Suppression Mission`)
 	game.state = "gov_suppression"
 }
 
@@ -4219,11 +4212,10 @@ states.gov_suppression = {
 		let loc = unit_loc(unit)
 		clear_undo()
 
+		log_h3(`Suppression in A${loc}`)
 		let assist = count_not_neutralized_unit_type_in_loc(EL_X, loc)
 		if (assist) {
-			log(`>in A${loc} (with ${assist} Elite)`)
-		} else {
-			log(`>in A${loc}`)
+			log(`>(with ${assist} Elite)`)
 		}
 
 		lower_gov_psl(GOV_SUPPRESSION_COST)
@@ -4235,7 +4227,6 @@ states.gov_suppression = {
 function goto_gov_population_resettlement_mission() {
 	push_undo()
 	game.passes = 0
-	log_h3(`Population Resettlement Mission`)
 	game.state = "gov_population_resettlement"
 }
 
@@ -4267,7 +4258,7 @@ states.gov_population_resettlement = {
 		let loc = unit_loc(unit)
 		clear_undo()
 
-		log(`>in A${loc}`)
+		log_h3(`Population Resettlement in A${loc}`)
 		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST)
 		set_area_remote(loc)
 		set_area_terrorized(loc)
