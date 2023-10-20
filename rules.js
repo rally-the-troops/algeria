@@ -1200,8 +1200,8 @@ const SCENARIOS = {
 	},
 	"1958": {
 		gov_psl: 50,
-		air_avail: 6,
-		helo_avail: 4,
+		air_max: 6,
+		helo_max: 4,
 		naval: 2,
 		fln_psl: 60,
 		is_morocco_tunisia_independent: true,
@@ -1209,8 +1209,8 @@ const SCENARIOS = {
 	},
 	"1960": {
 		gov_psl: 45,
-		air_avail: 7,
-		helo_avail: 5,
+		air_max: 7,
+		helo_max: 5,
 		naval: 3,
 		fln_psl: 45,
 		is_morocco_tunisia_independent: true,
@@ -1389,6 +1389,7 @@ function setup_scenario(scenario_name) {
 
 	let scenario = SCENARIOS[scenario_name]
 	Object.assign(game, scenario)
+	restore_air_helo_avail()
 
 	log(`FLN PSL=${game.fln_psl}`)
 	game.fln_ap = roll_nd6(2)
@@ -4477,6 +4478,12 @@ function unit_and_area_recovery() {
 	})
 }
 
+function restore_air_helo_avail() {
+	game.air_avail = game.air_max
+	game.helo_avail = game.helo_max
+	// log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
+}
+
 function unit_redeployment() {
 	log_h3("Redeployment")
 	for_each_non_neutralized_unit_in_algeria(u => {
@@ -4496,10 +4503,6 @@ function unit_redeployment() {
 			}
 		}
 	})
-
-	game.air_avail = game.air_max
-	game.helo_avail = game.helo_max
-	// log(`Air Avail=${game.air_avail} Helo Avail=${game.helo_avail}`)
 }
 
 function roll_coup_table(drm=0) {
@@ -4805,6 +4808,7 @@ function goto_turn_interphase() {
 
 	unit_and_area_recovery()
 	unit_redeployment()
+	restore_air_helo_avail()
 	final_psl_adjustment()
 
 	if (check_victory())
