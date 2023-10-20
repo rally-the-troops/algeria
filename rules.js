@@ -2532,6 +2532,7 @@ function goto_gov_deployment_phase() {
 	game.state = "gov_deployment"
 	game.selected = []
 	game.deployed = []
+	game.mode_changed = []
 }
 
 states.gov_deployment = {
@@ -2540,17 +2541,17 @@ states.gov_deployment = {
 		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
 		if (game.selected.length === 0) {
 			for_each_friendly_unit_on_map(u => {
-				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || is_division_unit(u))
+				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || (is_division_unit(u) && !set_has(game.mode_changed, u) && !is_slow_french_reaction()))
 					gen_action_unit(u)
 			})
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_type = unit_type(first_unit)
 			let first_unit_loc = unit_loc(first_unit)
-			let first_unit_box= unit_box(first_unit)
+			let first_unit_box = unit_box(first_unit)
 
-			if (first_unit_type == FR_XX && game.selected.length === 1 && !is_slow_french_reaction()) {
-				if (is_unit_not_neutralized(first_unit)) {
+			if (first_unit_type == FR_XX && game.selected.length === 1 && !is_slow_french_reaction() && !set_has(game.mode_changed, first_unit)) {
+				if (is_unit_not_neutralized(first_unit) && unit_box(first_unit) === OPS) {
 					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
 				} else {
 					// allow selection of neutralized divisions (to change mode only)
@@ -2560,12 +2561,12 @@ states.gov_deployment = {
 			}
 
 			for_each_friendly_unit_in_loc(first_unit_loc, u => {
-				if (unit_box(u) === first_unit_box && is_mobile_unit(u) && (!set_has(game.deployed, u) || u === first_unit)) {
+				if ((unit_box(u) === OPS && unit_box(u) === first_unit_box && is_mobile_unit(u) && !set_has(game.deployed, u)) || u === first_unit) {
 					gen_action_unit(u)
 				}
 			})
 
-			if (is_unit_not_neutralized(first_unit) && !set_has(game.deployed, first_unit)) {
+			if (is_unit_not_neutralized(first_unit) && unit_box(first_unit) === OPS && !set_has(game.deployed, first_unit)) {
 				for_each_algerian_map_area(loc => {
 					gen_action_loc(loc)
 				})
@@ -2612,15 +2613,17 @@ states.gov_deployment = {
 		let loc = unit_loc(u)
 		push_undo()
 		if (is_unit_dispersed(u)) {
-			log(`U${u} in A${loc} switched to Concentrated mode`)
+			log(`U${u} in A${loc} set to Concentrated mode`)
 			clear_unit_dispersed(u)
 		} else {
-			log(`U${u} in A${loc} switched to Dispersed mode`)
+			log(`U${u} in A${loc} set to Dispersed mode`)
 			set_unit_dispersed(u)
 		}
+		set_add(game.mode_changed, u)
 	},
 	end_deployment() {
-		game.deployed = []
+		delete game.deployed
+		delete game.mode_changed
 		goto_fln_deployment_phase()
 	}
 }
