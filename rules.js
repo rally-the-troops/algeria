@@ -497,7 +497,8 @@ function clear_unit_dispersed(u) {
 }
 
 function move_unit(u, to) {
-	log(`>Moved U${u} to A${to}`)
+	let loc = unit_loc(u)
+	log(`>Moved U${u} from A${loc} to A${to}`)
 	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 }
@@ -3240,8 +3241,9 @@ states.fln_move = {
 		let loc = unit_loc(unit)
 		push_undo()
 
-		let drm = -count_patrol_units_in_loc(loc)
-		if (is_border_crossing(loc, to)) {
+		// Note that the die roll is modified by the number of Government units on Patrol in the area moved to, not from.
+		let drm = -count_patrol_units_in_loc(to)
+		if (is_border_crossing(loc, to) && game.border_zone_active) {
 			drm += game.border_zone_drm
 		}
 		let [_result, effect] = roll_mst(drm)
@@ -4503,6 +4505,9 @@ function unit_redeployment() {
 			}
 		}
 	})
+
+	restore_air_helo_avail()
+	game.border_zone_active = false
 }
 
 function roll_coup_table(drm=0) {
@@ -4808,7 +4813,6 @@ function goto_turn_interphase() {
 
 	unit_and_area_recovery()
 	unit_redeployment()
-	restore_air_helo_avail()
 	final_psl_adjustment()
 
 	if (check_victory())
