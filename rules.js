@@ -4514,33 +4514,34 @@ function roll_coup_table(drm=0) {
 	let coup = roll_nd6(2, drm)
 	let delta_psp = 0
 
+	const prefix="Outcome: "
 	if (coup === 2) {
-		log("Coup: Wild success") //: +3d6 PSP, mobilize 2d6 PSP of units for free
+		log(`${prefix}Wild success`) //: +3d6 PSP, mobilize 2d6 PSP of units for free
 		delta_psp = roll_nd6(3, drm)
 		raise_gov_psl(delta_psp)
 		return 'wild_success'
 	} else if (coup <= 4) {
-		log("Big success") //: +2d6 PSP, mobilize 1d6 PSP of units for free
+		log(`${prefix}Big success`) //: +2d6 PSP, mobilize 1d6 PSP of units for free
 		delta_psp = roll_nd6(2, drm)
 		raise_gov_psl(delta_psp)
 		return 'big_success'
 	} else if (coup <= 6) {
-		log("Coup: Success") //: +1d6 PSP
+		log(`${prefix}Success`) //: +1d6 PSP
 		delta_psp = roll_d6(drm)
 		raise_gov_psl(delta_psp)
 		return 'success'
 	} else if (coup === 7) {
-		log("Coup: Fizzle") //: -1d6 PSP
+		log(`${prefix}Fizzle`) //: -1d6 PSP
 		delta_psp = roll_d6(drm)
 		lower_gov_psl(delta_psp)
 		return 'fizzle'
 	} else if (coup <= 9) {
-		log("Coup: Failure") //: -2d6 PSP, remove 1 elite unit from the game
+		log(`${prefix}Failure`) //: -2d6 PSP, remove 1 elite unit from the game
 		delta_psp = roll_nd6(2, drm)
 		lower_gov_psl(delta_psp)
 		return 'failure'
 	} else {
-		log("Coup: Abject failure") //: -3d6 PSP, remove 1d6 elite units from the game
+		log(`${prefix}Abject failure`) //: -3d6 PSP, remove 1d6 elite units from the game
 		delta_psp = roll_nd6(3, drm)
 		lower_gov_psl(delta_psp)
 		return 'abject_failure'
