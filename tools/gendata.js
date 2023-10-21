@@ -14,10 +14,10 @@ let areas = []
 let zone_areas = {}
 let next_location_id = 0
 
-function def_area(id, name, type, zone, x, y, w, h) {
+function def_area(id, name, type, zone) {
     let loc = next_location_id++
     locations[id] = loc
-    areas.push({loc, id, name, type, zone, x, y, w, h})
+    areas.push({loc, id, name, type, zone})
     if (zone) {
         if (!(zone in zone_areas)) {
             zone_areas[zone] = []
@@ -32,40 +32,40 @@ def_area("DEPLOY", "Deployment")
 def_area("ELIMINATED", "Eliminated")
 
 // countries
-def_area("FRANCE", "France", COUNTRY, null, 1690.3, 244.8, 94, 94)
-def_area("TUNISIA", "Tunisia", COUNTRY, "TUNISIA", 2499.9, 1667.6, 94, 94)
-def_area("MOROCCO", "Morocco", COUNTRY, "MOROCCO", 109, 1765, 94, 94)
+def_area("FRANCE", "France", COUNTRY, null)
+def_area("TUNISIA", "Tunisia", COUNTRY, "TUNISIA")
+def_area("MOROCCO", "Morocco", COUNTRY, "MOROCCO")
 
-def_area("I-1", "Barika", RURAL, "I", 1708.1, 1117.9)
-def_area("I-2", "Batna", REMOTE, "I", 2185.6, 1390.9)
-def_area("I-3", "Biskra", REMOTE, "I", 1853.6, 1620.9)
-def_area("I-4", "Tebessa", RURAL, "I", 2299.6, 1120.9)
+def_area("I-1", "Barika", RURAL, "I")
+def_area("I-2", "Batna", REMOTE, "I")
+def_area("I-3", "Biskra", REMOTE, "I")
+def_area("I-4", "Tebessa", RURAL, "I")
 
-def_area("CONSTANTINE", "Constantine", URBAN, "II", 2066.6, 315.8)
-def_area("II-1", "Setif", RURAL, "II", 1917.6, 800.8)
-def_area("II-2", "Phillippeville", RURAL, "II", 2200.6, 584.9)
-def_area("II-3", "Souk Ahras", RURAL, "II", 2347.6, 848.9)
+def_area("CONSTANTINE", "Constantine", URBAN, "II")
+def_area("II-1", "Setif", RURAL, "II")
+def_area("II-2", "Phillippeville", RURAL, "II")
+def_area("II-3", "Souk Ahras", RURAL, "II")
 
-def_area("III-1", "Tizi Ouzou", RURAL, "III", 1473.6, 578.9)
-def_area("III-2", "Bordj Bou Arreridj", RURAL, "III", 1465.6, 832.9)
-def_area("III-3", "Bougie", RURAL, "III", 1703.6, 616.9)
+def_area("III-1", "Tizi Ouzou", RURAL, "III")
+def_area("III-2", "Bordj Bou Arreridj", RURAL, "III")
+def_area("III-3", "Bougie", RURAL, "III")
 
-def_area("ALGIERS", "Algiers", URBAN, "IV", 1185.6, 346.8)
-def_area("IV-1", "Medea", RURAL, "IV", 1212, 727)
-def_area("IV-2", "Orleansville", RURAL, "IV", 982, 780.2)
+def_area("ALGIERS", "Algiers", URBAN, "IV")
+def_area("IV-1", "Medea", RURAL, "IV")
+def_area("IV-2", "Orleansville", RURAL, "IV")
 
-def_area("ORAN", "Oran", URBAN, "V", 430.6, 588.8)
-def_area("V-1", "Mecheria", REMOTE, "V", 234, 1485.7)
-def_area("V-2", "Tlemcen", RURAL, "V", 173, 1140.9)
-def_area("V-3", "Sidi Bel Abbes", RURAL, "V", 476, 1038)
-def_area("V-4", "Mostaganem", RURAL, "V", 741, 863.9)
-def_area("V-5", "Saida", REMOTE, "V", 501, 1419.1)
-def_area("V-6", "Mascara", REMOTE, "V", 785, 1302.9)
-def_area("V-7", "Ain Sefra", REMOTE, "V", 752, 1670.9)
-def_area("V-8", "Laghouat", REMOTE, "V", 1191, 1615.6)
+def_area("ORAN", "Oran", URBAN, "V")
+def_area("V-1", "Mecheria", REMOTE, "V")
+def_area("V-2", "Tlemcen", RURAL, "V")
+def_area("V-3", "Sidi Bel Abbes", RURAL, "V")
+def_area("V-4", "Mostaganem", RURAL, "V")
+def_area("V-5", "Saida", REMOTE, "V")
+def_area("V-6", "Mascara", REMOTE, "V")
+def_area("V-7", "Ain Sefra", REMOTE, "V")
+def_area("V-8", "Laghouat", REMOTE, "V")
 
-def_area("VI-1", "Sidi Aissa", REMOTE, "VI", 1385, 1186)
-def_area("VI-2", "Ain Qussera", RURAL, "VI", 1070.6, 1235.6)
+def_area("VI-1", "Sidi Aissa", REMOTE, "VI")
+def_area("VI-2", "Ain Qussera", RURAL, "VI")
 
 let adjecents = {}
 
