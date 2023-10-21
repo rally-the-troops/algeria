@@ -15,6 +15,7 @@ const ELIMINATED = 2
 // const PTL = 2
 // const OC = 3
 // const BOXES = [UG, OPS, PTL, OC]
+const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
 
 const area_count = 31
 const unit_count = 120
@@ -148,11 +149,11 @@ const LAYOUT = {
 	"Constantine-OPS": [1227, 204],
 	"Constantine-UG": [1170, 204],
 	"Constantine-MK": [1280, 151],
-	"Phillippeville-OC": [1244, 540],
-	"Phillippeville-PTL": [1251, 456],
-	"Phillippeville-OPS": [1306, 402],
-	"Phillippeville-UG": [1249, 344],
-	"Phillippeville-MK": [1306, 307],
+	"Philippeville-OC": [1244, 540],
+	"Philippeville-PTL": [1251, 456],
+	"Philippeville-OPS": [1306, 402],
+	"Philippeville-UG": [1249, 344],
+	"Philippeville-MK": [1306, 307],
 	"Setif-OC": [1139, 541],
 	"Setif-PTL": [1043, 523],
 	"Setif-OPS": [1164, 376],
@@ -418,33 +419,26 @@ function create_border_zone(i) {
 
 const COUNTRY = 4
 
-function create_area(i, area_id, type) {
-	let e = ui.areas[i] = document.createElement("div")
-	e.id = `area-${area_id}`
+function create_area(i, area_id, area_name, type) {
+	let area_name_css = area_name.replaceAll(' ', '-')
+	let e = ui.areas[i] = document.querySelector(`#svgmap #areas #${area_name_css}`)
 	e.dataset.loc = data.areas[i].loc
-	e.className = "space"
 	e.addEventListener("mousedown", on_click_loc)
-	e.style.left = data.areas[i].x / SCALE + "px"
-	e.style.top = data.areas[i].y / SCALE + "px"
-	if (type !== COUNTRY) {
-		e.style.width = 193 / SCALE + "px"
-		e.style.height = 193 / SCALE + "px"
-	} else {
-		e.style.width = data.areas[i].w / SCALE + "px"
-		e.style.height = data.areas[i].h / SCALE + "px"
-	}
-	document.getElementById("areas").appendChild(e)
 }
 
-function create_area_markers(i, area_id) {
+function create_area_markers(i, area_id, area_name) {
+	const box_size = 95 / SCALE
+	console.log(i, area_id, area_name)
+	let [x, y] = LAYOUT[area_name + '-MK']
+
 	let e = document.createElement("div")
 	e.id = `area-marker-${area_id}`
 	e.dataset.loc = data.areas[i].loc
-	e.className = "space stack s"
-	e.style.left = (data.areas[i].x + 175) / SCALE + "px"
-	e.style.top = (data.areas[i].y - 65) / SCALE + "px"
-	e.style.width = 65 / SCALE + "px"
-	e.style.height = 65 / SCALE + "px"
+	e.className = "space stack"
+	e.style.left = x - (box_size / 2) + "px"
+	e.style.top = y - (box_size / 2) + "px"
+	e.style.width = box_size + "px"
+	e.style.height = box_size + "px"
 	document.getElementById("area_markers").appendChild(e)
 
 	ui.area_markers[i] = {}
@@ -452,21 +446,24 @@ function create_area_markers(i, area_id) {
 	for (let marker of ['remote', 'fln_control', 'gov_control', 'terror', 'oas_active']) {
 		let em = ui.area_markers[i][marker] = document.createElement("div")
 		em.id = `area-marker-${i}-${marker}`
-		em.className = `counter ${marker} s`
+		em.className = `counter ${marker}`
 		e.appendChild(em)
 	}
 }
 
-function create_box(i, area_id, box_id) {
+function create_box(i, area_id, area_name, box_id) {
+	const box_size = 90 / SCALE
+	let [x, y] = LAYOUT[area_name + '-' + BOX_NAMES[box_id]]
+
 	let e = ui.boxes[i * 4 + box_id] = document.createElement("div")
 	e.id = `ops-${area_id}-${box_id}`
 	e.dataset.loc = data.areas[i].loc
 	e.className = "space stack"
 	e.addEventListener("mousedown", on_click_loc)
-	e.style.left = (data.areas[i].x + (box_id % 2) * 99) / SCALE + "px"
-	e.style.top = (data.areas[i].y + Math.floor(box_id / 2) * 99) / SCALE + "px"
-	e.style.width = 94 / SCALE + "px"
-	e.style.height = 94 / SCALE + "px"
+	e.style.left = x - (box_size / 2) + "px"
+	e.style.top = y - (box_size / 2) + "px"
+	e.style.width = box_size + "px"
+	e.style.height = box_size + "px"
 	document.getElementById("boxes").appendChild(e)
 	return e
 }
@@ -501,20 +498,21 @@ function on_init() {
 	// Areas
 	for (let i = 0; i < data.areas.length; ++i) {
 		let area_id = data.areas[i].id
+		let area_name = data.areas[i].name
 		let type = data.areas[i].type
 		if (type) {
-			create_area(i, area_id, type)
+			create_area(i, area_id, area_name, type)
 
 			if (type !== COUNTRY) {
 				// Area markers
-				create_area_markers(i, area_id)
+				create_area_markers(i, area_id, area_name)
 
 				// Unit Boxes
 				for (let box_id = 0; box_id < 4; ++box_id) {
-					create_box(i, area_id, box_id)
+					create_box(i, area_id, area_name, box_id)
 				}
 			} else {
-				let e = create_box(i, area_id, 0)
+				let e = create_box(i, area_id, area_name, 0)
 
 				if (area_id === "FRANCE") {
 					ui.area_markers[i] = {}

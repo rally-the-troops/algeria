@@ -43,7 +43,7 @@ def_area("I-4", "Tebessa", RURAL, "I")
 
 def_area("CONSTANTINE", "Constantine", URBAN, "II")
 def_area("II-1", "Setif", RURAL, "II")
-def_area("II-2", "Phillippeville", RURAL, "II")
+def_area("II-2", "Philippeville", RURAL, "II")
 def_area("II-3", "Souk Ahras", RURAL, "II")
 
 def_area("III-1", "Tizi Ouzou", RURAL, "III")
