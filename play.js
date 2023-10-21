@@ -603,6 +603,27 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("reset", "Reset")
 }
 
+const ICONS = {
+	B0: '<span class="black d0"></span>',
+	B1: '<span class="black d1"></span>',
+	B2: '<span class="black d2"></span>',
+	B3: '<span class="black d3"></span>',
+	B4: '<span class="black d4"></span>',
+	B5: '<span class="black d5"></span>',
+	B6: '<span class="black d6"></span>',
+	W0: '<span class="white d0"></span>',
+	W1: '<span class="white d1"></span>',
+	W2: '<span class="white d2"></span>',
+	W3: '<span class="white d3"></span>',
+	W4: '<span class="white d4"></span>',
+	W5: '<span class="white d5"></span>',
+	W6: '<span class="white d6"></span>',
+}
+
+function sub_icon(match) {
+	return ICONS[match]
+}
+
 function on_focus_area_tip(x) { // eslint-disable-line no-unused-vars
 	ui.areas[x].classList.add("tip")
 }
@@ -652,6 +673,8 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 	text = text.replace(/>/g, "&gt;")
 	text = text.replace(/U(\d+)/g, sub_unit_name)
 	text = text.replace(/A(\d+)/g, sub_area_name)
+
+	text = text.replace(/\b[BW]\d\b/g, sub_icon)
 
 	if (text.match(/^\.h1/)) {
 		text = text.substring(4)
