@@ -16,6 +16,7 @@
 	--highlight-color: yellow;
 	--selected-color: blue;
 	--tip-color: red;
+	--target-color: indianred;
 }
 
 main { background-color: dimgray }
@@ -66,21 +67,26 @@ main { background-color: dimgray }
 	fill: white;
 }
 #map svg path.area.action {
-	fill-opacity: 0.4;
+	fill-opacity: 0.2;
 	fill: var(--highlight-color);
 	stroke: white;
-	stroke-width: 10;
-	stroke-dasharray: 8 4;
+	stroke-width: 8;
+}
+#map svg path.area.action:hover {
+	fill-opacity: 0.6;
 }
 #map svg path.area.target {
 	cursor: pointer;
 	fill-opacity: 0.4;
-	fill: var(--highlight-color);
+	fill: var(--target-color);
+	stroke: var(--target-color);
+	stroke-width: 8;
 }
 #map svg path.area.tip {
+	fill-opacity: 0.4;
+	fill: var(--tip-color);
 	stroke: var(--tip-color);
-	stroke-width: 20;
-	stroke-dasharray: 80 40;
+	stroke-width: 8;
 }
 
 /* SPACES */
@@ -88,16 +94,17 @@ main { background-color: dimgray }
 .space{position:absolute;box-sizing:border-box;border:4px solid transparent;}
 .space.loc{border-radius:50%;}
 .space.action{border-color:var(--highlight-color);}
-.space.target{border-color:indianred;}
+.space.target{border-color:var(--target-color);}
 .space.loc.action{border-color:var(--highlight-color);}
 .space.selected{border-color:var(--selected-color);}
 .space.tip { border-color: var(--tip-color);}
 
 .stack {
-  display:  grid;
+  display: grid;
   grid-gap: 0.1rem;
   grid-template-columns: repeat(auto-fill, 2px);
   transition: grid-template-columns 0.5s;
+  cursor: pointer;
 }
 
 .stack:hover {
@@ -153,7 +160,7 @@ main { background-color: dimgray }
 }
 
 .counter.contacted {
-	box-shadow: 0 0 0 2px indianred;
+	box-shadow: 0 0 0 2px var(--target-color);
 }
 
 .counter.tip {
