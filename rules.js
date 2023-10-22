@@ -2581,6 +2581,15 @@ function goto_gov_deployment_phase() {
 	game.mode_changed = []
 }
 
+function can_airmobilize_any_unit() {
+	let result = false
+	for_each_friendly_unit_on_map(u => {
+		if (can_airmobilize_unit(u) && airmobilize_cost([u]) <= game.helo_avail)
+			result = true
+	})
+	return result
+}
+
 states.gov_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
@@ -2619,7 +2628,7 @@ states.gov_deployment = {
 			}
 		}
 
-		if (game.helo_avail)
+		if (game.helo_avail && can_airmobilize_any_unit())
 			gen_action("airmobilize")
 
 		gen_action("end_deployment")
@@ -3797,7 +3806,7 @@ states.gov_flush = {
 				gen_action_loc(loc)
 		})
 
-		if (game.helo_avail)
+		if (game.helo_avail && can_airmobilize_any_unit())
 			gen_action("airmobilize")
 	},
 	airmobilize() {
@@ -3853,7 +3862,7 @@ states.gov_flush_select_units = {
 			gen_action("roll")
 		}
 
-		if (game.helo_avail)
+		if (game.helo_avail && can_airmobilize_any_unit())
 			gen_action("airmobilize")
 	},
 	airmobilize() {
@@ -3946,7 +3955,7 @@ states.gov_airmobilize_select_units = {
 		let cost = airmobilize_cost(game.selected)
 
 		for_each_friendly_unit_on_map(u => {
-			if (can_airmobilize_unit(u) && (set_has(game.selected, u) || (cost + airmobilize_cost([u]) <= game.helo_avail)))
+			if ((can_airmobilize_unit(u) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
 				gen_action_unit(u)
 		})
 
@@ -3959,7 +3968,14 @@ states.gov_airmobilize_select_units = {
 		gen_action("done")
 	},
 	unit(u) {
+		push_undo()
 		set_toggle(game.selected, u)
+		// preview selection to see backside of counter
+		if (set_has(game.selected, u)) {
+			set_unit_airmobile(u)
+		} else {
+			clear_unit_airmobile(u)
+		}
 	},
 	done() {
 		let list = game.selected
@@ -4033,7 +4049,7 @@ states.gov_react = {
 
 			gen_action("roll")
 		}
-		if (game.helo_avail)
+		if (game.helo_avail && can_airmobilize_any_unit())
 			gen_action("airmobilize")
 	},
 	airmobilize() {
