@@ -1669,8 +1669,10 @@ states.random_event = {
 		// goto_suez_crisis()
 	},
 	roll() {
-		let rnd = 10 * roll_d6() + roll_d6()
-		log("Rolled " + rnd)
+		let rnd1 = roll_d6()
+		let rnd2 = roll_d6()
+		let rnd = 10 * rnd1 + rnd2
+		log(`Rolled B${rnd1} B${rnd2}`)
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -1871,7 +1873,8 @@ function goto_morocco_tunisia_independence() {
 		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
 		// (represents infiltration of small numbers of weapons and troops through the borders).
 		log_h3("Infiltration through borders.")
-		let [result, _effect] = roll_mst()
+		let roll = roll_1d6()
+		let [result, _effect] = roll_mst(roll)
 		if (result)
 			raise_fln_ap(result)
 
@@ -2976,12 +2979,19 @@ states.fln_propaganda = {
 		set_area_propagandized(loc)
 		set_unit_box(unit, OC)
 
-		let drm = -count_patrol_units_in_loc(loc)
-		if (is_area_terrorized(loc))
-			drm -= 1
-		let [result, effect] = roll_mst(drm)
+		let roll = roll_1d6()
+		let patrol = count_patrol_units_in_loc(loc)
+		if (patrol) {
+			logi(`-${patrol} Patrol`)
+			roll -= patrol
+		}
+		if (is_area_terrorized(loc)) {
+			logi(`-1 Terrorized`)
+			roll -= 1
+		}
+		let [result, effect] = roll_mst(roll)
 		if (is_area_urban(loc)) {
-			log('x2 in Urban area')
+			logi('x2 Urban')
 			result *= 2
 		}
 
@@ -3214,11 +3224,21 @@ states.fln_strike = {
 			set_add(game.contacted, u)
 		}
 
-		let drm = assist
-		drm -= count_patrol_units_in_loc(loc)
-		if (is_area_terrorized(loc))
-			drm -= 1
-		let [result, effect] = roll_mst(drm)
+		let roll = roll_1d6()
+		if (assist) {
+			logi(`+${assist} Assist`)
+			roll += assist
+		}
+		let patrol = count_patrol_units_in_loc(loc)
+		if (patrol) {
+			logi(`-${patrol} Patrol`)
+			roll -= patrol
+		}
+		if (is_area_terrorized(loc)) {
+			logi(`-1 Terrorized`)
+			roll -= 1
+		}
+		let [result, effect] = roll_mst(roll)
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
@@ -3322,12 +3342,19 @@ states.fln_move = {
 
 		log_h3(`Move from A${loc} to A${to}`)
 		log(`> by U${unit}`)
+
+		let roll = roll_1d6()
 		// Note that the die roll is modified by the number of Government units on Patrol in the area moved to, not from.
-		let drm = -count_patrol_units_in_loc(to)
-		if (is_border_crossing(loc, to) && game.border_zone_active) {
-			drm += game.border_zone_drm
+		let patrol = count_patrol_units_in_loc(to)
+		if (patrol) {
+			logi(`-${patrol} Patrol`)
+			roll -= patrol
 		}
-		let [_result, effect] = roll_mst(drm)
+		if (is_border_crossing(loc, to) && game.border_zone_active) {
+			logi(`${game.border_zone_drm} Border Zone`)
+			roll += game.border_zone_drm
+		}
+		let [_result, effect] = roll_mst(roll)
 
 		if (effect === '+') {
 			eliminate_unit(unit)
@@ -3400,12 +3427,21 @@ states.fln_raid = {
 			set_add(game.contacted, u)
 		}
 
-		let drm = assist
-		drm -= count_patrol_units_in_loc(loc)
-		let [result, effect] = roll_mst(drm)
+		let roll = roll_1d6()
+		if (assist) {
+			logi(`+${assist} Assist`)
+			roll += assist
+		}
+		let patrol = count_patrol_units_in_loc(loc)
+		if (patrol) {
+			logi(`-${patrol} Patrol`)
+			roll -= patrol
+		}
+		let [result, effect] = roll_mst(roll)
+
 		if (result > 0) {
 			if (is_area_urban(loc)) {
-				log('x2 in Urban area')
+				logi('x2 Urban')
 				result *= 2
 			}
 			raise_fln_ap(result)
@@ -3895,21 +3931,32 @@ states.gov_flush_select_units = {
 		}
 		log(`Combined Gov. contact = ${contact_ratings}`)
 
-		let base_drm = 0
-		if (is_area_remote(loc)) base_drm += 1
-		if (is_area_terrorized(loc)) base_drm += 1
-		if (is_area_urban(loc)) base_drm -= 1
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
 
 		for_each_enemy_unit_in_loc_boxes(loc, [OPS, OC], u => {
 			log(`U${u}`)
-			let drm = base_drm
-			if (unit_evasion(u) > contact_ratings) drm += 1
+
+			let roll = roll_1d6()
+			if (is_area_remote(loc)) {
+				logi("+1 Remote")
+				roll += 1
+			}
+			if (is_area_terrorized(loc)) {
+				logi("+1 Terrorized")
+				roll += 1
+			}
+			if (is_area_urban(loc)) {
+				logi("-1 Urban")
+				roll -= 1
+			}
+			if (unit_evasion(u) > contact_ratings) {
+				logi("+1 Evasion")
+				roll += 1
+			}
 
 			// The Government player rolls to contact each FLN unit that is currently in the OPS or OC boxes
 			// by rolling equal to or less than this number, moving contacted units to one side.
-			let roll = roll_1d6(drm)
 			if (roll <= contact_ratings) {
 				log(">Contact")
 				set_add(game.contacted, u)
@@ -4160,24 +4207,36 @@ states.gov_intelligence = {
 		}
 		log(`Combined Gov. contact = ${contact_ratings}`)
 
-		let base_drm = 0
-		if (is_area_remote(loc)) base_drm += 1
-		if (is_area_terrorized(loc)) base_drm += 1
-		if (is_area_urban(loc)) base_drm -= 1
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or mission is in a Remote area, or if a Terror marker is present; -1 if mission is in an Urban area).
 
 		for_each_enemy_unit_in_loc_boxes(loc, [UG], u => {
 			log(`U${u}`)
-			let drm = base_drm
-			if (unit_evasion(u) > contact_ratings) drm += 1
+
+			let roll = roll_1d6()
+			if (is_area_remote(loc)) {
+				logi("+1 Remote")
+				roll += 1
+			}
+			if (is_area_terrorized(loc)) {
+				logi("+1 Terrorized")
+				roll += 1
+			}
+			if (is_area_urban(loc)) {
+				logi("-1 Urban")
+				roll -= 1
+			}
+			if (unit_evasion(u) > contact_ratings) {
+				logi("+1 Evasion")
+				roll += 1
+			}
+
 			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
-			let roll = roll_1d6(drm)
 			if (roll <= contact_ratings) {
-				log(">Contact")
+				logi("Contact")
 				set_unit_box(u, OC)
 			} else {
-				log(">No contact")
+				logi("No contact")
 			}
 		})
 
@@ -4225,9 +4284,12 @@ states.gov_civil_affairs = {
 
 		// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
 		// A DRM of +1 is applied if the "Amnesty" random event is in effect.
-		let drm = 0
-		if (game.events.amnesty) drm += 1
-		let [result, effect] = roll_mst(drm)
+		let roll = roll_1d6()
+		if (game.events.amnesty) {
+			logi("+1 Amnesty")
+			roll += 1
+		}
+		let [result, effect] = roll_mst(roll)
 
 		// PSP from successful Civil Affairs missions are subtracted from the FLN PSL (note this is different from the FLN Propaganda mission).
 		lower_fln_psl(result)
@@ -4254,9 +4316,16 @@ function do_suppression(loc, assist=0) {
 	// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
 	// Elite units may assist in this mission, each one yielding a +1 DRM.
 	// A DRM of +1 is applied if the "Amnesty" random event is in effect.
-	let drm = assist
-	if (game.events.amnesty) drm += 1
-	let [result, effect] = roll_mst(drm)
+	let roll = roll_1d6()
+	if (assist) {
+		logi(`+${assist} Assist`)
+		roll += assist
+	}
+	if (game.events.amnesty) {
+		logi("+1 Amnesty")
+		roll += 1
+	}
+	let [result, effect] = roll_mst(roll)
 
 	// rolls the die and a number of FLN Bands/Faileks in the area equal to the result on the Mission Success Table are neutralized,
 	// no matter what box they are in (FLN player chooses which exact units are neutralized).
@@ -4478,9 +4547,9 @@ function determine_control() {
 		// If one side has less than twice as many Points, take the difference of the two totals
 		// Both sides then roll 1d6 trying to get equal to or less than that number.
 		let fln_roll = roll_d6()
-		log(`> FLN rolled ${fln_roll}`)
+		log(`> FLN rolled B${fln_roll}`)
 		let gov_roll = roll_d6()
-		log(`> Government rolled ${gov_roll}`)
+		log(`> Government rolled B${gov_roll}`)
 
 		let fln_claim = fln_roll <= difference
 		let gov_claim = gov_roll <= difference
@@ -4516,38 +4585,40 @@ function depreciation_loss_number(pts) {
 	}
 }
 
+function gov_depreciate_asset(title, num_max) {
+	log(`${title}=${num_max}`)
+	let loss = depreciation_loss_number(num_max)
+	let roll = roll_1d6()
+	if (game.gov_psl <= 30) {
+		logi("-1 Gov. PSL <= 30")
+		roll -= 1
+	}
+	if (game.gov_psl >= 70) {
+		logi("+1 Gov. PSL >= 70")
+		roll += 1
+	}
+	log(`>${roll} <= ${loss} ?`)
+	if (roll <= loss) {
+		num_max = Math.max(num_max - loss, 0)
+		log(`>${title} -${loss}`)
+	} else {
+		log(">no change")
+	}
+	return num_max
+}
+
 function gov_depreciation() {
 	if (!game.air_max && !game.helo_max) {
 		return;
 	}
 
 	log_h3("Government Asset Depreciation")
-	let drm = 0
-	if (game.gov_psl <= 30) drm -= 1
-	if (game.gov_psl >= 70) drm += 1
 	if (game.air_max) {
-		log(`Air Max=${game.air_max}`)
-		let loss = depreciation_loss_number(game.air_max)
-		let roll = roll_1d6(drm)
-		log(`>${roll} <= ${loss} ?`)
-		if (roll <= loss) {
-			game.air_max = Math.max(game.air_max - loss, 0)
-			log(`>Air Max -${loss}`)
-		} else {
-			log(">no change")
-		}
+		game.air_max = gov_depreciate_asset('Air Max', game.air_max)
 	}
 	if (game.helo_max) {
 		log(`Helo Max=${game.helo_max}`)
-		let loss = depreciation_loss_number(game.helo_max)
-		let roll = roll_1d6(drm)
-		log(`>${roll} <= ${loss} ?`)
-		if (roll <= loss) {
-			game.helo_max = Math.max(game.helo_max - loss, 0)
-			log(`>Helo Max -${loss}`)
-		} else {
-			log(">no change")
-		}
+		game.helo_max = gov_depreciate_asset('Helo Max', game.helo_max)
 	}
 }
 
@@ -4557,11 +4628,16 @@ function fln_depreciation() {
 	}
 
 	log_h3("FLN unused AP Depreciation")
-	let drm = 0
-	if (game.fln_psl <= 30) drm -= 1
-	if (game.fln_psl >= 70) drm += 1
+	let roll = roll_1d6()
+	if (game.fln_psl <= 30) {
+		logi("-1 FLN PSL <= 30")
+		roll -= 1
+	}
+	if (game.fln_psl >= 70) {
+		logi("+1 FLN PSL >= 70")
+		roll += 1
+	}
 	let loss = depreciation_loss_number(game.fln_ap)
-	let roll = roll_1d6(drm)
 	log(`>${roll} <= ${loss} ?`)
 	if (roll <= loss) {
 		game.fln_ap = Math.max(game.fln_ap - loss, 0)
@@ -4574,13 +4650,30 @@ function unit_and_area_recovery() {
 	for_each_neutralized_unit_in_algeria(u => {
 		let loc = unit_loc(u)
 		log(`>U${u} in A${loc}`)
-		let drm = 0
-		if (is_fln_unit(u) && game.fln_psl <= 30) drm -= 1
-		if (is_fln_unit(u) && game.fln_psl >= 70) drm += 1
-		if (is_gov_unit(u) && game.gov_psl <= 30) drm -= 1
-		if (is_gov_unit(u) && (game.gov_psl >= 70 || is_elite_unit(u))) drm += 1
 
-		let roll = roll_1d6(drm)
+		let roll = roll_1d6()
+		if (is_fln_unit(u) && game.fln_psl <= 30) {
+			logi("-1 FLN PSL <= 30")
+			roll -= 1
+		}
+		if (is_fln_unit(u) && game.fln_psl >= 70) {
+			logi("+1 FLN PSL >= 70")
+			roll += 1
+		}
+		if (is_gov_unit(u) && game.gov_psl <= 30) {
+			logi("-1 Gov. PSL <= 30")
+			roll -= 1
+		}
+		if (is_gov_unit(u)) {
+			if (game.gov_psl >= 70) {
+				logi("+1 Gov. PSL >= 70")
+				roll += 1
+			} else if (is_elite_unit(u)) {
+				logi("+1 Elite")
+				roll += 1
+			}
+		}
+
 		if (roll >= 5) {
 			log(">Recovered")
 			clear_unit_neutralized(u)
@@ -4591,9 +4684,11 @@ function unit_and_area_recovery() {
 	for_each_algerian_map_area(loc => {
 		if (is_area_terrorized(loc)) {
 			log(`A${loc}`)
-			let drm = 0
-			if (!has_fln_not_neutralized_unit_in_loc(loc)) drm += 1
-			let roll = roll_1d6(drm)
+			let roll = roll_1d6()
+			if (!has_fln_not_neutralized_unit_in_loc(loc)) {
+				logi("+1 no active FLN")
+				roll += 1
+			}
 			if (roll >= 5) {
 				log(">Recovered")
 				clear_area_terrorized(loc)
@@ -4632,39 +4727,67 @@ function unit_redeployment() {
 	game.border_zone_active = false
 }
 
-function roll_coup_table(drm=0) {
-	let coup = roll_nd6(2, drm)
+function roll_coup_table(oas_drm=false) {
+	let coup = roll_nd6(2)
+	if (oas_drm) {
+		logi("+1 OAS deployed in France")
+		coup += 1
+	}
 	let delta_psp = 0
 
 	const prefix="Outcome: "
 	if (coup === 2) {
 		log(`${prefix}Wild success`) //: +3d6 PSP, mobilize 2d6 PSP of units for free
-		delta_psp = roll_nd6(3, drm)
+		delta_psp = roll_nd6(3)
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		raise_gov_psl(delta_psp)
 		return 'wild_success'
 	} else if (coup <= 4) {
 		log(`${prefix}Big success`) //: +2d6 PSP, mobilize 1d6 PSP of units for free
-		delta_psp = roll_nd6(2, drm)
+		delta_psp = roll_nd6(2)
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		raise_gov_psl(delta_psp)
 		return 'big_success'
 	} else if (coup <= 6) {
 		log(`${prefix}Success`) //: +1d6 PSP
-		delta_psp = roll_d6(drm)
+		delta_psp = roll_1d6()
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		raise_gov_psl(delta_psp)
 		return 'success'
 	} else if (coup === 7) {
 		log(`${prefix}Fizzle`) //: -1d6 PSP
-		delta_psp = roll_d6(drm)
+		delta_psp = roll_1d6()
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		lower_gov_psl(delta_psp)
 		return 'fizzle'
 	} else if (coup <= 9) {
 		log(`${prefix}Failure`) //: -2d6 PSP, remove 1 elite unit from the game
-		delta_psp = roll_nd6(2, drm)
+		delta_psp = roll_nd6(2)
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		lower_gov_psl(delta_psp)
 		return 'failure'
 	} else {
 		log(`${prefix}Abject failure`) //: -3d6 PSP, remove 1d6 elite units from the game
-		delta_psp = roll_nd6(3, drm)
+		delta_psp = roll_nd6(3)
+		if (oas_drm) {
+			logi("+1 OAS deployed in France")
+			delta_psp += 1
+		}
 		lower_gov_psl(delta_psp)
 		return 'abject_failure'
 	}
@@ -4672,10 +4795,7 @@ function roll_coup_table(drm=0) {
 
 function coup_attempt() {
 	log_h3("Coup attempt")
-	let drm = 0
-	// DRM +1 = if OAS is deployed in France)
-	if (is_area_france(game.oas)) drm += 1
-	let result = roll_coup_table(drm)
+	let result = roll_coup_table(is_area_france(game.oas))
 	if (check_victory())
 		return
 
@@ -4828,10 +4948,12 @@ function final_psl_adjustment() {
 	if (game.gov_psl <= 30) {
 		log_br()
 		log("Gov. PSL<=30: Checking for Coup d'etat")
-		let drm = 0 // +1 if OAS is deployed in France
-		if (is_area_france(game.oas)) drm += 1
-		let roll = roll_1d6(drm)
-		if (roll === 6) {
+		let roll = roll_1d6()
+		if (is_area_france(game.oas)) {
+			logi("+1 OAS deployed in France")
+			roll += 1
+		}
+		if (roll >= 6) {
 			coup_attempt()
 			return
 		} else {
@@ -5066,50 +5188,41 @@ function shuffle(list) {
 	}
 }
 
-function add_sign(num, zero = '') {
-	if (num > 0) {
-		return `+${num}`
-	} else if (num < 0) {
-		return `${num}`
-	} else {
-		return zero
-	}
-}
-
 function roll_d6() {
 	clear_undo()
 	return random(6) + 1
 }
 
-function roll_1d6(drm=0) {
+function roll_1d6() {
 	let roll = roll_d6()
-	let net_roll = roll + drm
-	//	Rolled 1d6+2=6
-	log(`>Rolled 1d6${add_sign(drm)}=${net_roll}`)
-	return net_roll
+	logi("Rolled B" + roll)
+	return roll
 }
 
-function roll_nd6(n, drm=0) {
+function roll_nd6(n) {
 	clear_undo()
-	let result = drm
+	let result = 0
+	let summary = []
 	for (let i = 0; i < n; ++i) {
-		result += roll_d6()
+		let roll = roll_d6()
+		result += roll
+		summary.push("B" + roll)
 	}
-	log(`>Rolled ${n}d6${add_sign(drm)}=${result}`)
+	logi("Rolled " + summary.join(" "))
 	return result
 }
 
 const MST = [0, 0, 1, 1, 1, 2, 2, 3, 4, 5]
 const MST_EFFECT = ['+', '+', '+', '', '', '', '', '@', '@', '@']
 
-function roll_mst(drm=0) {
-	let roll = clamp(roll_1d6(drm), -1, 8)
-	let result = MST[roll + 1]
-	let effect = MST_EFFECT[roll + 1]
+function roll_mst(roll) {
+	let num = clamp(roll, -1, 8)
+	let result = MST[num + 1]
+	let effect = MST_EFFECT[num + 1]
 	let effect_str = ''
 	if (effect === '+') effect_str = ' (bad)'
 	if (effect === '@') effect_str = ' (good)'
-	log(`>Mission Result: ${result}${effect}${effect_str}`)
+	log(`>MST: ${result}${effect}${effect_str}`)
 
 	return [result, effect]
 }
@@ -5136,7 +5249,7 @@ function combat_result(firepower, die) {
 function roll_crt(firepower) {
 	let roll = roll_1d6()
 	let result = combat_result(firepower, roll)
-	log(`>CRT result: ${result}`)
+	log(`>CRT: ${result}`)
 	return result
 }
 
