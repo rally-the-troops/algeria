@@ -17,7 +17,7 @@ const ELIMINATED = 2
 // const BOXES = [UG, OPS, PTL, OC]
 const BOX_NAMES = ["UG", "OPS", "PTL", "OC"]
 
-const area_count = 31
+// const area_count = 31
 const unit_count = 120
 
 function is_gov_unit(u) { return (u >= 0 && u <= 39) }
@@ -419,7 +419,7 @@ function create_border_zone(i) {
 
 const COUNTRY = 4
 
-function create_area(i, area_id, area_name, type) {
+function create_area(i, _area_id, area_name, _type) {
 	let area_name_css = area_name.replaceAll(' ', '-')
 	let e = ui.areas[i] = document.querySelector(`#svgmap #areas #${area_name_css}`)
 	e.dataset.loc = data.areas[i].loc
