@@ -2,14 +2,15 @@
 <!-- vim:set nowrap: -->
 <html>
 <head>
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no, interactive-widget=resizes-content, viewport-fit=cover">
+<meta name="theme-color" content="#444">
 <meta charset="UTF-8">
 <title>ALGERIA</title>
 <link rel="stylesheet" href="/fonts/fonts.css">
-<link rel="stylesheet" href="/common/play.css">
-<script defer src="/common/play.js"></script>
+<link rel="stylesheet" href="/common/client.css?v=4134">
+<script defer src="/common/client.js?v=4134"></script>
 <script defer src="data.js"></script>
-<script defer src="play.js"></script>
+<script defer src="play.js?v=4134"></script>
 <style>
 
 :root {
@@ -343,27 +344,21 @@ main { background-color: dimgray }
 
 <header>
 	<div id="toolbar">
-	<div class="menu">
-		<div class="menu_title"><img src="/images/cog.svg"></div>
-		<div class="menu_popup">
-			<div class="menu_item" onclick="send_save()">&#x1F41E; Save</div>
-			<div class="menu_item" onclick="send_restore()">&#x1F41E; Restore</div>
-			<div class="menu_separator"></div>
-
-			<a class="menu_item" href="info/rules.html" target="_blank">Rules of Play</a>
-			<a class="menu_item" href="info/charts.html" target="_blank">Charts &amp; Tables</a>
-			<a class="menu_item" href="info/charts.html#fln-missions" target="_blank">FLN Missions</a>
-			<a class="menu_item" href="info/charts.html#gov-missions" target="_blank">Gov. Missions</a>
-
-			<div class="resign menu_separator"></div>
-			<div class="resign menu_item" onclick="confirm_resign()">Resign</div>
-		</div>
+		<details>
+			<summary><img src="/images/cog.svg"></summary>
+			<menu>
+				<li><a href="info/rules.html" target="_blank">Rules of Play</a>
+				<li><a href="info/charts.html" target="_blank">Charts &amp; Tables</a>
+				<li><a href="info/charts.html#fln-missions" target="_blank">FLN Missions</a>
+				<li><a href="info/charts.html#gov-missions" target="_blank">Gov. Missions</a>
+				<li class="debug separator">
+				<li class="debug" onclick="send_save()">&#x1F41E; Save
+				<li class="debug" onclick="send_restore()">&#x1F41E; Restore
+				<li class="resign separator">
+				<li class="resign" onclick="confirm_resign()">Resign
+			</menu>
+		</details>
 	</div>
-	<div class="icon_button" onclick="toggle_zoom()"><img src="/images/magnifying-glass.svg"></div>
-	<div class="icon_button" onclick="toggle_log()"><img src="/images/scroll-quill.svg"></div>
-	</div>
-	<div id="prompt"></div>
-	<div id="actions"></div>
 </header>
 
 <aside>

@@ -1,7 +1,5 @@
 "use strict"
 
-/* global view, data, send_action, action_button, scroll_with_middle_mouse */
-
 const SCALE = 1.8033333333333332
 
 const FLN = 0
@@ -555,7 +553,7 @@ Node.prototype.appendChildAnimated = function(e) {
 	e.animate([
 		{ transform: transformFrom },
 		{ transform: transformTo },
-      ], {
+	], {
 		duration: 1000,
 		easing: 'ease',
 	})
@@ -732,7 +730,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("undo", "Undo")
 
 	// XXX debug
-    action_button("restart", "Restart")
+	action_button("restart", "Restart")
 	action_button("reset", "Reset")
 }
 
@@ -766,7 +764,7 @@ function on_blur_area_tip(x) { // eslint-disable-line no-unused-vars
 }
 
 function on_click_area_tip(x) { // eslint-disable-line no-unused-vars
-	ui.areas[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
+	scroll_into_view(ui.areas[x])
 }
 
 function sub_area_name(_match, p1, _offset, _string) {
@@ -784,7 +782,7 @@ function on_blur_unit_tip(x) { // eslint-disable-line no-unused-vars
 }
 
 function on_click_unit_tip(x) { // eslint-disable-line no-unused-vars
-	ui.units[x].scrollIntoView({ block:"center", inline:"center", behavior:"smooth" })
+	scroll_into_view(ui.units[x])
 }
 
 function sub_unit_name(_match, p1, _offset, _string) {
@@ -834,5 +832,3 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 	p.innerHTML = text
 	return p
 }
-
-scroll_with_middle_mouse("main")
