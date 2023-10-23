@@ -1653,7 +1653,7 @@ function goto_random_event() {
 		let roll = roll_1d6()
 		if (roll <= game.turn)
 			grant_morocco_tunisia_independence()
-		log_br()
+		log_sep()
 	}
 }
 
