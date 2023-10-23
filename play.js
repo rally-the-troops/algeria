@@ -1,5 +1,7 @@
 "use strict"
 
+/* global action_button, data, scroll_into_view, send_action, view */
+
 const SCALE = 1.8033333333333332
 
 const FLN = 0
@@ -330,27 +332,6 @@ function is_loc_action(x) {
 	return !!(view.actions && view.actions.loc && view.actions.loc.includes(x))
 }
 
-let action_register = []
-
-function register_action(e, action, id) {
-	e.my_action = action
-	e.my_id = id
-	e.onmousedown = on_click_action
-	action_register.push(e)
-}
-
-function on_click_action(evt) {
-	if (evt.button === 0)
-		if (send_action(evt.target.my_action, evt.target.my_id))
-			evt.stopPropagation()
-}
-
-function is_action(action, arg) {
-	if (arg === undefined)
-		return !!(view.actions && view.actions[action] === 1)
-	return !!(view.actions && view.actions[action] && view.actions[action].includes(arg))
-}
-
 let on_init_once = false
 
 function on_focus_unit(evt) {
@@ -648,9 +629,6 @@ function on_update() { // eslint-disable-line no-unused-vars
 	on_init()
 
 	update_map()
-
-	for (let e of action_register)
-		e.classList.toggle("action", is_action(e.my_action, e.my_id))
 
 	action_button("quick_setup", "Quick Setup")
 	action_button("end_deployment", "End deployment")
