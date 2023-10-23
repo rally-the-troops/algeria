@@ -519,6 +519,8 @@ function update_unit(e, u) {
 }
 
 Node.prototype.appendChildAnimated = function(e) {
+	if (this.contains(e))
+		return
 	const { left: x0, top: y0 } = e.getBoundingClientRect()
 	this.appendChild(e)
 	if (!x0)
@@ -575,23 +577,20 @@ function update_map() {
 
 		if (loc) {
 			if (loc === DEPLOY) {
-				if (is_gov_unit(u) && !ui.gov_supply.contains(e))
+				if (is_gov_unit(u))
 					ui.gov_supply.appendChildAnimated(e)
-				if (is_fln_unit(u) && !ui.fln_supply.contains(e))
+				if (is_fln_unit(u))
 					ui.fln_supply.appendChildAnimated(e)
 
 			} else if (loc === ELIMINATED) {
-				if (!ui.eliminated.contains(e))
-					ui.eliminated.appendChildAnimated(e)
+				ui.eliminated.appendChildAnimated(e)
 			} else {
 				let box_id = unit_box(u)
 				if (is_area_country(loc)) {
 					// only single box in France, Morocco and Tunisia
 					box_id = 0
 				}
-				if (!ui.boxes[loc * 4 + box_id].contains(e)) {
-					ui.boxes[loc * 4 + box_id].appendChildAnimated(e)
-				}
+				ui.boxes[loc * 4 + box_id].appendChildAnimated(e)
 			}
 			update_unit(e, u)
 		} else {
