@@ -674,9 +674,17 @@ function is_react_unit(u) {
 	return is_mobile_unit(u) && is_unit_not_neutralized(u)
 }
 
+function is_intelligence_loc(loc) {
+	return has_enemy_unit_in_loc_boxes(loc, [UG]) && count_not_neutralized_unit_type_in_loc(POL, loc)
+}
+
 function is_intelligence_unit(u) {
 	let loc = unit_loc(u)
 	return is_police_unit(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_loc_boxes(loc, [UG])
+}
+
+function is_civil_affairs_loc(loc) {
+	return !is_area_civil_affaired(loc) && !is_area_remote(loc) && count_not_neutralized_unit_type_in_loc(POL, loc)
 }
 
 function is_civil_affairs_unit(u) {
@@ -684,9 +692,17 @@ function is_civil_affairs_unit(u) {
 	return is_police_unit(u) && is_unit_not_neutralized(u) && !is_area_civil_affaired(loc) && !is_area_remote(loc)
 }
 
+function is_suppression_loc(loc) {
+	return !is_area_suppressed(loc) && has_enemy_unit_in_loc(loc) && count_not_neutralized_unit_type_in_loc(POL, loc)
+}
+
 function is_suppression_unit(u) {
 	let loc = unit_loc(u)
 	return is_police_unit(u) && is_unit_not_neutralized(u) && !is_area_suppressed(loc) && has_enemy_unit_in_loc(loc)
+}
+
+function is_population_resettlement_loc(loc) {
+	return is_area_rural(loc) && count_not_neutralized_unit_type_in_loc(POL, loc)
 }
 
 function is_population_resettlement_unit(u) {
@@ -3839,6 +3855,7 @@ function goto_gov_flush_mission() {
 	push_undo()
 	game.passes = 0
 	game.state = "gov_flush"
+	game.selected_loc = -1
 }
 
 function can_gov_react() {
@@ -4179,49 +4196,41 @@ function goto_gov_intelligence_mission() {
 	push_undo()
 	game.passes = 0
 	game.state = "gov_intelligence"
+	game.selected_loc = -1
 }
 
 states.gov_intelligence = {
 	inactive: "to do Intelligence mission",
 	prompt() {
-		if (!game.selected.length) {
-			view.prompt = "Intelligence: Select police unit(s)"
-			for_each_friendly_unit_on_map_of_type(POL, u => {
-				if (is_intelligence_unit(u)) {
-					gen_action_unit(u)
-				}
+		if (game.selected_loc === -1) {
+			view.prompt = "Intelligence: Select location"
+			for_each_algerian_map_area(loc => {
+				if (is_intelligence_loc(loc))
+					gen_action_loc(loc)
 			})
 		} else {
 			view.prompt = "Intelligence: Execute mission"
-			let first_unit = game.selected[0]
-			let first_unit_loc = unit_loc(first_unit)
-
-			for_each_friendly_unit_on_map_of_type(POL, u => {
-				if (unit_loc(u) == first_unit_loc && is_intelligence_unit(u)) {
-					gen_action_unit(u)
-				}
-			})
-
 			gen_action("roll")
 		}
 	},
-	unit(u) {
-		set_toggle(game.selected, u)
+	loc(l) {
+		push_undo()
+		game.selected_loc = l
 	},
 	roll() {
-		let list = game.selected
-		game.selected = []
-		let first_unit = list[0]
-		let loc = unit_loc(first_unit)
+		let loc = game.selected_loc
+		game.selected_loc = -1
 		clear_undo()
 
 		log_h3(`Intelligence in A${loc}`)
 		//  The Government player pays 1 PSP, indicates the area, totals the Contact Ratings of the non-neutralized Police units there
 		lower_gov_psl(GOV_INTELLIGENCE_COST)
 		let contact_ratings = 0
-		for (let u of list) {
-			contact_ratings += unit_contact(u)
-		}
+		for_each_friendly_unit_in_loc(loc, u => {
+			if (is_intelligence_unit(u))
+				contact_ratings += unit_contact(u)
+
+		})
 		log(`Combined Gov. contact = ${contact_ratings}`)
 
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
@@ -4265,34 +4274,30 @@ function goto_gov_civil_affairs_mission() {
 	push_undo()
 	game.passes = 0
 	game.state = "gov_civil_affairs"
+	game.selected_loc = -1
 }
 
 states.gov_civil_affairs = {
 	inactive: "to do Civil Affairs mission",
 	prompt() {
-		if (!game.selected.length) {
-			view.prompt = "Civil Affairs: Select police unit"
-			for_each_friendly_unit_on_map_of_type(POL, u => {
-				if (is_civil_affairs_unit(u)) {
-					gen_action_unit(u)
-				}
+		if (game.selected_loc === -1) {
+			view.prompt = "Civil Affairs: Select location"
+			for_each_algerian_map_area(loc => {
+				if (is_civil_affairs_loc(loc))
+					gen_action_loc(loc)
 			})
 		} else {
 			view.prompt = "Civil Affairs: Execute mission"
-			let first_unit = game.selected[0]
-
-			// Allow deselect
-			gen_action_unit(first_unit)
-
 			gen_action("roll")
 		}
 	},
-	unit(u) {
-		set_toggle(game.selected, u)
+	loc(l) {
+		push_undo()
+		game.selected_loc = l
 	},
 	roll() {
-		let unit = pop_selected()
-		let loc = unit_loc(unit)
+		let loc = game.selected_loc
+		game.selected_loc = -1
 		clear_undo()
 
 		log_h3(`Civil Affairs in A${loc}`)
@@ -4324,6 +4329,7 @@ function goto_gov_suppression_mission() {
 	push_undo()
 	game.passes = 0
 	game.state = "gov_suppression"
+	game.selected_loc = -1
 }
 
 function do_suppression(loc, assist=0) {
@@ -4395,29 +4401,24 @@ function do_suppression(loc, assist=0) {
 states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
-		if (!game.selected.length) {
-			view.prompt = "Suppression: Select police unit, Elite units may assist"
-			for_each_friendly_unit_on_map_of_type(POL, u => {
-				if (is_suppression_unit(u)) {
-					gen_action_unit(u)
-				}
+		if (game.selected_loc === -1) {
+			view.prompt = "Suppression: Select location"
+			for_each_algerian_map_area(loc => {
+				if (is_suppression_loc(loc))
+					gen_action_loc(loc)
 			})
 		} else {
 			view.prompt = "Suppression: Execute mission"
-			let first_unit = game.selected[0]
-
-			// Allow deselect
-			gen_action_unit(first_unit)
-
 			gen_action("roll")
 		}
 	},
-	unit(u) {
-		set_toggle(game.selected, u)
+	loc(l) {
+		push_undo()
+		game.selected_loc = l
 	},
 	roll() {
-		let unit = pop_selected()
-		let loc = unit_loc(unit)
+		let loc = game.selected_loc
+		game.selected_loc = -1
 		clear_undo()
 
 		log_h3(`Suppression in A${loc}`)
@@ -4436,34 +4437,30 @@ function goto_gov_population_resettlement_mission() {
 	push_undo()
 	game.passes = 0
 	game.state = "gov_population_resettlement"
+	game.selected_loc = -1
 }
 
 states.gov_population_resettlement = {
 	inactive: "to do Population Resettlement mission",
 	prompt() {
-		if (!game.selected.length) {
-			view.prompt = " Population Resettlement: Select police unit"
-			for_each_friendly_unit_on_map_of_type(POL, u => {
-				if (is_population_resettlement_unit(u)) {
-					gen_action_unit(u)
-				}
+		if (game.selected_loc === -1) {
+			view.prompt = "Population Resettlement: Select location"
+			for_each_algerian_map_area(loc => {
+				if (is_population_resettlement_loc(loc))
+					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = " Population Resettlement: Execute mission"
-			let first_unit = game.selected[0]
-
-			// Allow deselect
-			gen_action_unit(first_unit)
-
+			view.prompt = "Population Resettlement: Execute mission"
 			gen_action("roll")
 		}
 	},
-	unit(u) {
-		set_toggle(game.selected, u)
+	loc(l) {
+		push_undo()
+		game.selected_loc = l
 	},
 	roll() {
-		let unit = pop_selected()
-		let loc = unit_loc(unit)
+		let loc = game.selected_loc
+		game.selected_loc = -1
 		clear_undo()
 
 		log_h3(`Population Resettlement in A${loc}`)
