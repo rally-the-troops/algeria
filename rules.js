@@ -1100,6 +1100,7 @@ function victory_scale() {
 }
 
 function check_victory() {
+	if (game.state === "game_over") return
 	if (game.gov_psl <= 0) {
 		let scale = victory_scale()
 		goto_game_over(FLN_NAME, `FLN wins: ${scale} victory`)
@@ -1113,6 +1114,7 @@ function check_victory() {
 }
 
 function check_shorter_victory() {
+	if (game.state === "game_over") return
 	// If one player would "win" with at least a Substantial Victory (that is, his PSL is 26 or more points ahead of the other player's) two checks running,
 	// the game ends at that point and he wins the game with the level of victory he enjoyed at that moment.
 	let psl_diff = Math.abs(game.gov_psl - game.fln_psl)
