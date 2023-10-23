@@ -100,7 +100,7 @@ main { background-color: dimgray }
 	fill-opacity: 0.6;
 }
 #map svg path.area.target {
-	cursor: pointer;
+	/* cursor: pointer; */
 	fill-opacity: 0.4;
 	fill: var(--target-color);
 	stroke: var(--target-color);
@@ -124,28 +124,51 @@ main { background-color: dimgray }
 .space.tip { border-color: var(--tip-color);}
 
 .stack {
-  display: grid;
-  grid-gap: 0.1rem;
-  grid-template-columns: repeat(auto-fill, 2px);
-  transition: grid-template-columns 0.5s;
-  cursor: pointer;
+	pointer-events: none;
 }
 
-.stack:hover {
-  grid-template-columns: repeat(8, 36px);
-}
+.stack > div { position: absolute; transition: inset 200ms ease; }
+.stack:hover > div { z-index: 100; }
 
-.stack.m:hover {
-  grid-template-columns: repeat(8, 34px);
-}
+.stack.m > div:nth-child(1 of :not(.hide)) { left: calc(0 * 8px); top: calc(0 * 8px); }
+.stack.m > div:nth-child(2 of :not(.hide)) { left: calc(1 * 8px); top: calc(1 * 8px); }
+.stack.m > div:nth-child(3 of :not(.hide)) { left: calc(2 * 8px); top: calc(2 * 8px); }
+.stack.m > div:nth-child(4 of :not(.hide)) { left: calc(3 * 8px); top: calc(3 * 8px); }
+.stack.m > div:nth-child(5 of :not(.hide)) { left: calc(4 * 8px); top: calc(4 * 8px); }
+.stack.m > div:nth-child(6 of :not(.hide)) { left: calc(5 * 8px); top: calc(5 * 8px); }
+.stack.m > div:nth-child(7 of :not(.hide)) { left: calc(6 * 8px); top: calc(6 * 8px); }
+.stack.m > div:nth-child(8 of :not(.hide)) { left: calc(7 * 8px); top: calc(7 * 8px); }
+.stack.m > div:nth-child(9 of :not(.hide)) { left: calc(8 * 8px); top: calc(8 * 8px); }
 
-.stack.s:hover {
-  grid-template-columns: repeat(8, 24px);
-}
+.stack.m:hover > div:nth-child(1 of :not(.hide)) { left: calc(0 * 30px); top: calc(0 * 30px); }
+.stack.m:hover > div:nth-child(2 of :not(.hide)) { left: calc(1 * 30px); top: calc(1 * 30px); }
+.stack.m:hover > div:nth-child(3 of :not(.hide)) { left: calc(2 * 30px); top: calc(2 * 30px); }
+.stack.m:hover > div:nth-child(4 of :not(.hide)) { left: calc(3 * 30px); top: calc(3 * 30px); }
+.stack.m:hover > div:nth-child(5 of :not(.hide)) { left: calc(4 * 30px); top: calc(4 * 30px); }
+.stack.m:hover > div:nth-child(6 of :not(.hide)) { left: calc(5 * 30px); top: calc(5 * 30px); }
+.stack.m:hover > div:nth-child(7 of :not(.hide)) { left: calc(6 * 30px); top: calc(6 * 30px); }
+.stack.m:hover > div:nth-child(8 of :not(.hide)) { left: calc(7 * 30px); top: calc(7 * 30px); }
+.stack.m:hover > div:nth-child(9 of :not(.hide)) { left: calc(8 * 30px); top: calc(8 * 30px); }
 
-.stack:hover div {
-  z-index: 100;
-}
+.stack > div:nth-child(1 of :not(.hide)) { left: calc(0 * 12px); top: calc(0 * -16px); }
+.stack > div:nth-child(2 of :not(.hide)) { left: calc(1 * 12px); top: calc(1 * -16px); }
+.stack > div:nth-child(3 of :not(.hide)) { left: calc(2 * 12px); top: calc(2 * -16px); }
+.stack > div:nth-child(4 of :not(.hide)) { left: calc(3 * 12px); top: calc(3 * -16px); }
+.stack > div:nth-child(5 of :not(.hide)) { left: calc(4 * 12px); top: calc(4 * -16px); }
+.stack > div:nth-child(6 of :not(.hide)) { left: calc(5 * 12px); top: calc(5 * -16px); }
+.stack > div:nth-child(7 of :not(.hide)) { left: calc(6 * 12px); top: calc(6 * -16px); }
+.stack > div:nth-child(8 of :not(.hide)) { left: calc(7 * 12px); top: calc(7 * -16px); }
+.stack > div:nth-child(9 of :not(.hide)) { left: calc(8 * 12px); top: calc(8 * -16px); }
+
+.stack:hover > div:nth-child(1 of :not(.hide)) { left: calc(0 * 30px); top: calc(0 * -30px); }
+.stack:hover > div:nth-child(2 of :not(.hide)) { left: calc(1 * 30px); top: calc(1 * -30px); }
+.stack:hover > div:nth-child(3 of :not(.hide)) { left: calc(2 * 30px); top: calc(2 * -30px); }
+.stack:hover > div:nth-child(4 of :not(.hide)) { left: calc(3 * 30px); top: calc(3 * -30px); }
+.stack:hover > div:nth-child(5 of :not(.hide)) { left: calc(4 * 30px); top: calc(4 * -30px); }
+.stack:hover > div:nth-child(6 of :not(.hide)) { left: calc(5 * 30px); top: calc(5 * -30px); }
+.stack:hover > div:nth-child(7 of :not(.hide)) { left: calc(6 * 30px); top: calc(6 * -30px); }
+.stack:hover > div:nth-child(8 of :not(.hide)) { left: calc(7 * 30px); top: calc(7 * -30px); }
+.stack:hover > div:nth-child(9 of :not(.hide)) { left: calc(8 * 30px); top: calc(8 * -30px); }
 
 #tracker div {
   box-sizing: border-box;
@@ -157,6 +180,8 @@ main { background-color: dimgray }
 	background-size: 1000%;
 	background-repeat: no-repeat;
 	border-style: solid;
+	pointer-events: auto;
+	cursor: pointer;
 }
 
 .counter {
