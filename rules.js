@@ -2073,6 +2073,7 @@ function goto_gov_reinforcement_phase() {
 
 	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
 		log("French Reaction: FLN PSL > Gov. PSL")
+		log_br()
 		game.events.french_reaction = true
 	}
 
@@ -3575,9 +3576,10 @@ function goto_combat() {
 	for (let u of game.combat.fln_units) {
 		fln_firepower += unit_firepower(u)
 	}
-	logi(`FLN firepower ${fln_firepower}`)
+	log(`FLN firepower ${fln_firepower}`)
 	game.combat.hits_on_gov = roll_crt(fln_firepower)
-	log(`Hits on Gov. ${game.combat.hits_on_gov}`)
+	logi(`Hits on Gov. ${game.combat.hits_on_gov}`)
+	log_br()
 
 	let gov_firepower = 0
 	for (let u of game.combat.gov_units) {
@@ -3597,9 +3599,10 @@ function goto_combat() {
 		let roll = roll_nd6(game.mission_air_pts)
 		gov_firepower += roll
 	}
-	logi(`Gov. firepower ${gov_firepower}${half_str}`)
+	log(`Gov. firepower ${gov_firepower}${half_str}`)
 	game.combat.hits_on_fln = roll_crt(gov_firepower)
-	log(`Hits on FLN ${game.combat.hits_on_fln}`)
+	logi(`Hits on FLN ${game.combat.hits_on_fln}`)
+	log_br()
 
 	// Step 2: FLN to distribute hits on government
 	if (game.combat.hits_on_gov) {
@@ -3671,7 +3674,7 @@ function end_combat() {
 function goto_combat_fln_losses() {
 	game.phasing = FLN_NAME
 	set_active_player()
-	log_h3(`FLN to Distribute losses`)
+	log(`FLN to Distribute losses`)
 	game.state = "fln_combat_fln_losses"
 }
 
@@ -3852,7 +3855,7 @@ states.gov_flush = {
 	prompt() {
 		view.prompt = "Flush: Select location"
 		for_each_algerian_map_area(loc => {
-			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]))
+			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_in_loc(loc))
 				gen_action_loc(loc)
 		})
 
