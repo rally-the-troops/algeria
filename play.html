@@ -18,6 +18,21 @@
 	--selected-color: blue;
 	--tip-color: red;
 	--target-color: indianred;
+
+	--counter-french-color: #BCDDFF;
+	--counter-elite-color: #FFCCCB;
+	--counter-algerian-color: #FFE7BD;
+	--counter-fln-color: #C1E1C1;
+	--counter-remote-color: #DFD9C1;
+
+	--stack-2-left: 10px;
+	--stack-2-top: -13px;
+	--stack-3-left: 8px;
+	--stack-3-top: -10px;
+	--stack-4-left: 6px;
+	--stack-4-top: -7px;
+	--stack-5-left: 4px;
+	--stack-5-top: -4px;
 }
 
 main { background-color: dimgray }
@@ -169,6 +184,28 @@ main { background-color: dimgray }
 .stack > div:nth-child(8 of :not(.hide)) { left: calc(7 * 12px); top: calc(7 * -16px); }
 .stack > div:nth-child(9 of :not(.hide)) { left: calc(8 * 12px); top: calc(8 * -16px); }
 
+/* stack of 2 */
+.stack:not(:hover) > div:nth-last-child(2 of :not(.hide)) ~ div:nth-child(2 of :not(.hide)) { left: calc(1 * var(--stack-2-left)); top: calc(1 * var(--stack-2-top)); }
+
+/* stack of 3 */
+.stack:not(:hover) > div:nth-last-child(3 of :not(.hide)) ~ div:nth-child(2 of :not(.hide)) { left: calc(1 * var(--stack-3-left)); top: calc(1 * var(--stack-3-top)); }
+.stack:not(:hover) > div:nth-last-child(3 of :not(.hide)) ~ div:nth-child(3 of :not(.hide)) { left: calc(2 * var(--stack-3-left)); top: calc(2 * var(--stack-3-top)); }
+
+/* stack of 4 */
+.stack:not(:hover) > div:nth-last-child(4 of :not(.hide)) ~ div:nth-child(2 of :not(.hide)) { left: calc(1 * var(--stack-4-left)); top: calc(1 * var(--stack-4-top)); }
+.stack:not(:hover) > div:nth-last-child(4 of :not(.hide)) ~ div:nth-child(3 of :not(.hide)) { left: calc(2 * var(--stack-4-left)); top: calc(2 * var(--stack-4-top)); }
+.stack:not(:hover) > div:nth-last-child(4 of :not(.hide)) ~ div:nth-child(4 of :not(.hide)) { left: calc(3 * var(--stack-4-left)); top: calc(3 * var(--stack-4-top)); }
+
+/* stack of 5 or more */
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(2 of :not(.hide)) { left: calc(1 * var(--stack-5-left)); top: calc(1 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(3 of :not(.hide)) { left: calc(2 * var(--stack-5-left)); top: calc(2 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(4 of :not(.hide)) { left: calc(3 * var(--stack-5-left)); top: calc(3 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(5 of :not(.hide)) { left: calc(4 * var(--stack-5-left)); top: calc(4 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(6 of :not(.hide)) { left: calc(5 * var(--stack-5-left)); top: calc(5 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(7 of :not(.hide)) { left: calc(6 * var(--stack-5-left)); top: calc(6 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(8 of :not(.hide)) { left: calc(7 * var(--stack-5-left)); top: calc(7 * var(--stack-5-top)); }
+.stack:not(:hover) > div:nth-last-child(n+5 of :not(.hide)) ~ div:nth-child(9 of :not(.hide)) { left: calc(8 * var(--stack-5-left)); top: calc(8 * var(--stack-5-top)); }
+
 .stack:hover > div:nth-child(1 of :not(.hide)) { left: calc(0 * 30px); top: calc(0 * -30px); }
 .stack:hover > div:nth-child(2 of :not(.hide)) { left: calc(1 * 30px); top: calc(1 * -30px); }
 .stack:hover > div:nth-child(3 of :not(.hide)) { left: calc(2 * 30px); top: calc(2 * -30px); }
@@ -198,7 +235,8 @@ main { background-color: dimgray }
 	height: 39px;
 	border-width: 2px;
 	border-radius: 8px;
-	background-image: url(counters.svg?v=6);
+	background-image: url(counters.svg?v=8);
+	background-color: white;
 }
 
 .counter.m {
@@ -239,24 +277,36 @@ main { background-color: dimgray }
 	pointer-events: none;
 }
 
-.counter.turn_now{background-position:0% 0%}
-.counter.fln_psl{background-position:11.11111111111111% 0%}
-.counter.fln_ap{background-position:22.22222222222222% 0%}
-.counter.gov_psl{background-position:33.33333333333333% 0%}
-.counter.fln_control{background-position:44.44444444444444% 0%}
-.counter.gov_control{background-position:55.55555555555556% 0%}
-.counter.oas_active{background-position:66.66666666666666% 0%}
-.counter.remote{background-position:77.77777777777777% 0%}
+.counter.turn_now{background-position:0% 0%;}
+.counter.fln_psl{background-position:11.11111111111111% 0%;}
+.counter.fln_ap{background-position:22.22222222222222% 0%;}
+.counter.gov_psl{background-position:33.33333333333333% 0%;}
+.counter.fln_control{background-position:44.44444444444444% 0%;}
+.counter.gov_control{background-position:55.55555555555556% 0%;}
+.counter.oas_active{background-position:66.66666666666666% 0%;}
+.counter.remote{background-position:77.77777777777777% 0%; background-color: var(--counter-remote-color);}
 .counter.terror{background-position:88.88888888888889% 0%}
 
-.counter.air_avail{background-position:0% 11.11111111111111%}
-.counter.air_max{background-position:11.11111111111111% 11.11111111111111%}
-.counter.helo_avail{background-position:22.22222222222222% 11.11111111111111%}
-.counter.helo_max{background-position:33.33333333333333% 11.11111111111111%}
-.counter.naval_pts{background-position:44.44444444444444% 11.11111111111111%}
-.counter.border_zone{background-position:55.55555555555556% 11.11111111111111%}
-.counter.border_zone_inactive{background-position:66.66666666666666% 11.11111111111111%}
+.counter.air_avail{background-position:0% 11.11111111111111%;}
+.counter.air_max{background-position:11.11111111111111% 11.11111111111111%;}
+.counter.helo_avail{background-position:22.22222222222222% 11.11111111111111%;}
+.counter.helo_max{background-position:33.33333333333333% 11.11111111111111%;}
+.counter.naval_pts{background-position:44.44444444444444% 11.11111111111111%;}
+.counter.border_zone{background-position:55.55555555555556% 11.11111111111111%;}
+.counter.border_zone_inactive{background-position:66.66666666666666% 11.11111111111111%;}
 
+.fr_xx_2, .fr_xx_4, .fr_xx_9, .fr_xx_12, .fr_xx_13, .fr_xx_14, .fr_xx_19, .fr_xx_20, .fr_xx_21, .fr_xx_29, .fr_xx_27, .fr_xx_5, .fr_xx_7, .fr_xx_dispersed, .fr_x {
+	background-color: var(--counter-french-color);
+}
+.fr_elite_x_para, .fr_elite_x_inf, .fr_elite_x_marine {
+	background-color: var(--counter-elite-color);
+}
+.alg_x, .alg_police {
+	background-color: var(--counter-algerian-color);
+}
+.fln_failek, .fln_band, .fln_cadre, .fln_front {
+	background-color: var(--counter-fln-color);
+}
 .counter.fr_xx_2{background-position:0% 22.22222222222222%}
 .counter.fr_xx_4{background-position:11.11111111111111% 22.22222222222222%}
 .counter.fr_xx_9{background-position:22.22222222222222% 22.22222222222222%}
