@@ -804,6 +804,9 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 	else if (text.match(/^\.h3/)) {
 		text = text.substring(4)
 		p.className = 'h3'
+	} else if (text.match(/^.hr$/)) {
+		p.className = "hr";
+		text = "";
 	}
 
 	p.innerHTML = text
