@@ -539,7 +539,7 @@ function free_unit(u) {
 }
 
 function activate_oas() {
-	log("Gov. PSL<=30: OAS Activated")
+	log("Gov. PSL ≤ 30: OAS Activated")
 	game.oas = DEPLOY
 	game.oas_control = -1
 }
@@ -555,7 +555,7 @@ function roll_oas_control() {
 }
 
 function remove_oas() {
-	log("Gov. PSL>=70: OAS Removed")
+	log("Gov. PSL ≥ 70: OAS Removed")
 	game.oas = 0
 	game.oas_control = -1
 }
@@ -1159,8 +1159,8 @@ function goto_game_over(result, victory) {
 	game.result = result
 	game.victory = victory
 	log_h1("Game Over")
-	log(`FLN PSL=${game.fln_psl}`)
-	log(`Gov. PSL=${game.gov_psl}`)
+	log(`FLN PSL ${game.fln_psl}`)
+	log(`Gov. PSL ${game.gov_psl}`)
 	log_br()
 	log(victory)
 	return true
@@ -1444,10 +1444,10 @@ function setup_scenario(scenario_name) {
 	Object.assign(game, scenario)
 	restore_air_helo_avail()
 
-	log(`FLN PSL=${game.fln_psl}`)
+	log(`FLN PSL ${game.fln_psl}`)
 	game.fln_ap = roll_nd6(2)
-	log(`FLN AP=${game.fln_ap}`)
-	log(`Gov. PSL=${game.gov_psl}`)
+	log(`FLN AP ${game.fln_ap}`)
+	log(`Gov. PSL ${game.gov_psl}`)
 	log_br()
 
 	let deployment = SCENARIO_DEPLOYMENT[scenario_name]
@@ -2057,7 +2057,7 @@ function end_random_event() {
 	// See who controls OAS
 	if (game.oas) {
 		log_br()
-		log("OAS Active")
+		log_h3("OAS Active")
 		roll_oas_control()
 	}
 	goto_gov_reinforcement_phase()
@@ -2088,7 +2088,7 @@ function goto_gov_reinforcement_phase() {
 	})
 
 	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
-		log("French Reaction: FLN PSL > Gov. PSL")
+		log_h3("French Reaction: FLN PSL > Gov. PSL")
 		log_br()
 		game.events.french_reaction = true
 	}
@@ -3386,6 +3386,7 @@ states.fln_move = {
 			roll += game.border_zone_drm
 		}
 		let [_result, effect] = roll_mst(roll)
+		log_br()
 
 		if (effect === '+') {
 			eliminate_unit(unit)
@@ -3963,7 +3964,7 @@ states.gov_flush_select_units = {
 			if (is_unit_airmobile(u) && unit_loc(u) !== loc)
 				set_unit_loc(u, loc)
 		}
-		log(`Combined Gov. contact = ${contact_ratings}`)
+		log(`Combined Gov. contact ${contact_ratings}`)
 
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
@@ -4161,7 +4162,7 @@ states.gov_react = {
 
 		// FLN player has a chance to evade to the UG box.
 		// Units roll 1d6 individually, and move to the UG box if they roll equal to or less than their Evasion Rating.
-		log("FLN unit evasion")
+		log("Evasion:")
 		for (let u of game.contacted) {
 			log(`U${u}`)
 			let roll = roll_1d6()
@@ -4231,7 +4232,7 @@ states.gov_intelligence = {
 				contact_ratings += unit_contact(u)
 
 		})
-		log(`Combined Gov. contact = ${contact_ratings}`)
+		log(`Combined Gov. contact ${contact_ratings}`)
 
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or mission is in a Remote area, or if a Terror marker is present; -1 if mission is in an Urban area).
@@ -4259,10 +4260,10 @@ states.gov_intelligence = {
 
 			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
 			if (roll <= contact_ratings) {
-				logi(`Roll ${roll} <= ${contact_ratings}: Contact`)
+				logi(`Contact`)
 				set_unit_box(u, OC)
 			} else {
-				logi(`Roll ${roll} > ${contact_ratings}: No contact`)
+				logi(`No contact`)
 			}
 		})
 
@@ -4562,7 +4563,7 @@ function determine_control() {
 		let fln_roll = roll_d6()
 		logi(`FLN rolled B${fln_roll}`)
 		let gov_roll = roll_d6()
-		logi(`Government rolled B${gov_roll}`)
+		logi(`Gov. rolled B${gov_roll}`)
 
 		let fln_claim = fln_roll <= difference
 		let gov_claim = gov_roll <= difference
@@ -4599,23 +4600,22 @@ function depreciation_loss_number(pts) {
 }
 
 function gov_depreciate_asset(title, num_max) {
-	log(`${title}=${num_max}`)
+	log(`${title} ${num_max}`)
 	let loss = depreciation_loss_number(num_max)
 	let roll = roll_1d6()
 	if (game.gov_psl <= 30) {
-		logi("-1 Gov. PSL <= 30")
+		logi("-1 Gov. PSL ≤ 30")
 		roll -= 1
 	}
 	if (game.gov_psl >= 70) {
-		logi("+1 Gov. PSL >= 70")
+		logi("+1 Gov. PSL ≥ 70")
 		roll += 1
 	}
-	logi(`${roll} <= ${loss} ?`)
 	if (roll <= loss) {
 		num_max = Math.max(num_max - loss, 0)
 		logi(`${title} -${loss}`)
 	} else {
-		logi("no change")
+		logi(`No change`)
 	}
 	return num_max
 }
@@ -4642,18 +4642,19 @@ function fln_depreciation() {
 	log_h3("FLN unused AP Depreciation")
 	let roll = roll_1d6()
 	if (game.fln_psl <= 30) {
-		logi("-1 FLN PSL <= 30")
+		logi("-1 FLN PSL ≤ 30")
 		roll -= 1
 	}
 	if (game.fln_psl >= 70) {
-		logi("+1 FLN PSL >= 70")
+		logi("+1 FLN PSL ≥ 70")
 		roll += 1
 	}
 	let loss = depreciation_loss_number(game.fln_ap)
-	logi(`Roll <= Loss ${loss}?`)
 	if (roll <= loss) {
 		game.fln_ap = Math.max(game.fln_ap - loss, 0)
 		logi(`AP -${loss}`)
+	} else {
+		logi(`No change`)
 	}
 }
 
@@ -4661,24 +4662,24 @@ function unit_and_area_recovery() {
 	log_h3("Recovery of Neutralized Units")
 	for_each_neutralized_unit_in_algeria(u => {
 		let loc = unit_loc(u)
-		logi(`U${u} in A${loc}`)
+		log(`U${u} in A${loc}`)
 
 		let roll = roll_1d6()
 		if (is_fln_unit(u) && game.fln_psl <= 30) {
-			logi("-1 FLN PSL <= 30")
+			logi("-1 FLN PSL ≤ 30")
 			roll -= 1
 		}
 		if (is_fln_unit(u) && game.fln_psl >= 70) {
-			logi("+1 FLN PSL >= 70")
+			logi("+1 FLN PSL ≥ 70")
 			roll += 1
 		}
 		if (is_gov_unit(u) && game.gov_psl <= 30) {
-			logi("-1 Gov. PSL <= 30")
+			logi("-1 Gov. PSL ≤ 30")
 			roll -= 1
 		}
 		if (is_gov_unit(u)) {
 			if (game.gov_psl >= 70) {
-				logi("+1 Gov. PSL >= 70")
+				logi("+1 Gov. PSL ≥ 70")
 				roll += 1
 			} else if (is_elite_unit(u)) {
 				logi("+1 Elite")
@@ -4689,6 +4690,8 @@ function unit_and_area_recovery() {
 		if (roll >= 5) {
 			logi("Recovered")
 			clear_unit_neutralized(u)
+		} else {
+			logi("Not recovered")
 		}
 	})
 
@@ -4704,6 +4707,8 @@ function unit_and_area_recovery() {
 			if (roll >= 5) {
 				logi("Recovered")
 				clear_area_terrorized(loc)
+			} else {
+				logi("Not recovered")
 			}
 		}
 	})
@@ -4960,7 +4965,7 @@ function final_psl_adjustment() {
 
 	if (game.gov_psl <= 30) {
 		log_br()
-		log("Gov. PSL<=30: Checking for Coup d'etat")
+		log("Gov. PSL ≤ 30: Coup d'etat?")
 		let roll = roll_1d6()
 		if (is_area_france(game.oas)) {
 			logi("+1 OAS deployed in France")
