@@ -2298,7 +2298,8 @@ states.gov_reinforcement = {
 		}
 		// cost can be fraction
 		let cost = activation_cost(list)
-		lower_gov_psl(cost)
+		if (cost)
+			lower_gov_psl(cost)
 	},
 	remove() {
 		let list = game.selected
