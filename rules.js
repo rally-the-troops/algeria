@@ -591,7 +591,7 @@ function is_algerian_unit(u) {
 }
 
 function can_airmobilize_unit(u) {
-	return !is_unit_airmobile(u) && ([FR_X, EL_X, AL_X].includes(unit_type(u)))
+	return !is_unit_airmobile(u) && ([FR_X, EL_X, AL_X].includes(unit_type(u))) && [OPS, PTL].includes(unit_box(u))
 }
 
 function is_division_unit(u) {
@@ -5241,7 +5241,7 @@ function roll_mst(roll) {
 	let effect_str = ''
 	if (effect === '+') effect_str = ' (bad)'
 	if (effect === '@') effect_str = ' (good)'
-	log(`MST: ${result}${effect}${effect_str}`)
+	log(`Mission Result ${result}${effect}${effect_str}`)
 
 	return [result, effect]
 }
@@ -5268,7 +5268,7 @@ function combat_result(firepower, die) {
 function roll_crt(firepower) {
 	let roll = roll_1d6()
 	let result = combat_result(firepower, roll)
-	log(`CRT: ${result}`)
+	log(`Combat Result ${result}`)
 	return result
 }
 
