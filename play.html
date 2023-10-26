@@ -269,9 +269,8 @@ main { background-color: dimgray }
 }
 
 .counter.neutralized {
-    background-color: rgba(255,255,255,0.6);
-    background-blend-mode: lighten;
 	border-color:grey;
+	background-color: lightgray;
 }
 
 .counter.oas_active {
@@ -296,18 +295,31 @@ main { background-color: dimgray }
 .counter.border_zone{background-position:55.55555555555556% 11.11111111111111%;}
 .counter.border_zone_inactive{background-position:66.66666666666666% 11.11111111111111%;}
 
-.fr_xx_2, .fr_xx_4, .fr_xx_9, .fr_xx_12, .fr_xx_13, .fr_xx_14, .fr_xx_19, .fr_xx_20, .fr_xx_21, .fr_xx_29, .fr_xx_27, .fr_xx_5, .fr_xx_7, .fr_xx_dispersed, .fr_x {
+.counter[class*=' fr_x'] {
 	background-color: var(--counter-french-color);
 }
-.fr_elite_x_para, .fr_elite_x_inf, .fr_elite_x_marine {
+.counter[class*=' fr_elite_x_'] {
 	background-color: var(--counter-elite-color);
 }
-.alg_x, .alg_police {
+.counter[class*=' alg_'] {
 	background-color: var(--counter-algerian-color);
 }
-.fln_failek, .fln_band, .fln_cadre, .fln_front {
+.counter[class*=' fln_'] {
 	background-color: var(--counter-fln-color);
 }
+.counter.neutralized[class*=' fr_x'] {
+	background-color: color-mix(in srgb, var(--counter-french-color) 40%, white);
+}
+.counter.neutralized[class*=' fr_elite_x_'] {
+	background-color: color-mix(in srgb, var(--counter-elite-color) 40%, white);
+}
+.counter.neutralized[class*=' alg_'] {
+	background-color: color-mix(in srgb, var(--counter-algerian-color) 40%, white);
+}
+.counter.neutralized[class*=' fln_'] {
+	background-color: color-mix(in srgb, var(--counter-fln-color) 40%, white);
+}
+
 .counter.fr_xx_2{background-position:0% 22.22222222222222%}
 .counter.fr_xx_4{background-position:11.11111111111111% 22.22222222222222%}
 .counter.fr_xx_9{background-position:22.22222222222222% 22.22222222222222%}
