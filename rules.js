@@ -4020,6 +4020,8 @@ states.gov_flush_select_units = {
 
 function goto_gov_airmobilize() {
 	game.selected = []
+	push_undo()
+
 	game.from_state = game.state
 	game.state = "gov_airmobilize_select_units"
 }
@@ -4051,7 +4053,6 @@ states.gov_airmobilize_select_units = {
 		gen_action("done")
 	},
 	unit(u) {
-		push_undo()
 		set_toggle(game.selected, u)
 		// preview selection to see backside of counter
 		if (set_has(game.selected, u)) {
@@ -4064,7 +4065,6 @@ states.gov_airmobilize_select_units = {
 		let list = game.selected
 		game.selected = []
 
-		push_undo()
 		let cost = airmobilize_cost(list)
 		game.helo_avail -= cost
 		log(`Airmobilized (using ${cost} Helo PTS):`)
