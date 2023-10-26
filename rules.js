@@ -2084,7 +2084,8 @@ function goto_gov_reinforcement_phase() {
 
 	// Algerian units activate for free
 	for_each_friendly_unit_on_map_of_type(AL_X, u => {
-		set_unit_box(u, OPS)
+		if (is_unit_not_neutralized(u))
+			set_unit_box(u, OPS)
 	})
 
 	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
