@@ -7,6 +7,28 @@ const SCALE = 1.8033333333333332
 const FLN = 0
 const GOV = 1
 
+const FR_XX = 0
+const FR_X = 1
+const EL_X = 2
+const AL_X = 3
+const POL = 4
+const FAILEK = 5
+const BAND = 6
+const CADRE = 7
+const FRONT = 8
+
+const UNIT_TYPE_SORT = {
+	[POL]: 0,
+	[FR_XX]: 1,
+	[AL_X]: 2,
+	[FR_X]: 3,
+	[EL_X]: 4,
+	[FRONT]: 5,
+	[CADRE]: 6,
+	[BAND]: 7,
+	[FAILEK]: 8
+}
+
 const DEPLOY = 1
 const ELIMINATED = 2
 
@@ -288,6 +310,10 @@ function is_unit_neutralized(u) {
 	return (view.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
 }
 
+function unit_type(u) {
+	return data.units[u].type
+}
+
 function unit_loc(u) {
 	return (view.units[u] & UNIT_LOC_MASK) >> UNIT_LOC_SHIFT
 }
@@ -352,6 +378,7 @@ function build_units() {
 		elt.addEventListener("mouseenter", on_focus_unit)
 		elt.addEventListener("mouseleave", on_blur)
 		elt.unit = u
+		elt.index = UNIT_TYPE_SORT[unit_type(u)]
 	}
 	for (let u = 0; u < unit_count; ++u) {
 		build_unit(u)
@@ -407,7 +434,6 @@ function create_area(i, _area_id, area_name, _type) {
 
 function create_area_markers(i, area_id, area_name) {
 	const box_size = 95 / SCALE
-	console.log(i, area_id, area_name)
 	let [x, y] = LAYOUT[area_name + '-MK']
 
 	let e = document.createElement("div")
@@ -499,6 +525,7 @@ function on_init() {
 					let em = ui.area_markers[i][marker] = document.createElement("div")
 					em.id = `area-marker-${i}-${marker}`
 					em.className = `counter ${marker}`
+					em.index = 9 // on top
 					e.appendChild(em)
 				}
 			}
@@ -518,14 +545,7 @@ function update_unit(e, u) {
 	e.classList.toggle("eliminated", is_unit_eliminated(u))
 }
 
-Node.prototype.appendChildAnimated = function(e) {
-	if (this.contains(e))
-		return
-	const { left: x0, top: y0 } = e.getBoundingClientRect()
-	this.appendChild(e)
-	if (!x0)
-		return
-	const { left: x1, top: y1 } = e.getBoundingClientRect()
+function animate(e, x0, y0, x1, y1) {
 	const dx = x0 - x1
 	const dy = y0 - y1
 	if (!dx && !dy)
@@ -540,6 +560,23 @@ Node.prototype.appendChildAnimated = function(e) {
 		duration: 1000,
 		easing: 'ease',
 	})
+}
+
+Node.prototype.appendChildAnimated = function(e, beforeReferenceNode) {
+	if (this.contains(e))
+		return
+	const { left: x0, top: y0 } = e.getBoundingClientRect()
+
+	if (!this.hasChildNodes || beforeReferenceNode === undefined) {
+		this.appendChild(e)
+	} else {
+		this.insertBefore(e, beforeReferenceNode)
+	}
+
+	if (!x0)
+		return
+	const { left: x1, top: y1 } = e.getBoundingClientRect()
+	animate(e, x0, y0, x1, y1)
 }
 
 function update_map() {
@@ -590,7 +627,12 @@ function update_map() {
 					// only single box in France, Morocco and Tunisia
 					box_id = 0
 				}
-				ui.boxes[loc * 4 + box_id].appendChildAnimated(e)
+				if (!ui.boxes[loc * 4 + box_id].contains(e)) {
+					// find position to insert / append node
+					let children = Array.from(ui.boxes[loc * 4 + box_id].childNodes)
+					let referenceNode = children.find((er) => er.index > e.index)
+					ui.boxes[loc * 4 + box_id].appendChildAnimated(e, referenceNode)
+				}
 			}
 			update_unit(e, u)
 		} else {
