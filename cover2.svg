@@ -8,10 +8,10 @@
 <text font-family="URW Gothic" font-size="160" text-anchor="middle" x="450" y="980" fill="#d21034">
 ALGERIA
 </text>
-<text font-family="URW Gothic" font-size="40" text-anchor="middle" x="450" y="1090" fill="white">
+<text font-family="URW Gothic" font-size="40" letter-spacing="2px" text-anchor="middle" x="450" y="1090" fill="gainsboro">
 Game design by Brian Train
 </text>
-<text font-family="URW Gothic" font-size="40" text-anchor="middle" x="450" y="90" fill="white">
+<text font-family="URW Gothic" font-weight="bold" letter-spacing="2px" font-size="40" text-anchor="middle" x="450" y="90" fill="gainsboro">
 The War of Independence 1954-1962
 </text>
 </svg>
