@@ -1,5 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200">
 
+<defs>
+<linearGradient id="sh1" gradientTransform="rotate(90)">
+	<stop offset="0%" stop-color="black" stop-opacity="0.00"/>
+	<stop offset="25%" stop-color="black" stop-opacity="0.06"/>
+	<stop offset="50%" stop-color="black" stop-opacity="0.25"/>
+	<stop offset="75%" stop-color="black" stop-opacity="0.56"/>
+	<stop offset="100%" stop-color="black" stop-opacity="1.00"/>
+</linearGradient>
+</defs>
+
+<defs>
+<linearGradient id="sh2" gradientTransform="rotate(90)">
+	<stop offset="0%" stop-color="black" stop-opacity="1.00"/>
+	<stop offset="25%" stop-color="black" stop-opacity="0.56"/>
+	<stop offset="50%" stop-color="black" stop-opacity="0.25"/>
+	<stop offset="75%" stop-color="black" stop-opacity="0.06"/>
+	<stop offset="100%" stop-color="black" stop-opacity="0.00"/>
+</linearGradient>
+</defs>
+
 <g id="algeria" transform="translate(0 0)">
 <path fill="#fff" d="M0 0h900v600H0z" />
 <path fill="#063" d="M0 0h450v600H0z" />
@@ -12,21 +32,26 @@
 </g>
 
 <rect width="900" height="300" y="600" fill="#222" />
-
 <g id="text" transform="translate(0 600)">
-
 <text font-family="URW Gothic" font-size="160" text-anchor="middle" x="450" y="185" fill="#d21034">
 ALGERIA
 </text>
-
-<text font-family="URW Gothic" font-size="40" text-anchor="middle" x="450" y="255" fill="gainsboro">
+<text font-family="URW Gothic" font-weight="bold" font-size="40" text-anchor="middle" letter-spacing="2px"
+	x="450" y="255"
+	fill="gainsboro"
+>
 The War of Independence 1954-1962
 </text>
-
 </g>
 
-<text font-family="URW Gothic" font-size="40" text-anchor="middle" x="450" y="1155" fill="black">
+<rect width="900" height="50" y="550" fill="url(#sh1)" fill-opacity="0.2" />
+<rect width="900" height="50" y="900" fill="url(#sh2)" fill-opacity="0.2" />
+
+<!-- too small to read in thumbnails anyway... -->
+<!--
+<text font-family="URW Gothic" font-weight="bold" font-size="30" text-anchor="middle" x="450" y="1160" fill="#000" letter-spacing="4px">
 Brian Train
 </text>
+-->
 
 </svg>
