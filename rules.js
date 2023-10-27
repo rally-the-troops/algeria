@@ -3569,11 +3569,8 @@ states.fln_harass = {
 	roll() {
 		let list = game.selected
 		game.selected = []
-		let first_unit = list[0]
-		let loc = unit_loc(first_unit)
 		clear_undo()
 
-		log_h3(`Harass in A${loc}`)
 		game.combat = {
 			fln_units: [],
 			gov_units: [],
@@ -3598,7 +3595,12 @@ function goto_combat() {
 
 	let loc = unit_loc(game.combat.fln_units[0])
 
-	log_h3(`Combat in A${loc}`)
+	if (game.combat.harass) {
+		log_h3(`Harass in A${loc}`)
+	} else {
+		log_h3(`Combat in A${loc}`)
+	}
+
 	// Result is the number of 'hits' on enemy units.
 
 	let fln_firepower = 0
