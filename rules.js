@@ -185,10 +185,15 @@ function lower_fln_psl(amount) {
 	game.fln_psl = Math.max(0, game.fln_psl - amount)
 }
 
-function lower_gov_psl(amount) {
+function lower_gov_psl(amount, indent=true) {
 	if (amount <= 0)
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
-	logi(`Goverment PSL -${amount}`)
+	let log_msg = `Goverment PSL -${amount}`
+	if (indent) {
+		logi(log_msg)
+	} else {
+		log(log_msg)
+	}
 	game.gov_psl = Math.max(0, game.gov_psl - amount)
 }
 
@@ -2991,7 +2996,7 @@ states.fln_propaganda = {
 				}
 			})
 		} else {
-			view.prompt = "Propaganda: Execute mission"
+			view.prompt = `Propaganda: Execute mission (cost ${FLN_PROPAGANDA_COST} AP)`
 			let first_unit = game.selected[0]
 
 			// Allow deselect
@@ -3212,7 +3217,7 @@ states.fln_strike = {
 				}
 			})
 		} else {
-			view.prompt = "Strike: Execute mission"
+			view.prompt = `Strike: Execute mission (cost ${FLN_STRIKE_COST} AP)`
 
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
@@ -3226,7 +3231,7 @@ states.fln_strike = {
 			})
 
 			if (can_assist) {
-				view.prompt = "Strike: Execute mission (or select Cadres to assist)"
+				view.prompt = `Strike: Execute mission (or select Cadres to assist) (cost ${FLN_STRIKE_COST} AP)`
 			}
 
 			// Allow deselect
@@ -3427,7 +3432,7 @@ states.fln_raid = {
 				}
 			})
 		} else {
-			view.prompt = "Raid: Execute mission"
+			view.prompt = `Raid: Execute mission (cost ${FLN_RAID_COST} AP)`
 
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
@@ -4219,7 +4224,7 @@ states.gov_intelligence = {
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = "Intelligence: Execute mission"
+			view.prompt = `Intelligence: Execute mission (cost ${GOV_INTELLIGENCE_COST} PSP)`
 			gen_action("roll")
 		}
 	},
@@ -4234,7 +4239,7 @@ states.gov_intelligence = {
 
 		log_h3(`Intelligence in A${loc}`)
 		//  The Government player pays 1 PSP, indicates the area, totals the Contact Ratings of the non-neutralized Police units there
-		lower_gov_psl(GOV_INTELLIGENCE_COST)
+		lower_gov_psl(GOV_INTELLIGENCE_COST, false)
 		let contact_ratings = 0
 		for_each_friendly_unit_in_loc(loc, u => {
 			if (is_intelligence_unit(u))
@@ -4297,7 +4302,7 @@ states.gov_civil_affairs = {
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = "Civil Affairs: Execute mission"
+			view.prompt = `Civil Affairs: Execute mission (cost ${GOV_CIVIL_AFFAIRS_COST} PSP)`
 			gen_action("roll")
 		}
 	},
@@ -4311,7 +4316,7 @@ states.gov_civil_affairs = {
 		clear_undo()
 
 		log_h3(`Civil Affairs in A${loc}`)
-		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST)
+		lower_gov_psl(GOV_CIVIL_AFFAIRS_COST, false)
 		set_area_civil_affaired(loc)
 
 		// rolls 1d6, applies any DRM and reads the result off the Mission Success Table.
@@ -4418,7 +4423,7 @@ states.gov_suppression = {
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = "Suppression: Execute mission"
+			view.prompt = `Suppression: Execute mission (cost ${GOV_SUPPRESSION_COST} PSP)`
 			gen_action("roll")
 		}
 	},
@@ -4434,10 +4439,10 @@ states.gov_suppression = {
 		log_h3(`Suppression in A${loc}`)
 		let assist = count_not_neutralized_unit_type_in_loc(EL_X, loc)
 		if (assist) {
-			logi(`(with ${assist} Elite)`)
+			log(`(with ${assist} Elite)`)
 		}
 
-		lower_gov_psl(GOV_SUPPRESSION_COST)
+		lower_gov_psl(GOV_SUPPRESSION_COST, false)
 		do_suppression(loc, assist)
 		end_gov_mission()
 	}
@@ -4460,7 +4465,7 @@ states.gov_population_resettlement = {
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = "Population Resettlement: Execute mission"
+			view.prompt = `Population Resettlement: Execute mission (cost ${GOV_POPULATION_RESETTLEMENT_COST} PSP)`
 			gen_action("roll")
 		}
 	},
@@ -4474,7 +4479,7 @@ states.gov_population_resettlement = {
 		clear_undo()
 
 		log_h3(`Population Resettlement in A${loc}`)
-		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST)
+		lower_gov_psl(GOV_POPULATION_RESETTLEMENT_COST, false)
 		set_area_remote(loc)
 		set_area_terrorized(loc)
 		logi("Area terrorized & now Remote")
