@@ -3037,6 +3037,7 @@ states.fln_propaganda = {
 			logi('x2 Urban')
 			result *= 2
 		}
+		log_br()
 
 		set_add(game.contacted, unit)
 
