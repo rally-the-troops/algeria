@@ -1684,12 +1684,7 @@ states.random_event = {
 	inactive: "to do random event",
 	prompt() {
 		view.prompt = "Roll for a random event."
-		// gen_action("reset") // XXX debug
 		gen_action("roll")
-	},
-	reset() {
-		// XXX DEBUG
-		// goto_suez_crisis()
 	},
 	roll() {
 		let rnd1 = roll_d6()
@@ -2685,13 +2680,8 @@ states.gov_deployment = {
 		for (let u of list) {
 			let loc = unit_loc(u)
 			if (loc === to) {
-				if (unit_box(u) === PTL) {
-					log(`U${u} in A${loc}`)
-					set_unit_box(u, OPS)
-				} else {
-					log(`U${u} in A${loc} on PTL`)
-					set_unit_box(u, PTL)
-				}
+				log(`U${u} in A${loc} on PTL`)
+				set_unit_box(u, PTL)
 			} else {
 				log(`U${u} in A${loc}`)
 				set_unit_loc(u, to)
@@ -2777,7 +2767,6 @@ states.fln_deployment = {
 			}
 		}
 
-		// XXX confirmation when no units are activated?
 		gen_action("end_deployment")
 	},
 	unit(u) {
