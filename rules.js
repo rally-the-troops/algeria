@@ -663,6 +663,10 @@ function is_harass_unit(u) {
 	return (type === BAND || type === FAILEK) && is_unit_not_neutralized(u) && is_area_algerian(loc) && has_enemy_unit_in_loc(loc)
 }
 
+function is_potential_airmobile_flush_unit(u) {
+	return can_airmobilize_unit(u) && airmobilize_cost([u]) <= game.helo_avail && is_unit_not_neutralized(u) && has_enemy_unit_in_boxes([OPS, OC])
+}
+
 function is_airmobile_flush_unit(u) {
 	return is_unit_airmobile(u) && is_unit_not_neutralized(u) && has_enemy_unit_in_boxes([OPS, OC])
 }
@@ -3800,7 +3804,7 @@ states.gov_operations = {
 		view.actions.population_resettlement = 0
 
 		for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
-			if (is_flush_unit(u) || is_airmobile_flush_unit(u)) {
+			if (is_flush_unit(u) || is_airmobile_flush_unit(u) || is_potential_airmobile_flush_unit(u)) {
 				view.actions.flush = 1
 			}
 			if (game.gov_psl > GOV_INTELLIGENCE_COST && is_intelligence_unit(u)) {
@@ -3878,13 +3882,19 @@ states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
 		view.prompt = "Flush: Select location"
+		let has_loc = false
 		for_each_algerian_map_area(loc => {
-			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_in_loc(loc))
+			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_in_loc(loc)) {
 				gen_action_loc(loc)
+				has_loc = true
+			}
 		})
 
-		if (game.helo_avail && can_airmobilize_any_unit())
+		if (game.helo_avail && can_airmobilize_any_unit()) {
+			if (!has_loc)
+				view.prompt = "Flush: Select location (you need to Airmobilize first)"
 			gen_action("airmobilize")
+		}
 	},
 	airmobilize() {
 		push_undo()
