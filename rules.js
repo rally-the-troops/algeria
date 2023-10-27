@@ -2823,6 +2823,8 @@ function goto_operations_phase() {
 	game.passes = 0
 	delete game.fln_auto_pass
 	delete game.gov_auto_pass
+	game.fln_ops = 0
+	game.gov_ops = 0
 
 	// In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
 	if (is_area_algerian(game.oas)) {
@@ -2847,7 +2849,10 @@ function goto_operations_phase() {
 function goto_fln_operations_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
-	log_h2(`${game.active} Operations`)
+
+	// XXX backwards compatiblity for ongoing games; replace with game.fln_ops += 1
+	game.fln_ops = (game.fln_ops ?? 0) + 1
+	log_h2(`${game.active} Operation ${game.fln_ops}`)
 	clear_combat()
 
 	if (game.fln_auto_pass) {
@@ -3768,7 +3773,9 @@ states.fln_combat_fln_losses = {
 function goto_gov_operations_phase() {
 	game.phasing = GOV_NAME
 	set_active_player()
-	log_h2(`${game.active} Operations`)
+	// XXX backwards compatiblity for ongoing games; replace with game.gov_ops += 1
+	game.gov_ops = (game.gov_ops ?? 0) + 1
+	log_h2(`${game.active} Operation ${game.gov_ops}`)
 	clear_combat()
 
 	if (game.gov_auto_pass) {
@@ -4514,6 +4521,8 @@ function end_operations_phase() {
 	game.passes = 0
 	delete game.fln_auto_pass
 	delete game.gov_auto_pass
+	delete game.fln_ops
+	delete game.gov_ops
 	clear_combat()
 	goto_turn_interphase()
 }
