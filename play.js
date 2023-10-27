@@ -747,10 +747,6 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("end_turn", "End Turn")
 	action_button("done", "Done")
 	action_button("undo", "Undo")
-
-	// XXX debug
-	action_button("restart", "Restart")
-	action_button("reset", "Reset")
 }
 
 const ICONS = {
