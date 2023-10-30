@@ -984,9 +984,13 @@ exports.scenarios = [ "1954", "1958", "1960" ]
 exports.roles = [ FLN_NAME, GOV_NAME ]
 
 function gen_action(action, argument) {
-	if (!(action in view.actions))
-		view.actions[action] = []
-	view.actions[action].push(argument)
+	if (argument === undefined) {
+		view.actions[action] = 1
+	} else {
+		if (!(action in view.actions))
+			view.actions[action] = []
+		view.actions[action].push(argument)
+	}
 }
 
 function gen_action_unit(u) {
