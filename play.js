@@ -672,7 +672,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	update_map()
 
 	action_button("quick_setup", "Quick Setup")
-	action_button("end_deployment", "End deployment")
+	action_button("end_deployment", "End Deployment")
 	action_button("roll", "Roll")
 	action_button("raise_fln_psl_1d6", "+1d6 FLN PSL")
 	action_button("lower_gov_psl_1d6", "-1d6 Government PSL")
@@ -686,7 +686,7 @@ function on_update() { // eslint-disable-line no-unused-vars
 	// gov reinforcement
 	action_button("mobilization", "Mobilization")
 	action_button("activation", "Activation")
-	action_button("acquire_assets", "Acquire assets")
+	action_button("acquire_assets", "Acquire Assets")
 
 	action_button("select_all_inactive", "Select All")
 	action_button("acquire_air_point", "+1 Air")
@@ -706,10 +706,10 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("convert_band_to_failek", "Convert to Failek")
 	action_button("convert_front_to_cadre", "Convert to Cadre")
 
-	action_button("end_reinforcement", "End reinforcement")
+	action_button("end_reinforcement", "End Reinforcement")
 
 	action_button("change_division_mode", "Change Division Mode")
-	action_button("end_deployment", "End deployment")
+	action_button("end_deployment", "End Deployment")
 
 	action_button("propaganda", "Propaganda")
 	action_button("strike", "Strike")
