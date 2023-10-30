@@ -33,6 +33,18 @@ const BAND = 6
 const CADRE = 7
 const FRONT = 8
 
+const unit_type_name = [
+	"French Division",
+	"French Brigade",
+	"French Elite Brigade",
+	"Algerian Brigade",
+	"Algerian Police",
+	"FLN Failek",
+	"FLN Band",
+	"FLN Cadre",
+	"FLN Front",
+]
+
 // Free deployment holding box
 const FREE = 0
 const DEPLOY = 1
@@ -1475,7 +1487,6 @@ function goto_scenario_setup() {
 	game.state = "scenario_setup"
 	log_h2(`${game.active} Deployment`)
 	game.selected = []
-	game.summary = {}
 }
 
 function current_player_deployment() {
@@ -1590,8 +1601,6 @@ states.scenario_setup = {
 		for_each_friendly_unit(u => {
 			free_unit(u)
 		})
-
-		log("Loading quick setup")
 		let deployment = current_player_quick_setup()
 		setup_units(deployment)
 	},
@@ -1602,25 +1611,41 @@ states.scenario_setup = {
 		let list = game.selected
 		game.selected = []
 		push_undo()
-		let from = unit_loc(list[0])
-		if (from !== DEPLOY) {
-			// make correction when shifting units within zone
-			game.summary[from] = (game.summary[from] | 0) - list.length
-		}
-		game.summary[to] = (game.summary[to] | 0) + list.length
+		// game.summary[to] = (game.summary[to] | 0) + list.length
 		for (let u of list) {
 			deploy_unit(u, to)
 		}
 	},
 	end_deployment() {
-		log(`Deployed`)
-		// TODO this can be more informative, mentioning unit types instead of summary
-		let keys = Object.keys(game.summary).map(Number).sort((a,b)=>a-b)
-		for (let x of keys) {
-			if (game.summary[x] > 0)
-				logi(`${game.summary[x]} at A${x}`)
+
+		// verbose deployment
+		if (true) {
+			for_each_map_area(loc => {
+				let n = [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+				for_each_friendly_unit_in_loc(loc, u => {
+					n[units[u].type] += 1
+				})
+				let i
+				for (i = 0; i < n.length; ++i)
+					if (n[i] > 0)
+						break
+				if (i < n.length) {
+					log("A" + loc)
+					for (i = 0; i < n.length; ++i)
+						if (n[i] > 0)
+							logi(`${n[i]} ${unit_type_name[i]}`)
+				}
+			})
+		} else {
+			for_each_map_area(loc => {
+				let n = 0
+				for_each_friendly_unit_in_loc(loc, u => {
+					n += 1
+				})
+				if (n > 0)
+					log(`${n} at A${loc}`)
+			})
 		}
-		game.summary = null
 
 		end_scenario_setup()
 	}
