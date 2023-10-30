@@ -641,9 +641,11 @@ function update_map() {
 	}
 
 	// Hide supply panels when empty
+	/*
 	ui.fln_supply_panel.classList.toggle("hide", !(ui.fln_supply.childNodes.length - 1))
 	ui.gov_supply_panel.classList.toggle("hide", !(ui.gov_supply.childNodes.length - 1))
 	ui.eliminated_panel.classList.toggle("hide", !(ui.eliminated.childNodes.length - 1))
+	*/
 
 	for (let i = 0; i < ui.areas.length; ++i) {
 		let e = ui.areas[i]
