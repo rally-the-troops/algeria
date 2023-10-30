@@ -28,8 +28,14 @@
 	--counter-french-color: #BCDDFF;
 	--counter-elite-color: #FFCCCB;
 	--counter-algerian-color: #FFE7BD;
-	--counter-fln-color: #51a36d;
 	--counter-remote-color: #DFD9C1;
+	--counter-fln-color: #51a36d;
+
+	--counter-french-border: navy;
+	--counter-elite-border: navy;
+	--counter-algerian-border: navy;
+	--counter-remote-border: navy;
+	--counter-fln-border: darkgreen;
 
 	--stack-2-left: 10px;
 	--stack-2-top: -13px;
@@ -310,15 +316,19 @@ main { background-color: dimgray }
 
 .unit[class*=' fr_x'] {
 	background-color: var(--counter-french-color);
+	border-color: var(--counter-french-border);
 }
 .unit[class*=' fr_elite_x_'] {
 	background-color: var(--counter-elite-color);
+	border-color: var(--counter-elite-border);
 }
 .unit[class*=' alg_'] {
 	background-color: var(--counter-algerian-color);
+	border-color: var(--counter-algerian-border);
 }
 .unit[class*=' fln_'] {
 	background-color: var(--counter-fln-color);
+	border-color: var(--counter-fln-border);
 }
 .unit.neutralized[class*=' fr_x'] {
 	background-color: color-mix(in srgb, var(--counter-french-color) 40%, white);
