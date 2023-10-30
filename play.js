@@ -557,7 +557,7 @@ function animate(e, x0, y0, x1, y1) {
 		{ transform: transformFrom },
 		{ transform: transformTo },
 	], {
-		duration: 1000,
+		duration: 750,
 		easing: 'ease',
 	})
 }
