@@ -169,7 +169,7 @@ function raise_gov_psl(amount) {
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	// can trigger victory
 	game.gov_psl += amount
-	logi(`Goverment PSL +${amount}`)
+	logi(`Government PSL +${amount}`)
 	if (game.gov_psl > MAX_PSL) {
 		let excess_psl = game.gov_psl - MAX_PSL
 		log(`Government PSL exceeds ${MAX_PSL}`)
@@ -188,7 +188,7 @@ function lower_fln_psl(amount) {
 function lower_gov_psl(amount, indent=true) {
 	if (amount <= 0)
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
-	let log_msg = `Goverment PSL -${amount}`
+	let log_msg = `Government PSL -${amount}`
 	if (indent) {
 		logi(log_msg)
 	} else {
