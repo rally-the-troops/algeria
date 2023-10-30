@@ -5473,6 +5473,22 @@ function array_insert(array, index, item) {
 	return array
 }
 
+function array_remove_pair(array, index) {
+	let n = array.length
+	for (let i = index + 2; i < n; ++i)
+		array[i - 2] = array[i]
+	array.length = n - 2
+}
+
+function array_insert_pair(array, index, key, value) {
+	for (let i = array.length; i > index; i -= 2) {
+		array[i] = array[i-2]
+		array[i+1] = array[i-1]
+	}
+	array[index] = key
+	array[index+1] = value
+}
+
 function set_clear(set) {
 	set.length = 0
 }
@@ -5546,6 +5562,82 @@ function is_subset_with_multiplicity(multiset, subset) {
 		arr.reduce((acc, el) => (el === val ? acc + 1 : acc), 0)
 
 	return !subset.some(val => (occurrences(subset, val) > occurrences(multiset, val)))
+}
+
+function map_clear(map) {
+	map.length = 0
+}
+
+function map_has(map, key) {
+	let a = 0
+	let b = (map.length >> 1) - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = map[m<<1]
+		if (key < x)
+			b = m - 1
+		else if (key > x)
+			a = m + 1
+		else
+			return true
+	}
+	return false
+}
+
+function map_get(map, key, missing) {
+	let a = 0
+	let b = (map.length >> 1) - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = map[m<<1]
+		if (key < x)
+			b = m - 1
+		else if (key > x)
+			a = m + 1
+		else
+			return map[(m<<1)+1]
+	}
+	return missing
+}
+
+function map_set(map, key, value) {
+	let a = 0
+	let b = (map.length >> 1) - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = map[m<<1]
+		if (key < x)
+			b = m - 1
+		else if (key > x)
+			a = m + 1
+		else {
+			map[(m<<1)+1] = value
+			return
+		}
+	}
+	array_insert_pair(map, a<<1, key, value)
+}
+
+function map_delete(map, item) {
+	let a = 0
+	let b = (map.length >> 1) - 1
+	while (a <= b) {
+		let m = (a + b) >> 1
+		let x = map[m<<1]
+		if (item < x)
+			b = m - 1
+		else if (item > x)
+			a = m + 1
+		else {
+			array_remove_pair(map, m<<1)
+			return
+		}
+	}
+}
+
+function map_for_each(map, f) {
+	for (let i = 0; i < map.length; i += 2)
+		f(map[i], map[i+1])
 }
 
 // Fast deep copy for objects without cycles
