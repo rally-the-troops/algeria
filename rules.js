@@ -1547,7 +1547,9 @@ states.scenario_setup = {
 			})
 
 			if (current_player_quick_setup()) {
-				view.actions.quick_setup = !game.quick_setup
+				// only allow quick-setup as the very first action
+				if (game.undo.length === 0)
+					view.actions.quick_setup = 1
 			}
 		} else {
 			// subsequent units must be on the same map location (or also on DEPLOY)
@@ -1592,7 +1594,6 @@ states.scenario_setup = {
 		log("Loading quick setup")
 		let deployment = current_player_quick_setup()
 		setup_units(deployment)
-		game.quick_setup = true
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -1610,7 +1611,6 @@ states.scenario_setup = {
 		for (let u of list) {
 			deploy_unit(u, to)
 		}
-		delete game.quick_setup
 	},
 	end_deployment() {
 		log(`Deployed`)
@@ -1621,7 +1621,6 @@ states.scenario_setup = {
 				logi(`${game.summary[x]} at A${x}`)
 		}
 		game.summary = null
-		delete game.quick_setup
 
 		end_scenario_setup()
 	}
