@@ -2440,47 +2440,52 @@ states.gov_reinforcement = {
 
 function give_fln_ap() {
 	// Give AP
-	log_h3("Areas under FLN control")
+	log_h3("Areas under FLN control:")
+
+	log_br()
+
 	for_each_algerian_map_area(loc => {
 		let control_ap = 0
-		let summary = []
+		let summary = null
 		if (is_area_urban(loc)) {
 			// He gets 5 AP for each Urban area he controls, or 2 AP if the area is contested but he has non-neutralized units there.
-			summary.push('Urban')
 			if (is_area_fln_control(loc)) {
-				summary.push('Control')
+				summary = "urban, control"
 				control_ap += 5
 			} else if (has_friendly_not_neutralized_unit_in_loc(loc)) {
-				summary.push('Units')
+				summary = "urban, units"
 				control_ap += 2
 			}
 		} else if (is_area_rural(loc)) {
 			// He gets 2 AP for each Rural area he controls, and 1 if the area is contested but he has non-neutralized units there.
-			summary.push('Rural')
 			if (is_area_fln_control(loc)) {
-				summary.push('Control')
+				summary = "rural, control"
 				control_ap += 2
 			} else if (has_friendly_not_neutralized_unit_in_loc(loc)) {
-				summary.push('Units')
+				summary = "rural, units"
 				control_ap += 1
 			}
 		}
 		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
 		if (is_area_terrorized(loc)) {
-			summary.push("Terrorized")
-			control_ap -= 1
+			if (summary) {
+				summary += ", terrorized"
+				control_ap -= 1
+			}
 		}
-		if (control_ap > 0) {
-			log(`A${loc} (` + summary.join(", ") + ")")
-			raise_fln_ap(control_ap)
+		if (summary) {
+			log(`A${loc}`)
+			raise_fln_ap(control_ap, summary)
 		}
 	})
+
+	log_br()
 
 	// The FLN PSL
 	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
 	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
 	let psl_ap = Math.max(psl_percentage - game.naval, 0)
-	log(`10% of PSL (- ${game.naval} Naval PTS)`)
+	log(`10% of ${game.fln_psl} PSL (- ${game.naval} Naval PTS)`)
 	if (psl_ap) {
 		raise_fln_ap(psl_ap)
 	}
