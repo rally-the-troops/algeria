@@ -1132,11 +1132,11 @@ function check_victory() {
 	if (game.state === "game_over") return
 	if (game.gov_psl <= 0) {
 		let scale = victory_scale()
-		goto_game_over(FLN_NAME, `FLN wins: ${scale} victory`)
+		goto_game_over(FLN_NAME, `FLN wins: ${scale} victory.`)
 		return true
 	} else if (game.fln_psl <= 0) {
 		let scale = victory_scale()
-		goto_game_over(GOV_NAME, `Government wins: ${scale} victory`)
+		goto_game_over(GOV_NAME, `Government wins: ${scale} victory.`)
 		return true
 	}
 	return false
@@ -1151,15 +1151,15 @@ function check_shorter_victory() {
 		let leader = game.gov_psl > game.fln_psl ? GOV : FLN
 		if (game.shorter_victory_leader === GOV && leader === GOV) {
 			let scale = victory_scale()
-			goto_game_over(GOV_NAME, `Government wins: ${scale} Shorter Game victory`)
+			goto_game_over(GOV_NAME, `Government wins: ${scale} Shorter Game victory.`)
 			return true
 		} else if (game.shorter_victory_leader === FLN && leader === FLN) {
 			let scale = victory_scale()
-			goto_game_over(FLN_NAME, `FLN wins: ${scale} Shorter Game victory`)
+			goto_game_over(FLN_NAME, `FLN wins: ${scale} Shorter Game victory.`)
 			return true
 		}
 		game.shorter_victory_leader = leader
-		log(`${player_name(leader)} leads with ${psl_diff} PSL`)
+		log(`${player_name(leader)} leads with ${psl_diff} PSL.`)
 	} else {
 		game.shorter_victory_leader = -1
 	}
@@ -1538,7 +1538,7 @@ states.scenario_setup = {
 	inactive: "setup",
 	prompt() {
 		let count = count_friendly_unit_in_loc(DEPLOY)
-		view.prompt = `Setup: ${game.active} Deployment. ${count} unit(s) remaining.`
+		view.prompt = `Setup: ${game.active} Deployment. ${count} unit(s) remain.`
 
 		if (!game.selected.length) {
 			// first unit can be any unit in DEPLOY or on map
@@ -1776,7 +1776,7 @@ function goto_un_debate() {
 states.random_event_un_debate = {
 	inactive: "to do UN debate",
 	prompt() {
-		view.prompt = "Random Event: UN Debate"
+		view.prompt = "Random Event: UN Debate."
 		gen_action("raise_fln_psl_1d6")
 		gen_action("lower_gov_psl_1d6")
 	},
@@ -1804,7 +1804,7 @@ function goto_fln_factional_purge() {
 states.event_fln_factional_purge_select_zone = {
 	inactive: "to do FLN Factional Purge",
 	prompt() {
-		view.prompt = "FLN Factional Purge: Choose one wilaya (zone) where to neutralize 1d6 FLN units"
+		view.prompt = "FLN Factional Purge: Choose one wilaya (zone) where to neutralize 1d6 FLN units."
 		gen_action("zone_I")
 		gen_action("zone_II")
 		gen_action("zone_III")
@@ -1853,7 +1853,7 @@ function continue_fln_factional_purge() {
 states.event_fln_factional_purge_select_units = {
 	inactive: "to do FLN Factional Purge",
 	prompt() {
-		view.prompt = `FLN Factional Purge: Select ${game.events.fln_purge_num} unit(s) in wilaya (zone) ${game.events.fln_purge_zone} to neutralize`
+		view.prompt = `FLN Factional Purge: Select ${game.events.fln_purge_num} unit(s) in wilaya (zone) ${game.events.fln_purge_zone} to neutralize.`
 
 		for_each_friendly_unit_in_zone(game.events.fln_purge_zone, u => {
 			gen_action_unit(u)
@@ -1936,7 +1936,7 @@ function goto_nato_pressure() {
 states.event_gov_nato_pressure_select_units = {
 	inactive: "to do NATO pressure",
 	prompt() {
-		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map`
+		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map.`
 
 		let target = 0
 		for (let u of game.selected) {
@@ -2005,7 +2005,7 @@ function goto_suez_crisis() {
 states.event_gov_suez_crisis_select_units = {
 	inactive: "to do Suez Crisis",
 	prompt() {
-		view.prompt = `Suez Crisis: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map`
+		view.prompt = `Suez Crisis: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map.`
 
 		let target = 0
 		for (let u of game.selected) {
@@ -2113,7 +2113,7 @@ function goto_gov_reinforcement_phase() {
 states.place_oas = {
 	inactive: "to place OAS",
 	prompt() {
-		view.prompt = "Reinforcement: Place OAS in Urban area or France"
+		view.prompt = "Reinforcement: Place OAS in Urban area or France."
 
 		for_each_map_area(loc => {
 			if (is_area_urban(loc))
@@ -2175,9 +2175,9 @@ states.gov_reinforcement = {
 
 		if (!game.selected.length) {
 			if (!is_slow_french_reaction()) {
-				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets"
+				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets."
 			} else {
-				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets (Slow French Reaction)"
+				view.prompt = "Reinforcement: Mobilize & activate units, and acquire assets (Slow French Reaction)."
 			}
 			// first unit can be any unit in DEPLOY or on map
 			for_each_friendly_unit_in_loc(DEPLOY, u => {
@@ -2232,7 +2232,7 @@ states.gov_reinforcement = {
 			view.actions.undo = 1
 
 			if (first_unit_type === POL && first_unit_loc !== DEPLOY) {
-				view.prompt = "Reinforcement: Remove Police units"
+				view.prompt = "Reinforcement: Remove Police units."
 
 				for_each_friendly_unit_on_map_of_type(POL, u => {
 					gen_action_unit(u)
@@ -2241,7 +2241,7 @@ states.gov_reinforcement = {
 				gen_action("remove")
 			} else if (first_unit_loc === DEPLOY) {
 				let cost = mobilization_cost(game.selected)
-				view.prompt = `Reinforcement: Mobilize units (cost ${cost} PSP)`
+				view.prompt = `Reinforcement: Mobilize units (cost ${cost} PSP).`
 
 				if (!is_slow_french_reaction()) {
 					for_each_friendly_unit_in_loc(DEPLOY, u => {
@@ -2262,7 +2262,7 @@ states.gov_reinforcement = {
 				}
 			} else {
 				let cost = activation_cost(game.selected)
-				view.prompt = `Reinforcement: Activate units (cost ${cost} PSP)`
+				view.prompt = `Reinforcement: Activate units (cost ${cost} PSP).`
 
 				for_each_friendly_unit_on_map_box(OC, u => {
 					gen_action_unit(u)
@@ -2522,7 +2522,7 @@ states.fln_reinforcement = {
 	inactive: "to do Reinforcement",
 	prompt() {
 		if (!game.selected.length) {
-			view.prompt = "Reinforcement: Build & Augment units"
+			view.prompt = "Reinforcement: Build & Augment units."
 
 			// Front can build Cadres and Bands, or be converted to Cadre
 			for_each_friendly_unit_on_map_of_type(FRONT, u => {
@@ -2553,7 +2553,7 @@ states.fln_reinforcement = {
 			view.actions.undo = 1
 
 			if (first_unit_type === FRONT) {
-				view.prompt = "Reinforcement: Front can build Cadre or Band"
+				view.prompt = "Reinforcement: Front can build Cadre or Band."
 				// The FLN player may build new Cadres or Bands by spending the AP cost and placing them in the UG box of any area which contains a non-Neutralized Front
 				// (note that this requires the presence of a Front)
 				if (has_free_unit_by_type(CADRE) && game.fln_ap >= build_cost(first_unit_loc))
@@ -2564,7 +2564,7 @@ states.fln_reinforcement = {
 					gen_action("convert_front_to_cadre")
 
 			} else if (first_unit_type === CADRE) {
-				view.prompt = "Reinforcement: Convert Cadre"
+				view.prompt = "Reinforcement: Convert Cadre."
 				// Fronts may not be created in Remote areas (not enough people) and there may be only one Front per area.
 				if (!(has_unit_type_in_loc(FRONT, first_unit_loc) || is_area_remote(first_unit_loc)) && has_free_unit_by_type(FRONT) && game.fln_ap >= convert_cost(FRONT)) {
 					gen_action("convert_cadre_to_front")
@@ -2572,7 +2572,7 @@ states.fln_reinforcement = {
 				if (has_free_unit_by_type(BAND) && game.fln_ap >= convert_cost(BAND))
 					gen_action("convert_cadre_to_band")
 			} else if (first_unit_type === BAND) {
-				view.prompt = "Reinforcement: Convert Band"
+				view.prompt = "Reinforcement: Convert Band."
 				if (has_free_unit_by_type(FAILEK) && game.fln_ap >= convert_cost(FAILEK))
 					gen_action("convert_band_to_failek")
 			}
@@ -2650,7 +2650,7 @@ function can_airmobilize_any_unit() {
 states.gov_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
-		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area"
+		view.prompt = "Deploy activated mobile units to PTL or into OPS of another area."
 		if (!game.selected.length) {
 			for_each_friendly_unit_on_map(u => {
 				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || (is_division_unit(u) && !set_has(game.mode_changed, u) && !is_slow_french_reaction()))
@@ -2671,10 +2671,10 @@ states.gov_deployment = {
 
 			if (first_unit_type == FR_XX && game.selected.length === 1 && !is_slow_french_reaction() && !set_has(game.mode_changed, first_unit)) {
 				if (is_unit_not_neutralized(first_unit) && unit_box(first_unit) === OPS) {
-					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode"
+					view.prompt = "Deploy activated mobile units to PTL or into OPS of another area, or change division mode."
 				} else {
 					// allow selection of neutralized divisions (to change mode only)
-					view.prompt = "Deploy: change division mode"
+					view.prompt = "Deploy: change division mode."
 				}
 				gen_action("change_division_mode")
 			}
@@ -2758,7 +2758,7 @@ function goto_fln_deployment_phase() {
 states.fln_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
-		view.prompt = "Deploy units to OPS in same area"
+		view.prompt = "Deploy units to OPS in same area."
 		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(UG, u => {
 				let loc = unit_loc(u)
@@ -2792,12 +2792,12 @@ states.fln_deployment = {
 					has_front = true
 				})
 				if (has_front) {
-					view.prompt = "Deploy Cadre to Area with Front"
+					view.prompt = "Deploy Cadre to Area with Front."
 				}
 			}
 
 			if (!game.deploy_cadre_france && first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE) && !is_area_urban(first_unit_loc)) {
-				view.prompt = "Deploy units to OPS in same area (or Cadre to France)"
+				view.prompt = "Deploy units to OPS in same area (or Cadre to France)."
 				// deploy single Cadre to France
 				gen_action_loc(FRANCE)
 			}
@@ -2903,7 +2903,7 @@ const FLN_RAID_COST = 1
 states.fln_operations = {
 	inactive: "to do Operations",
 	prompt() {
-		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass"
+		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass."
 
 		// check if any FLN missions can actually be performed
 		view.actions.propaganda = 0
@@ -3013,7 +3013,7 @@ states.fln_propaganda = {
 	inactive: "to do Propaganda mission",
 	prompt() {
 		if (!game.selected.length) {
-			view.prompt = "Propaganda: Select Front or Cadre"
+			view.prompt = "Propaganda: Select Front or Cadre."
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				if (is_propaganda_unit(u)) {
 					gen_action_unit(u)
@@ -3025,7 +3025,7 @@ states.fln_propaganda = {
 				}
 			})
 		} else {
-			view.prompt = `Propaganda: Execute mission (cost ${FLN_PROPAGANDA_COST} AP)`
+			view.prompt = `Propaganda: Execute mission (cost ${FLN_PROPAGANDA_COST} AP).`
 			let first_unit = game.selected[0]
 
 			// Allow deselect
@@ -3153,7 +3153,7 @@ function distribute_psl(where, delta) {
 states.distribute_psp = {
 	inactive: "to distribute PSP",
 	prompt() {
-		view.prompt = `Distribute ${game.distribute.psp} PSP`
+		view.prompt = `Distribute ${game.distribute.psp} PSP.`
 
 		if (game.distribute.who === FLN) {
 			gen_action("add_fln_psl")
@@ -3237,7 +3237,7 @@ function goto_fln_strike_mission() {
 states.fln_strike = {
 	inactive: "to do Strike mission",
 	prompt() {
-		view.prompt = "Strike: Select Front in Urban area, Cadres may assist"
+		view.prompt = "Strike: Select Front in Urban area, Cadres may assist."
 
 		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
@@ -3247,7 +3247,7 @@ states.fln_strike = {
 				}
 			})
 		} else {
-			view.prompt = `Strike: Execute mission (cost ${FLN_STRIKE_COST} AP)`
+			view.prompt = `Strike: Execute mission (cost ${FLN_STRIKE_COST} AP).`
 
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
@@ -3261,7 +3261,7 @@ states.fln_strike = {
 			})
 
 			if (can_assist) {
-				view.prompt = `Strike: Execute mission (or select Cadres to assist) (cost ${FLN_STRIKE_COST} AP)`
+				view.prompt = `Strike: Execute mission (or select Cadres to assist) (cost ${FLN_STRIKE_COST} AP).`
 			}
 
 			// Allow deselect
@@ -3365,9 +3365,9 @@ states.fln_move = {
 	prompt() {
 		if (!game.selected.length) {
 			if (game.events.jealousy_and_paranoia) {
-				view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)"
+				view.prompt = "Move: Select unit to move (Jealousy and Paranoia restricts movements)."
 			} else {
-				view.prompt = "Move: Select unit to move"
+				view.prompt = "Move: Select unit to move."
 			}
 
 			for_each_friendly_unit_on_map_box(OPS, u => {
@@ -3380,7 +3380,7 @@ states.fln_move = {
 					gen_action_unit(u)
 			})
 		} else {
-			view.prompt = "Move: Select area to move to"
+			view.prompt = "Move: Select area to move to."
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 			let zone = area_zone(first_unit_loc)
@@ -3462,7 +3462,7 @@ states.fln_raid = {
 				}
 			})
 		} else {
-			view.prompt = `Raid: Execute mission (cost ${FLN_RAID_COST} AP)`
+			view.prompt = `Raid: Execute mission (cost ${FLN_RAID_COST} AP).`
 
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
@@ -3552,7 +3552,7 @@ function goto_fln_harass_mission() {
 states.fln_harass = {
 	inactive: "to do Harass mission",
 	prompt() {
-		view.prompt = "Harass: Select Band or Failek unit (may combine if Failek present)"
+		view.prompt = "Harass: Select Band or Failek unit (may combine if Failek present)."
 		if (!game.selected.length) {
 			for_each_friendly_unit_on_map_box(OPS, u => {
 				if (is_harass_unit(u)) {
@@ -3571,9 +3571,9 @@ states.fln_harass = {
 			}
 
 			if (!has_target) {
-				view.prompt = "Harass: Select enemy unit in area"
+				view.prompt = "Harass: Select enemy unit in area."
 			} else if (game.selected.length > 1) {
-				view.prompt = "Harass: Execute mission"
+				view.prompt = "Harass: Execute mission."
 				gen_action("roll")
 			}
 
@@ -3781,7 +3781,7 @@ function reduce_fln_unit(from_type, to_type) {
 states.fln_combat_fln_losses = {
 	inactive: "to distribute combat losses",
 	prompt() {
-		view.prompt = `Distribute ${game.combat.distribute_fln_hits} hit(s) as losses`
+		view.prompt = `Distribute ${game.combat.distribute_fln_hits} hit(s) as losses.`
 
 		// each 'hit' on FLN units eliminates one Cadre or Band, or reduces a Front to a Cadre, or reduces a Failek to a Band (FLN player chooses how to distribute his losses).
 		if (has_fln_combat_unit(CADRE))
@@ -3917,7 +3917,7 @@ function can_gov_react() {
 states.gov_flush = {
 	inactive: "to do Flush mission",
 	prompt() {
-		view.prompt = "Flush: Select location"
+		view.prompt = "Flush: Select location."
 		let has_loc = false
 		for_each_algerian_map_area(loc => {
 			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_in_loc(loc)) {
@@ -3928,7 +3928,7 @@ states.gov_flush = {
 
 		if (game.helo_avail && can_airmobilize_any_unit()) {
 			if (!has_loc)
-				view.prompt = "Flush: Select location (you need to Airmobilize first)"
+				view.prompt = "Flush: Select location (you need to Airmobilize first)."
 			gen_action("airmobilize")
 		}
 	},
@@ -3946,7 +3946,7 @@ states.gov_flush_select_units = {
 	inactive: "to do Flush mission",
 	prompt() {
 		if (!game.selected.length) {
-			view.prompt = "Flush: Select (air)mobile unit(s)"
+			view.prompt = "Flush: Select (air)mobile unit(s)."
 			for_each_friendly_unit_on_map_boxes([OPS, PTL], u => {
 				if ((unit_loc(u) === game.selected_loc && is_flush_unit(u)) || is_airmobile_flush_unit(u)) {
 					gen_action_unit(u)
@@ -3956,9 +3956,9 @@ states.gov_flush_select_units = {
 			let first_unit = game.selected[0]
 
 			if (is_area_urban(game.selected_loc) || !game.air_max) {
-				view.prompt = "Flush: Execute mission"
+				view.prompt = "Flush: Execute mission."
 			} else {
-				view.prompt = `Flush: Execute mission (using ${game.mission_air_pts} Air PTS)`
+				view.prompt = `Flush: Execute mission (using ${game.mission_air_pts} Air PTS).`
 				view.actions.use_air_point = game.air_avail > 0
 			}
 
@@ -4096,9 +4096,9 @@ states.gov_airmobilize_select_units = {
 		})
 
 		if (!game.selected.length) {
-			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize`
+			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize.`
 		} else {
-			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize (cost ${cost} Helo PTS)`
+			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize (cost ${cost} Helo PTS).`
 		}
 
 		gen_action("done")
@@ -4139,7 +4139,7 @@ states.gov_react = {
 	inactive: "to do React mission",
 	prompt() {
 		if (!game.selected.length) {
-			view.prompt = "React: Select mobile unit(s) or No React"
+			view.prompt = "React: Select mobile unit(s) or No React."
 
 			let loc = unit_loc(game.contacted[0])
 
@@ -4155,9 +4155,9 @@ states.gov_react = {
 			let contact_loc = unit_loc(game.contacted[0])
 
 			if (is_area_urban(contact_loc) || !game.air_max) {
-				view.prompt = "React: Execute mission"
+				view.prompt = "React: Execute mission."
 			} else {
-				view.prompt = `React: Execute mission (using ${game.mission_air_pts} Air PTS)`
+				view.prompt = `React: Execute mission (using ${game.mission_air_pts} Air PTS).`
 				view.actions.use_air_point = game.air_avail > 0
 			}
 
@@ -4256,13 +4256,13 @@ states.gov_intelligence = {
 	inactive: "to do Intelligence mission",
 	prompt() {
 		if (game.selected_loc === -1) {
-			view.prompt = "Intelligence: Select location"
+			view.prompt = "Intelligence: Select location."
 			for_each_algerian_map_area(loc => {
 				if (is_intelligence_loc(loc))
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = `Intelligence: Execute mission (cost ${GOV_INTELLIGENCE_COST} PSP)`
+			view.prompt = `Intelligence: Execute mission (cost ${GOV_INTELLIGENCE_COST} PSP).`
 			gen_action("roll")
 		}
 	},
@@ -4334,13 +4334,13 @@ states.gov_civil_affairs = {
 	inactive: "to do Civil Affairs mission",
 	prompt() {
 		if (game.selected_loc === -1) {
-			view.prompt = "Civil Affairs: Select location"
+			view.prompt = "Civil Affairs: Select location."
 			for_each_algerian_map_area(loc => {
 				if (is_civil_affairs_loc(loc))
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = `Civil Affairs: Execute mission (cost ${GOV_CIVIL_AFFAIRS_COST} PSP)`
+			view.prompt = `Civil Affairs: Execute mission (cost ${GOV_CIVIL_AFFAIRS_COST} PSP).`
 			gen_action("roll")
 		}
 	},
@@ -4455,13 +4455,13 @@ states.gov_suppression = {
 	inactive: "to do Suppression mission",
 	prompt() {
 		if (game.selected_loc === -1) {
-			view.prompt = "Suppression: Select location"
+			view.prompt = "Suppression: Select location."
 			for_each_algerian_map_area(loc => {
 				if (is_suppression_loc(loc))
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = `Suppression: Execute mission (cost ${GOV_SUPPRESSION_COST} PSP)`
+			view.prompt = `Suppression: Execute mission (cost ${GOV_SUPPRESSION_COST} PSP).`
 			gen_action("roll")
 		}
 	},
@@ -4497,13 +4497,13 @@ states.gov_population_resettlement = {
 	inactive: "to do Population Resettlement mission",
 	prompt() {
 		if (game.selected_loc === -1) {
-			view.prompt = "Population Resettlement: Select location"
+			view.prompt = "Population Resettlement: Select location."
 			for_each_algerian_map_area(loc => {
 				if (is_population_resettlement_loc(loc))
 					gen_action_loc(loc)
 			})
 		} else {
-			view.prompt = `Population Resettlement: Execute mission (cost ${GOV_POPULATION_RESETTLEMENT_COST} PSP)`
+			view.prompt = `Population Resettlement: Execute mission (cost ${GOV_POPULATION_RESETTLEMENT_COST} PSP).`
 			gen_action("roll")
 		}
 	},
@@ -4909,7 +4909,7 @@ function goto_coup_attempt_free_mobilize(value) {
 states.gov_coup_attempt_free_mobilize = {
 	inactive: "to do Coup Attempt",
 	prompt() {
-		view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free`
+		view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free.`
 
 		if (!game.selected.length) {
 			// first unit can be any unit in DEPLOY or on map
@@ -4922,7 +4922,7 @@ states.gov_coup_attempt_free_mobilize = {
 			let first_unit_loc = unit_loc(first_unit)
 			if (first_unit_loc === DEPLOY) {
 				let cost = mobilization_cost(game.selected)
-				view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free (selected ${cost} PSP)`
+				view.prompt = `Coup Attempt: Mobilize ${game.events.gov_free_mobilize} PSP of units for free (selected ${cost} PSP).`
 
 				for_each_friendly_unit_in_loc(DEPLOY, u => {
 					if (set_has(game.selected, u) || (cost + mobilization_cost([u]) <= game.events.gov_free_mobilize))
@@ -4981,7 +4981,7 @@ function goto_coup_attempt_remove_elite(num) {
 states.gov_coup_attempt_select_units = {
 	inactive: "to do Coup Attempt",
 	prompt() {
-		view.prompt = `Coup Attempt: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map`
+		view.prompt = `Coup Attempt: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map.`
 
 		let target = 0
 		for (let u of game.selected) {
@@ -5147,7 +5147,7 @@ function goto_turn_interphase() {
 states.turn_interphase = {
 	inactive: "to do Turn Interphase",
 	prompt() {
-		view.prompt = "Turn Interphase"
+		view.prompt = "Turn Interphase."
 		gen_action("end_turn")
 	},
 	end_turn() {
