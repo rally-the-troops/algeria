@@ -1096,11 +1096,11 @@ exports.view = function(state, player) {
 		view.prompt = `Waiting for ${game.active} \u2014 ${inactive}...`
 	} else {
 		view.actions = {}
-		states[game.state].prompt()
 		if (game.undo && game.undo.length > 0)
 			view.actions.undo = 1
 		else
 			view.actions.undo = 0
+		states[game.state].prompt()
 	}
 
 	return view
@@ -2221,10 +2221,16 @@ states.gov_reinforcement = {
 					gen_action("improve_border_zone")
 				}
 			}
+
+			// XXX confirmation when no units are activated?
+			gen_action("end_reinforcement")
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 			let first_unit_type = unit_type(first_unit)
+
+			view.actions.undo = 1
+
 			if (first_unit_type === POL && first_unit_loc !== DEPLOY) {
 				view.prompt = "Reinforcement: Remove Police units"
 
@@ -2268,9 +2274,12 @@ states.gov_reinforcement = {
 				}
 			}
 		}
-
-		// XXX confirmation when no units are activated?
-		gen_action("end_reinforcement")
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -2532,6 +2541,8 @@ states.fln_reinforcement = {
 				if (is_area_country(unit_loc(u)))
 					gen_action_unit(u)
 			})
+
+			gen_action("end_reinforcement")
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
@@ -2539,6 +2550,7 @@ states.fln_reinforcement = {
 
 			// Allow deselect
 			gen_action_unit(first_unit)
+			view.actions.undo = 1
 
 			if (first_unit_type === FRONT) {
 				view.prompt = "Reinforcement: Front can build Cadre or Band"
@@ -2565,8 +2577,12 @@ states.fln_reinforcement = {
 					gen_action("convert_band_to_failek")
 			}
 		}
-
-		gen_action("end_reinforcement")
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -2640,11 +2656,18 @@ states.gov_deployment = {
 				if ((!set_has(game.deployed, u) && unit_box(u) === OPS) || (is_division_unit(u) && !set_has(game.mode_changed, u) && !is_slow_french_reaction()))
 					gen_action_unit(u)
 			})
+
+			if (game.helo_avail && can_airmobilize_any_unit())
+				gen_action("airmobilize")
+
+			gen_action("end_deployment")
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_type = unit_type(first_unit)
 			let first_unit_loc = unit_loc(first_unit)
 			let first_unit_box = unit_box(first_unit)
+
+			view.actions.undo = 1
 
 			if (first_unit_type == FR_XX && game.selected.length === 1 && !is_slow_french_reaction() && !set_has(game.mode_changed, first_unit)) {
 				if (is_unit_not_neutralized(first_unit) && unit_box(first_unit) === OPS) {
@@ -2668,15 +2691,16 @@ states.gov_deployment = {
 				})
 			}
 		}
-
-		if (game.helo_avail && can_airmobilize_any_unit())
-			gen_action("airmobilize")
-
-		gen_action("end_deployment")
 	},
 	airmobilize() {
 		push_undo()
 		goto_gov_airmobilize()
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -2741,10 +2765,14 @@ states.fln_deployment = {
 				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
 					gen_action_unit(u)
 			})
+
+			gen_action("end_deployment")
 		} else {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 			let first_unit_type = unit_type(first_unit)
+
+			view.actions.undo = 1
 
 			// Allow deselect && more units in same box
 			for_each_friendly_unit_in_loc_box(first_unit_loc, UG, u => {
@@ -2774,8 +2802,12 @@ states.fln_deployment = {
 				gen_action_loc(FRANCE)
 			}
 		}
-
-		gen_action("end_deployment")
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
