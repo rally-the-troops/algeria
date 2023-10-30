@@ -1592,6 +1592,8 @@ states.scenario_setup = {
 						gen_action_loc(loc)
 				})
 			}
+
+			view.actions.undo = 1
 		}
 
 		view.actions.end_deployment = !count
@@ -1603,6 +1605,12 @@ states.scenario_setup = {
 		})
 		let deployment = current_player_quick_setup()
 		setup_units(deployment)
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
