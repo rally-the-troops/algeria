@@ -87,7 +87,7 @@ var game = null
 var view = null
 
 const {
-	areas, zone_areas, locations, units, adjecents
+	areas, zone_areas, locations, units, adjacents
 } = require("./data.js")
 
 var first_friendly_unit, last_friendly_unit
@@ -636,7 +636,7 @@ function can_cross_border(u) {
 		return false
 	let result = false
 	let loc = unit_loc(u)
-	for_each_adjecent_map_area(loc, adj => {
+	for_each_adjacent_map_area(loc, adj => {
 		if (is_border_crossing(loc, adj))
 			result = true
 	})
@@ -875,9 +875,9 @@ function for_each_map_area_in_zone(z, fn) {
 			fn(i)
 }
 
-function for_each_adjecent_map_area(x, fn) {
-	if (x in adjecents) {
-		for (let i of adjecents[x])
+function for_each_adjacent_map_area(x, fn) {
+	if (x in adjacents) {
+		for (let i of adjacents[x])
 			fn(i)
 	}
 }
@@ -3355,7 +3355,7 @@ states.fln_move = {
 				// A unit may also move to an area in a wilaya adjacent to its current one (that is, the two share a land border),
 				// but the area moved to must be adjacent to at least one area in its current wilaya.
 				// Morocco and Tunisia are treated as single-area wilaya for this purpose.
-				for_each_adjecent_map_area(to, adj => {
+				for_each_adjacent_map_area(to, adj => {
 					if (is_border_crossing(to, adj)) {
 						if (game.is_morocco_tunisia_independent)
 							gen_action_loc(adj)

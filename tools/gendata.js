@@ -67,46 +67,46 @@ def_area("V-8", "Laghouat", REMOTE, "V")
 def_area("VI-1", "Sidi Aissa", REMOTE, "VI")
 def_area("VI-2", "Ain Qussera", RURAL, "VI")
 
-let adjecents = {}
+let adjacents = {}
 
-function def_adjecent(id, neighbours) {
-    function add_adjecent(from, to) {
+function def_adjacent(id, neighbours) {
+    function add_adjacent(from, to) {
         const from_id = locations[from]
-        if (!(from_id in adjecents)) {
-            adjecents[from_id] = []
+        if (!(from_id in adjacents)) {
+            adjacents[from_id] = []
         }
-        adjecents[from_id].push(locations[to])
+        adjacents[from_id].push(locations[to])
     }
     for (const n of neighbours) {
-        add_adjecent(id, n)
-        add_adjecent(n, id)
+        add_adjacent(id, n)
+        add_adjacent(n, id)
     }
 }
 
-// only adjecent with neighbour zones are tracked, defined one way but they are bidirectional
-def_adjecent("TUNISIA", ["I-2", "I-3", "I-4", "II-3"])
-def_adjecent("MOROCCO", ["V-1", "V-2", "V-7"])
+// only adjacent with neighbour zones are tracked, defined one way but they are bidirectional
+def_adjacent("TUNISIA", ["I-2", "I-3", "I-4", "II-3"])
+def_adjacent("MOROCCO", ["V-1", "V-2", "V-7"])
 
-def_adjecent("I-1", ["II-1", "III-2", "VI-1"])
-def_adjecent("I-3", ["V-8", "VI-1"])
-def_adjecent("I-4", ["II-1", "II-2", "II-3"])
+def_adjacent("I-1", ["II-1", "III-2", "VI-1"])
+def_adjacent("I-3", ["V-8", "VI-1"])
+def_adjacent("I-4", ["II-1", "II-2", "II-3"])
 
-def_adjecent("II-1", ["III-2", "III-3"])
+def_adjacent("II-1", ["III-2", "III-3"])
 
-def_adjecent("III-1", ["IV-1"])
-def_adjecent("III-2", ["IV-1", "VI-1"])
+def_adjacent("III-1", ["IV-1"])
+def_adjacent("III-2", ["IV-1", "VI-1"])
 
-def_adjecent("IV-1", ["VI-1", "VI-2"])
-def_adjecent("IV-2", ["V-4", "VI-2"])
+def_adjacent("IV-1", ["VI-1", "VI-2"])
+def_adjacent("IV-2", ["V-4", "VI-2"])
 
-def_adjecent("V-4", ["VI-2"])
-def_adjecent("V-6", ["VI-2"])
-def_adjecent("V-8", ["VI-1", "VI-2"])
+def_adjacent("V-4", ["VI-2"])
+def_adjacent("V-6", ["VI-2"])
+def_adjacent("V-8", ["VI-1", "VI-2"])
 
 data.locations = locations
 data.areas = areas
 data.zone_areas = zone_areas
-data.adjecents = adjecents
+data.adjacents = adjacents
 
 let units = []
 
