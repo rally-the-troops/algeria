@@ -17,7 +17,12 @@ let next_location_id = 0
 function def_area(id, name, type, zone) {
     let loc = next_location_id++
     locations[id] = loc
-    areas.push({loc, id, name, type, zone})
+    if (type && type !== COUNTRY && type !== URBAN)
+	    areas.push({loc, id, full_name: id + " " + name, name, type, zone})
+    else if (type === URBAN)
+	    areas.push({loc, id, full_name: id, name, type, zone})
+    else
+	    areas.push({loc, id, full_name: name, name, type, zone})
     if (zone) {
         if (!(zone in zone_areas)) {
             zone_areas[zone] = []

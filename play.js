@@ -786,7 +786,7 @@ function on_click_area_tip(x) { // eslint-disable-line no-unused-vars
 
 function sub_area_name(_match, p1, _offset, _string) {
 	let x = p1 | 0
-	let n = data.areas[x].name
+	let n = data.areas[x].full_name
 	return `<span class="tip" onmouseenter="on_focus_area_tip(${x})" onmouseleave="on_blur_area_tip(${x})" onclick="on_click_area_tip(${x})">${n}</span>`
 }
 
