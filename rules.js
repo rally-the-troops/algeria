@@ -167,12 +167,13 @@ function raise_fln_psl(amount) {
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	// can trigger victory
 	game.fln_psl += amount
-	logi(`FLN PSL +${amount}`)
 	if (game.fln_psl > MAX_PSL) {
 		let excess_psl = game.fln_psl - MAX_PSL
-		log(`FLN PSL exceeds ${MAX_PSL}`)
+		logi(`FLN PSL +${amount} (subtracted from Gov PSL)`)
 		game.fln_psl = MAX_PSL
 		lower_gov_psl(excess_psl)
+	} else {
+		logi(`FLN PSL +${amount}`)
 	}
 }
 
@@ -181,12 +182,13 @@ function raise_gov_psl(amount) {
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
 	// can trigger victory
 	game.gov_psl += amount
-	logi(`Government PSL +${amount}`)
 	if (game.gov_psl > MAX_PSL) {
 		let excess_psl = game.gov_psl - MAX_PSL
-		log(`Government PSL exceeds ${MAX_PSL}`)
+		logi(`Gov PSL +${amount} (subtracted from FLN PSL)`)
 		game.gov_psl = MAX_PSL
 		lower_fln_psl(excess_psl)
+	} else {
+		logi(`Gov PSL +${amount}`)
 	}
 }
 
@@ -200,7 +202,7 @@ function lower_fln_psl(amount) {
 function lower_gov_psl(amount, indent=true) {
 	if (amount <= 0)
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
-	let log_msg = `Government PSL -${amount}`
+	let log_msg = `Gov PSL -${amount}`
 	if (indent) {
 		logi(log_msg)
 	} else {
@@ -209,10 +211,13 @@ function lower_gov_psl(amount, indent=true) {
 	game.gov_psl = Math.max(0, game.gov_psl - amount)
 }
 
-function raise_fln_ap(amount) {
+function raise_fln_ap(amount, reason) {
 	if (amount <= 0)
 		throw Error(`ASSERT: amount > 0, but was ${amount}`)
-	logi(`FLN AP +${amount}`)
+	if (reason)
+		logi(`FLN AP +${amount} (${reason})`)
+	else
+		logi(`FLN AP +${amount}`)
 	game.fln_ap = Math.min(MAX_AP, game.fln_ap + amount)
 }
 
@@ -1144,11 +1149,11 @@ function check_victory() {
 	if (game.state === "game_over") return
 	if (game.gov_psl <= 0) {
 		let scale = victory_scale()
-		goto_game_over(FLN_NAME, `FLN wins: ${scale} victory.`)
+		goto_game_over(FLN_NAME, `FLN won: ${scale} victory.`)
 		return true
 	} else if (game.fln_psl <= 0) {
 		let scale = victory_scale()
-		goto_game_over(GOV_NAME, `Government wins: ${scale} victory.`)
+		goto_game_over(GOV_NAME, `Government won: ${scale} victory.`)
 		return true
 	}
 	return false
@@ -1163,11 +1168,11 @@ function check_shorter_victory() {
 		let leader = game.gov_psl > game.fln_psl ? GOV : FLN
 		if (game.shorter_victory_leader === GOV && leader === GOV) {
 			let scale = victory_scale()
-			goto_game_over(GOV_NAME, `Government wins: ${scale} Shorter Game victory.`)
+			goto_game_over(GOV_NAME, `Government won: ${scale} Shorter Game victory.`)
 			return true
 		} else if (game.shorter_victory_leader === FLN && leader === FLN) {
 			let scale = victory_scale()
-			goto_game_over(FLN_NAME, `FLN wins: ${scale} Shorter Game victory.`)
+			goto_game_over(FLN_NAME, `FLN won: ${scale} Shorter Game victory.`)
 			return true
 		}
 		game.shorter_victory_leader = leader
