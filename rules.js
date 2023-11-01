@@ -1110,7 +1110,7 @@ exports.view = function(state, player) {
 		view.prompt = game.victory
 	} else if (player !== game.active) {
 		let inactive = states[game.state].inactive || game.state
-		view.prompt = `Waiting for ${game.active} \u2014 ${inactive}...`
+		view.prompt = `Waiting for ${game.active} ${inactive}.`
 	} else {
 		view.actions = {}
 		if (game.undo && game.undo.length > 0)
