@@ -612,6 +612,15 @@ function is_algerian_unit(u) {
 	return units[u].type === AL_X
 }
 
+function has_airmobile_target(u) {
+	let has_target = false
+	for_each_algerian_map_area(loc => {
+		if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && (unit_loc(u) === loc || is_elite_unit(u) || has_unit_type_in_loc(FR_XX, loc)))
+			has_target = true
+	})
+	return has_target
+}
+
 function can_airmobilize_unit(u) {
 	return !is_unit_airmobile(u) && ([FR_X, EL_X, AL_X].includes(unit_type(u))) && [OPS, PTL].includes(unit_box(u))
 }
@@ -982,11 +991,11 @@ function count_patrol_units_in_loc(loc) {
 	return result
 }
 
-function has_gov_react_units_in_loc(loc) {
+function has_gov_react_units_for_loc(loc) {
 	let has_division = has_unit_type_in_loc(FR_XX, loc)
 	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
 		if (is_react_unit(u) && (unit_box(u) === PTL || unit_box(u) === OPS)) {
-			if (unit_loc(u) === loc || (is_unit_airmobile(u) && (has_division || is_elite_unit(u))))
+			if (unit_loc(u) === loc || ((is_unit_airmobile(u) || is_potential_airmobile_flush_unit(u)) && (has_division || is_elite_unit(u))))
 				return true
 		}
 	return false
@@ -2678,7 +2687,7 @@ function goto_gov_deployment_phase() {
 function can_airmobilize_any_unit() {
 	let result = false
 	for_each_friendly_unit_on_map(u => {
-		if (can_airmobilize_unit(u) && airmobilize_cost([u]) <= game.helo_avail)
+		if (can_airmobilize_unit(u) && has_airmobile_target(u) && airmobilize_cost([u]) <= game.helo_avail)
 			result = true
 	})
 	return result
@@ -3973,7 +3982,7 @@ function can_gov_react() {
 	let loc = unit_loc(game.contacted[0])
 	if (is_area_france(loc))
 		return false
-	return has_gov_react_units_in_loc(loc)
+	return has_gov_react_units_for_loc(loc)
 }
 
 states.gov_flush = {
@@ -3982,7 +3991,7 @@ states.gov_flush = {
 		view.prompt = "Flush: Select location."
 		let has_loc = false
 		for_each_algerian_map_area(loc => {
-			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_in_loc(loc)) {
+			if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && has_gov_react_units_for_loc(loc)) {
 				gen_action_loc(loc)
 				has_loc = true
 			}
@@ -4161,7 +4170,7 @@ states.gov_airmobilize_select_units = {
 		let cost = airmobilize_cost(game.selected)
 
 		for_each_friendly_unit_on_map(u => {
-			if ((can_airmobilize_unit(u) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
+			if ((can_airmobilize_unit(u) && has_airmobile_target(u) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
 				gen_action_unit(u)
 		})
 
