@@ -1779,12 +1779,13 @@ states.random_event = {
 }
 
 function goto_no_event() {
-	log_h3("No Event. Lucky you.")
+	log_event("No Event.")
+	log("Lucky you.")
 	end_random_event()
 }
 
 function goto_fln_foreign_arms_shipment() {
-	log_h3("FLN Foreign arms shipment.")
+	log_event("FLN Foreign arms shipment.")
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
 	let roll = roll_nd6(2)
 	logi(`-${game.naval} Naval PTS`)
@@ -1795,7 +1796,7 @@ function goto_fln_foreign_arms_shipment() {
 }
 
 function goto_jealousy_and_paranoia() {
-	log_h3("Jealousy and Paranoia.")
+	log_event("Jealousy and Paranoia.")
 	log("FLN units may not Move domestically this turn only")
 	// FLN units may not Move across wilaya borders this turn only (they may move across international borders)
 	game.events.jealousy_and_paranoia = true
@@ -1803,7 +1804,7 @@ function goto_jealousy_and_paranoia() {
 }
 
 function goto_elections_in_france() {
-	log_h3("Elections in France")
+	log_event("Elections in France")
 	// Government player rolls on the Coup Table (no DRM) and adds or subtracts
 	// the number of PSP indicated: no units are mobilized or removed.
 	roll_coup_table()
@@ -1811,7 +1812,7 @@ function goto_elections_in_france() {
 }
 
 function goto_un_debate() {
-	log_h3("UN debates Algerian Independence.")
+	log_event("UN debates Algerian Independence.")
 	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
 
 	if (game.gov_psl <= game.fln_psl) {
@@ -1843,7 +1844,7 @@ states.random_event_un_debate = {
 }
 
 function goto_fln_factional_purge() {
-	log_h3("FLN Factional Purge")
+	log_event("FLN Factional Purge")
 	// The Government player chooses one wilaya and rolls 1d6, neutralizing
 	// that number of FLN units there (the FLN player's choice which ones).
 	game.phasing = GOV_NAME
@@ -1928,7 +1929,7 @@ states.event_fln_factional_purge_select_units = {
 }
 
 function grant_morocco_tunisia_independence() {
-	log_h3("Morocco & Tunisia Gains Independence.")
+	log_event("Morocco & Tunisia Gains Independence.")
 	log_br()
 	// Raise both FLN and Government PSL by 2d6;
 	let fln_roll = roll_nd6(2)
@@ -1948,7 +1949,7 @@ function goto_morocco_tunisia_independence() {
 		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
 		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
 		// (represents infiltration of small numbers of weapons and troops through the borders).
-		log_h3("Infiltration through borders.")
+		log_event("Infiltration through borders.")
 		let roll = roll_1d6()
 		let [result, _effect] = roll_mst(roll)
 		if (result)
@@ -1963,7 +1964,7 @@ function goto_morocco_tunisia_independence() {
 }
 
 function goto_nato_pressure() {
-	log_h3("NATO pressures France to boost European defense.")
+	log_event("NATO pressures France to boost European defense.")
 	// The Government player rolls 1d6 and must remove that number of French Army brigades
 	// (a division counts as three brigades) from the map.
 	game.phasing = GOV_NAME
@@ -2027,7 +2028,7 @@ states.event_gov_nato_pressure_select_units = {
 }
 
 function goto_suez_crisis() {
-	log_h3("Suez Crisis.")
+	log_event("Suez Crisis.")
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
 		log("No Event.")
@@ -2095,14 +2096,14 @@ states.event_gov_suez_crisis_select_units = {
 }
 
 function goto_amnesty() {
-	log_h3("Amnesty")
+	log_event("Amnesty")
 	log("Gov. Civil Affairs & Suppression +1 DRM this turn.")
 	game.events.amnesty = true
 	end_random_event()
 }
 
 function goto_jean_paul_sartre() {
-	log_h3("Jean-Paul Sartre writes article condemning the war.")
+	log_event("Jean-Paul Sartre writes article condemning the war.")
 	// Reduce Government PSL by 1 PSP.
 	lower_gov_psl(1)
 	end_random_event()
@@ -5319,6 +5320,12 @@ function log_h1(msg) {
 function log_h2(msg) {
 	log_br()
 	log(".h2 " + msg)
+	log_br()
+}
+
+function log_event(msg) {
+	log_br()
+	log(".h3 " + msg)
 	log_br()
 }
 
