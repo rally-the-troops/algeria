@@ -49,15 +49,24 @@ main { background-color: dimgray }
 .role_psl { float: right; }
 
 #log { background-color: whitesmoke; }
-#log .h1 { background-color: silver; font-weight: bold; padding-top:4px; padding-bottom:4px; margin: 8px 0; text-align: center; }
-#log .h2 { background-color: gainsboro; padding-top:2px; padding-bottom:2px; text-align: center; }
-#log .h3 { text-decoration: underline; }
+#log .h1, #log .h2 {
+	font-weight: bold;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	text-align: center;
+	border-top: 1px solid black;
+	border-bottom: 1px solid black;
+}
+#log .h1 { background-color: silver; }
+#log .h2 { background-color: gainsboro; }
+
 
 #log .fln { background-color: #C1E1C1; }
 #log .gov { background-color: #BCDDFF; }
 #log .oas { background-color: black; color: whitesmoke }
 #log .both { background-image: linear-gradient(60deg, #C1E1C1, #BCDDFF); text-shadow: 0 0 4px white; }
 #log > .i { padding-left: 20px; }
+
 #log .hr {
 	background-color: darkgray;
 	margin: 9px 0;
@@ -172,11 +181,11 @@ svg .area.tip {
 
 .box {
 	pointer-events: none;
-	position:absolute;
-	box-sizing:border-box;
-	display:flex;
-	justify-content:center;
-	align-items:center;
+	position: absolute;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	flex-wrap: wrap;
 	gap: 4px;
 }
@@ -262,7 +271,7 @@ svg .area.tip {
 }
 
 .counter.neutralized {
-	border-color:grey;
+	border-color: grey;
 	background-color: lightgray;
 }
 
@@ -304,17 +313,9 @@ svg .area.tip {
 	background-color: var(--counter-fln-color);
 	border-color: color-mix(in srgb, var(--counter-fln-color) 45%, black);
 }
-.unit.neutralized[class*=' fr_x'] {
-	background-color: color-mix(in srgb, var(--counter-french-color) 40%, white);
-}
-.unit.neutralized[class*=' fr_elite_x_'] {
-	background-color: color-mix(in srgb, var(--counter-elite-color) 40%, white);
-}
-.unit.neutralized[class*=' alg_'] {
-	background-color: color-mix(in srgb, var(--counter-algerian-color) 40%, white);
-}
-.unit.neutralized[class*=' fln_'] {
-	background-color: color-mix(in srgb, var(--counter-fln-color) 40%, white);
+.unit.neutralized {
+	filter: grayscale(50%) brightness(125%);
+	border-color: #555;
 }
 
 .unit.fr_xx_2{background-position:0% 22.22222222222222%}
