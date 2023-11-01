@@ -369,7 +369,7 @@ function focus_stack(stack) {
 	if (focus !== stack) {
 		focus = stack
 		update_map()
-		return stack.length <= 1
+		return !stack || stack.length <= 1
 	}
 	return true
 }
