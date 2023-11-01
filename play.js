@@ -360,7 +360,7 @@ function is_loc_action(x) {
 var stack_cache = []
 var focus = null
 
-document.querySelector("main").addEventListener("mousedown", evt => { 
+document.querySelector("#map").addEventListener("mousedown", evt => {
 	if (evt.button === 0)
 		blur_stack()
 })
