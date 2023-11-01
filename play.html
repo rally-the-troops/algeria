@@ -90,6 +90,11 @@ main { background-color: dimgray }
 	border: 1px solid #222;
 }
 
+#mapwrap {
+	width: 1503px;
+	height: 1103px;
+}
+
 #map {
 	width: 1503px;
 	height: 1103px;
@@ -358,12 +363,11 @@ svg .area.tip {
 .panel {
 	max-width: 900px;
 	margin: 36px auto;
-	background-color: #808080;
+	background-color: #555;
 	border: 3px solid #555;
 }
 
 .panel_header {
-	background-color: #555;
 	color: white;
 	user-select: none;
 	font-weight: bold;
@@ -372,12 +376,17 @@ svg .area.tip {
 }
 
 .panel_body {
+	background-color: #808080;
 	display: flex;
 	justify-content: start;
 	flex-wrap: wrap;
 	padding: 20px;
 	gap: 14px;
 	min-height: 43px;
+}
+
+@media (max-width: 800px) {
+	section { min-width: 1503px; }
 }
 
 </style>
@@ -426,9 +435,10 @@ svg .area.tip {
 	<div id="log"></div>
 </aside>
 
-<main>
+<main data-map-width="1503" data-map-height="1103">
 
-<div id="map">
+	<div id="mapwrap">
+		<div id="map">
 
 <svg id="svgmap" width="1503px" height="1103px" viewBox="0 0 1503 1103">
 
@@ -579,45 +589,44 @@ svg .area.tip {
 </g>
 </svg>
 
-<div id="decor"></div>
+			<div id="decor"></div>
 
-<div id="boxes"></div>
+			<div id="boxes"></div>
 
-<div id="pieces">
-	<div id="turn_now" class="counter turn_now"></div>
-	<div id="fln_psl" class="counter fln_psl"></div>
-	<div id="fln_ap" class="counter fln_ap"></div>
-	<div id="gov_psl" class="counter gov_psl"></div>
-	<div id="air_avail" class="counter air_avail hide"></div>
-	<div id="air_max" class="counter air_max"></div>
-	<div id="helo_avail" class="counter helo_avail hide"></div>
-	<div id="helo_max" class="counter helo_max"></div>
-	<div id="naval" class="counter naval_pts"></div>
-	<div id="border_zone" class="counter border_zone hide"></div>
-</div>
+			<div id="pieces">
+				<div id="turn_now" class="counter turn_now"></div>
+				<div id="fln_psl" class="counter fln_psl"></div>
+				<div id="fln_ap" class="counter fln_ap"></div>
+				<div id="gov_psl" class="counter gov_psl"></div>
+				<div id="air_avail" class="counter air_avail hide"></div>
+				<div id="air_max" class="counter air_max"></div>
+				<div id="helo_avail" class="counter helo_avail hide"></div>
+				<div id="helo_max" class="counter helo_max"></div>
+				<div id="naval" class="counter naval_pts"></div>
+				<div id="border_zone" class="counter border_zone hide"></div>
+			</div>
 
-</div>
+		</div>
+	</div>
 
-<div id="gov_supply_panel" class="panel">
-<div id="gov_supply_header" class="panel_header">Government Available Forces</div>
-<div id="gov_supply" class="panel_body">
+	<section>
 
-</div>
-</div>
+		<div id="gov_supply_panel" class="panel">
+			<div id="gov_supply_header" class="panel_header">Government Available Forces</div>
+			<div id="gov_supply" class="panel_body"></div>
+		</div>
 
-<div id="fln_supply_panel" class="panel">
-<div id="fln_supply_header" class="panel_header">FLN Available Forces</div>
-<div id="fln_supply" class="panel_body">
+		<div id="fln_supply_panel" class="panel">
+			<div id="fln_supply_header" class="panel_header">FLN Available Forces</div>
+			<div id="fln_supply" class="panel_body"></div>
+		</div>
 
-</div>
-</div>
+		<div id="eliminated_panel" class="panel">
+			<div id="eliminated_header" class="panel_header">Eliminated / Out of Play</div>
+			<div id="eliminated" class="panel_body"></div>
+		</div>
 
-<div id="eliminated_panel" class="panel">
-<div id="eliminated_header" class="panel_header">Eliminated / Out of Play</div>
-<div id="eliminated" class="panel_body">
-
-</div>
-</div>
+	</section>
 
 </main>
 

@@ -505,7 +505,10 @@ function layout_stack(loc_id, box_id) {
 		e.my_stack = stack
 		e.style.left = x + "px"
 		e.style.top = y + "px"
-		e.style.zIndex = z++
+		if (is_unit_selected(e.my_id))
+			e.style.zIndex = 100 + z++
+		else
+			e.style.zIndex = z++
 		x += dx
 		y += dy
 	}
