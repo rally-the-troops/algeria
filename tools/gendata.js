@@ -130,9 +130,22 @@ const BAND = 6
 const CADRE = 7
 const FRONT = 8
 
-function def_unit(side, type, name, klass, evasion_contact, firepower, count = 1) {
+const unit_type_name = [
+	"French division",
+	"French brigade",
+	"French elite brigade",
+	"Algerian brigade",
+	"Police",
+	"Failek",
+	"Band",
+	"Cadre",
+	"Front",
+]
+
+function def_unit(side, type, full_name, className, evasion_contact, firepower, count = 1) {
+    let name = unit_type_name[type]
     for (let i = 0; i < count; ++i) {
-        units.push({side, type, name, class: klass, evasion_contact, firepower})
+        units.push({side, type, name: name, full_name, class: className, evasion_contact, firepower})
     }
 }
 
@@ -157,12 +170,12 @@ def_unit(GOV, EL_X, "French elite brigade", "fr_elite_x_inf", 2, 9)
 def_unit(GOV, EL_X, "French elite brigade", "fr_elite_x_marine", 2, 9, 3)
 
 def_unit(GOV, AL_X, "Algerian brigade", "alg_x", 1, 5, 6)
-def_unit(GOV, POL, "Algerian Police", "alg_police", 2, 2, 10)
+def_unit(GOV, POL, "Police", "alg_police", 2, 2, 10)
 
-def_unit(FLN, FAILEK, "FLN Failek", "fln_failek", 2, 4, 10)
-def_unit(FLN, BAND, "FLN Band", "fln_band", 3, 2, 24)
-def_unit(FLN, CADRE, "FLN Cadre", "fln_cadre", 4, 1, 30)
-def_unit(FLN, FRONT, "FLN Front", "fln_front", 3, 3, 16)
+def_unit(FLN, FAILEK, "Failek", "fln_failek", 2, 4, 10)
+def_unit(FLN, BAND, "Band", "fln_band", 3, 2, 24)
+def_unit(FLN, CADRE, "Cadre", "fln_cadre", 4, 1, 30)
+def_unit(FLN, FRONT, "Front", "fln_front", 3, 3, 16)
 
 console.log("const area_count =", areas.length)
 console.log("const unit_count =", units.length)

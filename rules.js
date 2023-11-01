@@ -34,15 +34,15 @@ const CADRE = 7
 const FRONT = 8
 
 const unit_type_name = [
-	"French Division",
-	"French Brigade",
-	"French Elite Brigade",
-	"Algerian Brigade",
-	"Algerian Police",
-	"FLN Failek",
-	"FLN Band",
-	"FLN Cadre",
-	"FLN Front",
+	"French division",
+	"French brigade",
+	"French elite brigade",
+	"Algerian brigade",
+	"Police",
+	"Failek",
+	"Band",
+	"Cadre",
+	"Front",
 ]
 
 // Free deployment holding box
@@ -561,7 +561,7 @@ function free_unit(u) {
 }
 
 function activate_oas() {
-	log("Gov. PSL ≤ 30: OAS Activated")
+	log("Gov PSL ≤ 30: OAS Activated")
 	game.oas = DEPLOY
 	game.oas_control = -1
 }
@@ -577,7 +577,7 @@ function roll_oas_control() {
 }
 
 function remove_oas() {
-	log("Gov. PSL ≥ 70: OAS Removed")
+	log("Gov PSL ≥ 70: OAS Removed")
 	game.oas = 0
 	game.oas_control = -1
 }
@@ -1203,7 +1203,7 @@ function goto_game_over(result, victory) {
 	game.victory = victory
 	log_h1("Game Over")
 	log(`FLN PSL ${game.fln_psl}`)
-	log(`Gov. PSL ${game.gov_psl}`)
+	log(`Gov PSL ${game.gov_psl}`)
 	log_br()
 	log(victory)
 	return true
@@ -1804,7 +1804,7 @@ function goto_jealousy_and_paranoia() {
 }
 
 function goto_elections_in_france() {
-	log_event("Elections in France")
+	log_event("Elections in France.")
 	// Government player rolls on the Coup Table (no DRM) and adds or subtracts
 	// the number of PSP indicated: no units are mobilized or removed.
 	roll_coup_table()
@@ -1844,7 +1844,7 @@ states.random_event_un_debate = {
 }
 
 function goto_fln_factional_purge() {
-	log_event("FLN Factional Purge")
+	log_event("FLN Factional Purge.")
 	// The Government player chooses one wilaya and rolls 1d6, neutralizing
 	// that number of FLN units there (the FLN player's choice which ones).
 	game.phasing = GOV_NAME
@@ -2096,8 +2096,8 @@ states.event_gov_suez_crisis_select_units = {
 }
 
 function goto_amnesty() {
-	log_event("Amnesty")
-	log("Gov. Civil Affairs & Suppression +1 DRM this turn.")
+	log_event("Amnesty.")
+	log("Government Civil Affairs & Suppression +1 DRM this turn.")
 	game.events.amnesty = true
 	end_random_event()
 }
@@ -2148,7 +2148,7 @@ function goto_gov_reinforcement_phase() {
 	})
 
 	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
-		log_h3("French Reaction: FLN PSL > Gov. PSL")
+		log_h3("French Reaction: FLN PSL > Gov PSL")
 		log_br()
 		game.events.french_reaction = true
 	}
@@ -2440,8 +2440,7 @@ states.gov_reinforcement = {
 
 function give_fln_ap() {
 	// Give AP
-	log_h3("Areas under FLN control:")
-
+	log("Areas under FLN control:")
 	log_br()
 
 	for_each_algerian_map_area(loc => {
@@ -2485,6 +2484,7 @@ function give_fln_ap() {
 	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
 	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
 	let psl_ap = Math.max(psl_percentage - game.naval, 0)
+	log_br()
 	log(`10% of ${game.fln_psl} PSL (- ${game.naval} Naval PTS)`)
 	if (psl_ap) {
 		raise_fln_ap(psl_ap)
@@ -2960,6 +2960,7 @@ states.fln_operations = {
 	inactive: "to do Operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass."
+		view.prompt = "Operations."
 
 		// check if any FLN missions can actually be performed
 		view.actions.propaganda = 0
@@ -3720,7 +3721,7 @@ function goto_combat() {
 	}
 	log(`FLN firepower ${fln_firepower}`)
 	game.combat.hits_on_gov = roll_crt(fln_firepower)
-	logi(`Hits on Gov. ${game.combat.hits_on_gov}`)
+	logi(`Hits on Gov ${game.combat.hits_on_gov}`)
 	log_br()
 
 	let gov_firepower = 0
@@ -3741,7 +3742,7 @@ function goto_combat() {
 		let roll = roll_nd6(game.mission_air_pts)
 		gov_firepower += roll
 	}
-	log(`Gov. firepower ${gov_firepower}${half_str}`)
+	log(`Gov firepower ${gov_firepower}${half_str}`)
 	game.combat.hits_on_fln = roll_crt(gov_firepower)
 	logi(`Hits on FLN ${game.combat.hits_on_fln}`)
 	log_br()
@@ -3780,7 +3781,7 @@ function end_combat() {
 	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
 
 	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
-		logi(`Gov. units neutralized`)
+		logi(`Gov units neutralized`)
 		for (let u of game.combat.gov_units) {
 			neutralize_unit(u)
 		}
@@ -3912,6 +3913,7 @@ states.gov_operations = {
 	inactive: "to do Operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission, or Pass."
+		view.prompt = "Operations."
 
 		// check if any GOV missions can actually be performed
 		view.actions.flush = 0
@@ -4105,7 +4107,7 @@ states.gov_flush_select_units = {
 			if (is_unit_airmobile(u) && unit_loc(u) !== loc)
 				set_unit_loc(u, loc)
 		}
-		log(`Combined Gov. contact ${contact_ratings}`)
+		log(`Combined Gov contact ${contact_ratings}`)
 
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or Flush is in a Remote area, or if a Terror marker is present; -1 if Flush is in an Urban area).
@@ -4309,7 +4311,7 @@ states.gov_react = {
 	},
 	no_react() {
 		clear_undo()
-		log("Gov. doesn't React")
+		log("Gov doesn't React")
 		end_gov_mission()
 	},
 	roll() {
@@ -4393,7 +4395,7 @@ states.gov_intelligence = {
 				contact_ratings += unit_contact(u)
 
 		})
-		log(`Combined Gov. contact ${contact_ratings}`)
+		log(`Combined Gov contact ${contact_ratings}`)
 
 		// (DRM: +1 if target unit has an Evasion rating higher than the total Contact ratings involved,
 		// or mission is in a Remote area, or if a Terror marker is present; -1 if mission is in an Urban area).
@@ -4709,14 +4711,14 @@ function determine_control() {
 			return
 		}
 
-		log(`A${loc} (FLN ${fln_pts[loc]} - Gov. ${gov_pts[loc]})`)
+		log(`A${loc} (FLN ${fln_pts[loc]} - Gov ${gov_pts[loc]})`)
 
 		if (fln_pts[loc] >= 2 * gov_pts[loc]) {
 			logi(`FLN Control`)
 			set_area_fln_control(loc)
 			return
 		} else if (gov_pts[loc] >= 2 * fln_pts[loc]) {
-			logi(`Gov. Control`)
+			logi(`Gov Control`)
 			set_area_gov_control(loc)
 			return
 		}
@@ -4726,7 +4728,7 @@ function determine_control() {
 		let fln_roll = roll_d6()
 		logi(`FLN rolled B${fln_roll}`)
 		let gov_roll = roll_d6()
-		logi(`Gov. rolled B${gov_roll}`)
+		logi(`Gov rolled B${gov_roll}`)
 
 		let fln_claim = fln_roll <= difference
 		let gov_claim = gov_roll <= difference
@@ -4735,7 +4737,7 @@ function determine_control() {
 			logi(`FLN Control`)
 			set_area_fln_control(loc)
 		} else if (gov_claim && !fln_claim) {
-			logi(`Gov. Control`)
+			logi(`Gov Control`)
 			set_area_gov_control(loc)
 		} else {
 			logi(`Contested`)
@@ -4767,11 +4769,11 @@ function gov_depreciate_asset(title, num_max) {
 	let loss = depreciation_loss_number(num_max)
 	let roll = roll_1d6()
 	if (game.gov_psl <= 30) {
-		logi("-1 Gov. PSL ≤ 30")
+		logi("-1 Gov PSL ≤ 30")
 		roll -= 1
 	}
 	if (game.gov_psl >= 70) {
-		logi("+1 Gov. PSL ≥ 70")
+		logi("+1 Gov PSL ≥ 70")
 		roll += 1
 	}
 	if (roll <= loss) {
@@ -4837,12 +4839,12 @@ function unit_and_area_recovery() {
 			roll += 1
 		}
 		if (is_gov_unit(u) && game.gov_psl <= 30) {
-			logi("-1 Gov. PSL ≤ 30")
+			logi("-1 Gov PSL ≤ 30")
 			roll -= 1
 		}
 		if (is_gov_unit(u)) {
 			if (game.gov_psl >= 70) {
-				logi("+1 Gov. PSL ≥ 70")
+				logi("+1 Gov PSL ≥ 70")
 				roll += 1
 			} else if (is_elite_unit(u)) {
 				logi("+1 Elite")
@@ -5145,7 +5147,7 @@ function final_psl_adjustment() {
 
 	if (game.gov_psl <= 30) {
 		log_br()
-		log("Gov. PSL ≤ 30: Coup d'etat?")
+		log("Gov PSL ≤ 30: Coup d'etat?")
 		let roll = roll_1d6()
 		if (is_area_france(game.oas)) {
 			logi("+1 OAS deployed in France")
@@ -5228,7 +5230,7 @@ function continue_final_psl_adjustment() {
 			gov_control += 1
 		}
 	})
-	log(`Area control FLN ${fln_control} - Gov. ${gov_control}`)
+	log(`Area control FLN ${fln_control} - Gov ${gov_control}`)
 	let control_adjust = Math.floor(Math.abs(fln_control - gov_control) / 2)
 	if (control_adjust > 0) {
 		if (fln_control > gov_control) {
@@ -5330,7 +5332,7 @@ function log_h2(msg) {
 
 function log_event(msg) {
 	log_br()
-	log(".h3 " + msg)
+	log(msg)
 	log_br()
 }
 

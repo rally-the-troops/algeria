@@ -401,7 +401,7 @@ function on_focus_loc(evt) {
 }
 
 function on_focus_unit(evt) {
-	document.getElementById("status").textContent = data.units[evt.target.my_id].name
+	document.getElementById("status").textContent = data.units[evt.target.my_id].full_name
 }
 
 function on_blur(_evt) {
@@ -440,7 +440,7 @@ function layout_track(track, e) {
 
 	e.style.left = x + (dx * n) + "px"
 	e.style.top = y + (dy * n) + "px"
-	e.style.zIndex = track * 4 + n
+	e.style.zIndex = n
 
 	track_count[track] = n + 1
 }
@@ -869,9 +869,11 @@ function on_update() { // eslint-disable-line no-unused-vars
 	action_button("intelligence", "Intelligence")
 	action_button("civil_affairs", "Civil Affairs")
 	action_button("suppression", "Suppression")
-	action_button("population_resettlement", "Population Resettlement")
+	//action_button("population_resettlement", "Population Resettlement")
+	action_button("population_resettlement", "Resettlement")
 
-	action_button("gov_mission", "Government Mission")
+	//action_button("gov_mission", "Government Mission")
+	action_button("gov_mission", "Government")
 	action_button("use_air_point", "Air Point")
 	action_button("airmobilize", "Airmobilize")
 	action_button("no_react", "No React")
