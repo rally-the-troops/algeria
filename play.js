@@ -367,7 +367,6 @@ document.querySelector("#map").addEventListener("mousedown", evt => {
 
 function focus_stack(stack) {
 	if (focus !== stack) {
-		console.log("FOCUS STACK", stack)
 		focus = stack
 		update_map()
 		return stack.length <= 1
@@ -377,7 +376,6 @@ function focus_stack(stack) {
 
 function blur_stack() {
 	if (focus !== null) {
-		console.log("BLUR STACK")
 		focus = null
 	}
 	update_map()
@@ -393,9 +391,7 @@ function on_click_unit(evt) {
 
 function on_click_loc(evt) {
 	if (evt.button === 0) {
-		let loc = parseInt(evt.target.dataset.loc)
-		console.log('loc', loc)
-		if (send_action('loc', loc))
+		if (send_action('loc', evt.target.my_id))
 			evt.stopPropagation()
 	}
 }
@@ -537,7 +533,6 @@ function build_units() {
 
 function create_tracker(i, x, y) {
 	let e = ui.tracker[i] = document.createElement("div")
-	e.dataset.id = i
 	if (i % 5 === 0)
 		e.className = "box track5"
 	else
@@ -555,7 +550,6 @@ const DRM_DY = 0
 
 function create_border_zone(i, label) {
 	let e = document.createElement("div")
-	e.dataset.id = i
 	e.className = "box drm_track"
 	e.style.left = (DRM_X + i * DRM_DX) + "px"
 	e.style.top = (DRM_Y + i * DRM_DY) + "px"
@@ -568,7 +562,6 @@ const COUNTRY = 4
 function create_area(i, _area_id, area_name, _type) {
 	let area_name_css = area_name.replaceAll(' ', '-')
 	let e = ui.areas[i] = document.querySelector(`#svgmap #${area_name_css}`)
-	e.dataset.loc = data.areas[i].loc
 	e.my_id = i
 	e.addEventListener("mousedown", on_click_loc)
 	e.addEventListener("mouseenter", on_focus_loc)
@@ -577,7 +570,6 @@ function create_area(i, _area_id, area_name, _type) {
 
 function create_area_u(i, sel) {
 	let e = document.querySelector(sel)
-	e.dataset.loc = data.areas[i].loc
 	e.my_id = i
 	e.addEventListener("mousedown", on_click_loc)
 	e.addEventListener("mouseenter", on_focus_loc)
@@ -597,7 +589,6 @@ function create_area_markers(i, area_id, area_name) {
 
 	let e = document.createElement("div")
 	e.id = `area-marker-${area_id}`
-	e.dataset.loc = data.areas[i].loc
 	e.className = "area_markers"
 	e.style.left = x - (box_w / 2) + "px"
 	e.style.top = y - (box_h / 2) + "px"
@@ -803,14 +794,13 @@ function update_map() {
 		ui.areas_u[loc].classList.toggle("target", is_loc_selected(loc))
 	}
 
-	for (let i = 0; i < ui.areas.length; ++i) {
-		let e = ui.areas[i]
+	for (let loc = 0; loc < data.areas.length; ++loc) {
+		let e = ui.areas[loc]
 		if (e) {
-			let loc = parseInt(e.dataset.loc)
 			e.classList.toggle("action", is_loc_action(loc))
 			e.classList.toggle("target", is_loc_selected(loc))
 
-			let em = ui.area_markers[i]
+			let em = ui.area_markers[loc]
 			if (em) {
 				if (!is_area_country(loc)) {
 					em.fln_control.classList.toggle("hide", !is_area_fln_control(loc))
