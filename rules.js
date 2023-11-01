@@ -3440,7 +3440,14 @@ states.fln_move = {
 
 			// Allow deselect
 			gen_action_unit(first_unit)
+			view.actions.undo = 1
 		}
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -3510,8 +3517,16 @@ states.fln_raid = {
 				}
 			})
 
+			view.actions.undo = 1
+
 			gen_action("roll")
 		}
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -3628,7 +3643,15 @@ states.fln_harass = {
 				if (!has_target || set_has(game.selected, u))
 					gen_action_unit(u)
 			})
+
+			view.actions.undo = 1
 		}
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -4022,6 +4045,8 @@ states.gov_flush_select_units = {
 				gen_action_unit(first_unit)
 			}
 
+			view.actions.undo = 1
+
 			gen_action("roll")
 		}
 	},
@@ -4033,6 +4058,12 @@ states.gov_flush_select_units = {
 		push_undo()
 		game.air_avail -= 1
 		game.mission_air_pts += 1
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -4221,8 +4252,16 @@ states.gov_react = {
 				gen_action_unit(first_unit)
 			}
 
+			view.actions.undo = 1
+
 			gen_action("roll")
 		}
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	airmobilize() {
 		push_undo()
@@ -4974,9 +5013,17 @@ states.gov_coup_attempt_free_mobilize = {
 					})
 				}
 			}
+
+			view.actions.undo = 1
 		}
 
 		gen_action("done")
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
@@ -5034,6 +5081,14 @@ states.gov_coup_attempt_select_units = {
 		if (target >= game.events.gov_remove_num) {
 			gen_action("done")
 		}
+
+		view.actions.undo = 1
+	},
+	undo() {
+		if (game.selected.length > 0)
+			set_clear(game.selected)
+		else
+			pop_undo()
 	},
 	unit(u) {
 		set_toggle(game.selected, u)
