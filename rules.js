@@ -1971,9 +1971,9 @@ function goto_nato_pressure() {
 }
 
 states.event_gov_nato_pressure_select_units = {
-	inactive: "to do NATO pressure",
+	inactive: "to do NATO Pressure",
 	prompt() {
-		view.prompt = `NATO pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map.`
+		view.prompt = `NATO Pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map.`
 
 		let target = 0
 		for (let u of game.selected) {
