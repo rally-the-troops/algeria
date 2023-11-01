@@ -1559,7 +1559,7 @@ states.scenario_setup = {
 
 			if (current_player_quick_setup()) {
 				// only allow quick-setup as the very first action
-				if (game.undo.length === 0)
+				if (game.undo && game.undo.length === 0)
 					view.actions.quick_setup = 1
 			}
 		} else {
