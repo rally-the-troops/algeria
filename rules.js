@@ -3042,6 +3042,8 @@ function reduce_unit(u, type) {
 	}
 	set_unit_loc(n, loc)
 	set_unit_box(n, box)
+	if (is_unit_neutralized(u))
+		set_unit_neutralized(n)
 	free_unit(u)
 	return n
 }
