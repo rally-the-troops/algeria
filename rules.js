@@ -5082,7 +5082,8 @@ states.gov_coup_attempt_select_units = {
 			gen_action("done")
 		}
 
-		view.actions.undo = 1
+		if (game.selected.length > 0)
+			view.actions.undo = 1
 	},
 	undo() {
 		if (game.selected.length > 0)
