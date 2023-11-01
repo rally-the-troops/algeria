@@ -3989,6 +3989,9 @@ states.gov_flush_select_units = {
 					gen_action_unit(u)
 				}
 			})
+
+			if (game.helo_avail && can_airmobilize_any_unit())
+				gen_action("airmobilize")
 		} else {
 			let first_unit = game.selected[0]
 
@@ -4021,9 +4024,6 @@ states.gov_flush_select_units = {
 
 			gen_action("roll")
 		}
-
-		if (game.helo_avail && can_airmobilize_any_unit())
-			gen_action("airmobilize")
 	},
 	airmobilize() {
 		push_undo()
@@ -4186,6 +4186,9 @@ states.gov_react = {
 				}
 			})
 
+			if (game.helo_avail && can_airmobilize_any_unit())
+				gen_action("airmobilize")
+
 			gen_action("no_react")
 		} else {
 			let first_unit = game.selected[0]
@@ -4220,8 +4223,6 @@ states.gov_react = {
 
 			gen_action("roll")
 		}
-		if (game.helo_avail && can_airmobilize_any_unit())
-			gen_action("airmobilize")
 	},
 	airmobilize() {
 		push_undo()
