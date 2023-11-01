@@ -612,10 +612,14 @@ function is_algerian_unit(u) {
 	return units[u].type === AL_X
 }
 
-function has_airmobile_target(u) {
+function has_loc_as_airmobile_target(u, loc) {
+	return has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && (unit_loc(u) === loc || is_elite_unit(u) || has_unit_type_in_loc(FR_XX, loc))
+}
+
+function has_any_airmobile_target(u) {
 	let has_target = false
 	for_each_algerian_map_area(loc => {
-		if (has_enemy_unit_in_loc_boxes(loc, [OPS, OC]) && (unit_loc(u) === loc || is_elite_unit(u) || has_unit_type_in_loc(FR_XX, loc)))
+		if (has_loc_as_airmobile_target(u, loc))
 			has_target = true
 	})
 	return has_target
@@ -690,7 +694,7 @@ function is_harass_unit(u) {
 }
 
 function is_potential_airmobile_flush_unit(u) {
-	return can_airmobilize_unit(u) && airmobilize_cost([u]) <= game.helo_avail && is_unit_not_neutralized(u) && has_enemy_unit_in_boxes([OPS, OC])
+	return can_airmobilize_unit(u) && airmobilize_cost([u]) <= game.helo_avail && is_unit_not_neutralized(u)
 }
 
 function is_airmobile_flush_unit(u) {
@@ -2687,7 +2691,7 @@ function goto_gov_deployment_phase() {
 function can_airmobilize_any_unit() {
 	let result = false
 	for_each_friendly_unit_on_map(u => {
-		if (can_airmobilize_unit(u) && has_airmobile_target(u) && airmobilize_cost([u]) <= game.helo_avail)
+		if (can_airmobilize_unit(u) && has_any_airmobile_target(u) && airmobilize_cost([u]) <= game.helo_avail)
 			result = true
 	})
 	return result
@@ -4169,10 +4173,21 @@ states.gov_airmobilize_select_units = {
 	prompt() {
 		let cost = airmobilize_cost(game.selected)
 
-		for_each_friendly_unit_on_map(u => {
-			if ((can_airmobilize_unit(u) && has_airmobile_target(u) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
-				gen_action_unit(u)
-		})
+		if (game.contacted.length) {
+			// React
+			let loc = unit_loc(game.contacted[0])
+
+			for_each_friendly_unit_on_map(u => {
+				if ((can_airmobilize_unit(u) && has_loc_as_airmobile_target(u, loc) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
+					gen_action_unit(u)
+			})
+		} else {
+			// Flush
+			for_each_friendly_unit_on_map(u => {
+				if ((can_airmobilize_unit(u) && has_any_airmobile_target(u) && (cost + airmobilize_cost([u]) <= game.helo_avail)) || set_has(game.selected, u))
+					gen_action_unit(u)
+			})
+		}
 
 		if (!game.selected.length) {
 			view.prompt = `Airmobilize: Select mobile brigade unit(s) to airmobilize.`
