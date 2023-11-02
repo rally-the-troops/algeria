@@ -564,19 +564,22 @@ function free_unit(u) {
 }
 
 function activate_oas() {
-	log("Gov PSL ≤ 30: OAS Activated")
+	log("Gov PSL ≤ 30:")
+	logi("OAS Activated")
 	game.oas = DEPLOY
 	game.oas_control = -1
 }
 
 function roll_oas_control() {
-	let roll = roll_1d6()
+	let roll = roll_d6()
+	log(`OAS Control B${roll}`)
 	if (roll <= 3) {
+		logi("FLN")
 		game.oas_control = FLN
 	} else {
+		logi("Government")
 		game.oas_control = GOV
 	}
-	logi(`Controlled by ${player_name(game.oas_control)}.`)
 }
 
 function remove_oas() {
@@ -2205,6 +2208,7 @@ states.place_oas = {
 		push_undo()
 		game.oas = to
 		log(`OAS placed in A${to}.`)
+		log_br()
 
 		if (is_gov_player()) {
 			game.state = "gov_reinforcement"
@@ -4820,7 +4824,7 @@ function end_operations_phase() {
 }
 
 function determine_control() {
-	log_h3("Determine Control")
+	log_h3("Control")
 
 	let fln_pts = new Array(area_count).fill(0)
 	let gov_pts = new Array(area_count).fill(0)
@@ -4936,9 +4940,12 @@ function depreciation_loss_number(pts) {
 }
 
 function gov_depreciate_asset(title, num_max) {
-	log(`${title} ${num_max}`)
 	let loss = depreciation_loss_number(num_max)
-	let roll = roll_1d6()
+	let roll = roll_d6()
+
+	log(`${title} G${roll}`)
+	logi(`Loss ${loss} of ${num_max}`)
+
 	if (game.gov_psl <= 30) {
 		logi("-1 Gov PSL ≤ 30")
 		roll -= 1
@@ -4947,12 +4954,15 @@ function gov_depreciate_asset(title, num_max) {
 		logi("+1 Gov PSL ≥ 70")
 		roll += 1
 	}
+
 	if (roll <= loss) {
 		num_max = Math.max(num_max - loss, 0)
-		logi(`${title} -${loss}`)
+		log(`Lost ${loss}.`)
 	} else {
-		logi(`No change`)
+		log(`No change.`)
 	}
+	log_br()
+
 	return num_max
 }
 
@@ -4961,7 +4971,6 @@ function gov_depreciation() {
 		return;
 	}
 
-	log_h3("Government Asset Depreciation")
 	if (game.air_max) {
 		game.air_max = gov_depreciate_asset('Air Max', game.air_max)
 	}
@@ -4975,8 +4984,12 @@ function fln_depreciation() {
 		return;
 	}
 
-	log_h3("FLN unused AP Depreciation")
-	let roll = roll_1d6()
+	let roll = roll_d6()
+	let loss = depreciation_loss_number(game.fln_ap)
+
+	log("Unused FLN AP F" + roll)
+	logi(`Loss ${loss} of ${game.fln_ap}`)
+
 	if (game.fln_psl <= 30) {
 		logi("-1 FLN PSL ≤ 30")
 		roll -= 1
@@ -4985,59 +4998,86 @@ function fln_depreciation() {
 		logi("+1 FLN PSL ≥ 70")
 		roll += 1
 	}
-	let loss = depreciation_loss_number(game.fln_ap)
+
 	if (roll <= loss) {
 		game.fln_ap = Math.max(game.fln_ap - loss, 0)
-		logi(`AP -${loss}`)
+		log(`Lost ${loss}.`)
 	} else {
-		logi(`No change`)
+		log(`No change.`)
 	}
 }
 
 function unit_and_area_recovery() {
 	log_h3("Recovery of Neutralized Units")
-	for_each_neutralized_unit_in_algeria(u => {
-		let loc = unit_loc(u)
-		log(`U${u} in A${loc}`)
 
-		let roll = roll_1d6()
-		if (is_fln_unit(u) && game.fln_psl <= 30) {
-			logi("-1 FLN PSL ≤ 30")
-			roll -= 1
-		}
-		if (is_fln_unit(u) && game.fln_psl >= 70) {
-			logi("+1 FLN PSL ≥ 70")
-			roll += 1
-		}
-		if (is_gov_unit(u) && game.gov_psl <= 30) {
-			logi("-1 Gov PSL ≤ 30")
-			roll -= 1
-		}
-		if (is_gov_unit(u)) {
-			if (game.gov_psl >= 70) {
-				logi("+1 Gov PSL ≥ 70")
-				roll += 1
-			} else if (is_elite_unit(u)) {
-				logi("+1 Elite")
-				roll += 1
+	let gov_drm = 0
+	let fln_drm = 0
+
+	if (game.gov_psl <= 30) {
+		log("Gov Modifier")
+		logi("-1 for PSL ≤ 30")
+		gov_drm -= 1
+	}
+	else if (game.gov_psl >= 70) {
+		log("Gov Modifier")
+		logi("+1 for PSL ≥ 70")
+		gov_drm += 1
+	}
+
+	if (game.fln_psl <= 30) {
+		log("FLN Modifier")
+		logi("-1 for PSL ≤ 30")
+		fln_drm -= 1
+	}
+	else if (game.fln_psl >= 70) {
+		log("FLN Modifier")
+		logi("+1 for PSL ≥ 70")
+		fln_drm += 1
+	}
+
+	log_br()
+
+	for (let loc = 0; loc < area_count; ++loc) {
+		let first = true
+		for_each_neutralized_unit_in_algeria(u => {
+			if (unit_loc(u) !== loc)
+				return
+			if (first) {
+				log("A" + loc)
+				first = false
 			}
-		}
+			let roll = roll_d6()
 
-		if (roll >= 5) {
-			logi("Recovered")
-			clear_unit_neutralized(u)
-		} else {
-			logi("Not recovered")
-		}
-	})
+			let drm = 0
+			if (is_gov_unit(u)) {
+				logi(`U${u} G${roll}`)
+				drm + gov_drm
+				if (is_elite_unit(u)) {
+					logii("+1 Elite")
+					drm += 1
+				}
+			} else {
+				logi(`U${u} F${roll}`)
+				drm + fln_drm
+			}
+
+			if (roll + drm >= 5) {
+				logii("Recovered")
+				clear_unit_neutralized(u)
+			} else {
+				logii("Not recovered")
+			}
+		})
+	}
 
 	log_h3("Recovery of Terrorized Areas")
+
 	for_each_algerian_map_area(loc => {
 		if (is_area_terrorized(loc)) {
-			log(`A${loc}`)
-			let roll = roll_1d6()
+			let roll = roll_d6()
+			log(`A${loc} B${roll}`)
 			if (!has_fln_not_neutralized_unit_in_loc(loc)) {
-				logi("+1 no active FLN")
+				logi("+1 No active FLN")
 				roll += 1
 			}
 			if (roll >= 5) {
@@ -5057,7 +5097,7 @@ function restore_air_helo_avail() {
 }
 
 function unit_redeployment() {
-	log_h3("Redeployment")
+	// log_h3("Redeployment")
 	for_each_non_neutralized_unit_in_algeria(u => {
 		// let loc = unit_loc(u)
 		let box = unit_box(u)
@@ -5081,73 +5121,56 @@ function unit_redeployment() {
 }
 
 function roll_coup_table(oas_drm=false) {
-	let coup = roll_nd6(2)
+	let d1 = roll_d6()
+	let d2 = roll_d6()
+
+	log_br()
+	log(`Coup attempt G${d1+d2}`)
+
+	let coup = d1 + d2
 	if (oas_drm) {
 		logi("+1 OAS deployed in France")
 		coup += 1
 	}
+
 	let delta_psp = 0
 
-	const prefix="Outcome: "
 	if (coup === 2) {
-		log(`${prefix}Wild success`) //: +3d6 PSP, mobilize 2d6 PSP of units for free
-		delta_psp = roll_nd6(3)
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Wild success`) //: +3d6 PSP, mobilize 2d6 PSP of units for free
+		delta_psp = roll_nd6(3, "G", "Gained")
 		raise_gov_psl(delta_psp)
 		return 'wild_success'
 	} else if (coup <= 4) {
-		log(`${prefix}Big success`) //: +2d6 PSP, mobilize 1d6 PSP of units for free
-		delta_psp = roll_nd6(2)
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Big success`) //: +2d6 PSP, mobilize 1d6 PSP of units for free
+		delta_psp = roll_nd6(2, "G", "Gained")
 		raise_gov_psl(delta_psp)
 		return 'big_success'
 	} else if (coup <= 6) {
-		log(`${prefix}Success`) //: +1d6 PSP
-		delta_psp = roll_1d6()
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Success`) //: +1d6 PSP
+		delta_psp = roll_nd6(1, "G", "Gained")
 		raise_gov_psl(delta_psp)
 		return 'success'
 	} else if (coup === 7) {
-		log(`${prefix}Fizzle`) //: -1d6 PSP
-		delta_psp = roll_1d6()
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Fizzle`) //: -1d6 PSP
+		delta_psp = roll_nd6(1, "W", "Lost")
 		lower_gov_psl(delta_psp)
 		return 'fizzle'
 	} else if (coup <= 9) {
-		log(`${prefix}Failure`) //: -2d6 PSP, remove 1 elite unit from the game
-		delta_psp = roll_nd6(2)
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Failure`) //: -2d6 PSP, remove 1 elite unit from the game
+		delta_psp = roll_nd6(2, "W", "Lost")
 		lower_gov_psl(delta_psp)
 		return 'failure'
 	} else {
-		log(`${prefix}Abject failure`) //: -3d6 PSP, remove 1d6 elite units from the game
-		delta_psp = roll_nd6(3)
-		if (oas_drm) {
-			logi("+1 OAS deployed in France")
-			delta_psp += 1
-		}
+		logi(`Abject failure`) //: -3d6 PSP, remove 1d6 elite units from the game
+		delta_psp = roll_nd6(3, "W", "Lost")
 		lower_gov_psl(delta_psp)
 		return 'abject_failure'
 	}
 }
 
 function coup_attempt() {
-	log_h3("Coup attempt")
+	let d1, d2, roll
+
 	let result = roll_coup_table(is_area_france(game.oas))
 	if (check_victory())
 		return
@@ -5155,24 +5178,28 @@ function coup_attempt() {
 	// mobilize / remove units
 	switch (result) {
 	case 'wild_success':
-		log("mobilize 2d6 PSP of units for free")
-		goto_coup_attempt_free_mobilize(roll_nd6(2))
+		d1 = roll_d6()
+		d2 = roll_d6()
+		log(`Mobilize G${d1} G${d2} PSP of units for free.`)
+		goto_coup_attempt_free_mobilize(d1 + d2)
 		break
 	case 'big_success':
-		log("mobilize 1d6 PSP of units for free")
-		goto_coup_attempt_free_mobilize(roll_1d6())
+		d1 = roll_d6()
+		log(`Mobilize G${d1} PSP of units for free.`)
+		goto_coup_attempt_free_mobilize(d1)
 		break
 	case 'success':
 	case 'fizzle':
 		continue_final_psl_adjustment()
 		break
 	case 'failure':
-		log("remove 1 elite unit from the game")
+		log("Remove 1 elite unit from the game.")
 		goto_coup_attempt_remove_elite(1)
 		break
 	case 'abject_failure':
-		log("remove 1d6 elite units from the game")
-		goto_coup_attempt_remove_elite(roll_1d6())
+		d1 = roll_d6()
+		log("Remove G${d1} elite units from the game.")
+		goto_coup_attempt_remove_elite(d1)
 		break
 	default:
 		throw Error("Unknown coup result: " + result)
@@ -5313,21 +5340,22 @@ states.gov_coup_attempt_select_units = {
 }
 
 function final_psl_adjustment() {
-	log_h3("Final PSL Adjustment")
+	log_h3("Political Support Adjustment")
 
 	if (game.gov_psl <= 30) {
-		log_br()
-		log("Gov PSL ≤ 30: Coup d'etat?")
-		let roll = roll_1d6()
+		//log("Gov PSL ≤ 30")
+		let roll = roll_d6()
+		log(`Coup d'etat G${roll}`)
 		if (is_area_france(game.oas)) {
 			logi("+1 OAS deployed in France")
 			roll += 1
 		}
 		if (roll >= 6) {
+			logi("Coup attempt!")
 			coup_attempt()
 			return
 		} else {
-			logi("No Coup attempt.")
+			logi("No coup")
 		}
 	}
 	continue_final_psl_adjustment()
@@ -5336,13 +5364,15 @@ function final_psl_adjustment() {
 function continue_final_psl_adjustment() {
 	game.state = "turn_interphase"
 
+	log_br()
+
 	if (game.oas) {
 		log_br()
 		if (is_area_algerian(game.oas)) {
-			log("OAS deployed in Algeria")
+			log("OAS deployed in Algeria.")
 			lower_gov_psl(1)
 		} else if (is_area_france(game.oas)) {
-			log("OAS deployed in France")
+			log("OAS deployed in France.")
 			lower_gov_psl(2)
 		}
 	}
@@ -5357,7 +5387,12 @@ function continue_final_psl_adjustment() {
 
 	if (gov_area_adjust > 0) {
 		log_br()
-		log("Areas Terrorized or Resettled")
+		log("Terrorized or Resettled areas.")
+		for_each_algerian_map_area(loc => {
+			if (is_area_terrorized(loc) || is_area_resettled(loc)) {
+				logi("A" + loc)
+			}
+		})
 		lower_gov_psl(gov_area_adjust)
 		if (check_victory())
 			return
@@ -5365,8 +5400,8 @@ function continue_final_psl_adjustment() {
 
 	if (!has_fln_not_neutralized_mobile_unit_in_algeria()) {
 		log_br()
-		log("No non-neutralized FLN mobile units present in Algeria")
-		let roll = roll_nd6(3)
+		log("No non-neutralized FLN mobile units present in Algeria.")
+		let roll = roll_nd6(3, "F", "Lost")
 		lower_fln_psl(roll)
 		if (check_victory())
 			return
@@ -5381,7 +5416,7 @@ function continue_final_psl_adjustment() {
 		let fln_firepower_adjust = Math.floor(firepower * 0.1)
 		if (fln_firepower_adjust) {
 			log_br()
-			log("Total Firepower of FLN mobile units in Morocco and/or Tunisia x 10%")
+			log("Total Firepower of FLN mobile units in Morocco and/or Tunisia x 10%.")
 			raise_fln_psl(fln_firepower_adjust)
 		}
 		if (check_victory())
@@ -5400,7 +5435,9 @@ function continue_final_psl_adjustment() {
 			gov_control += 1
 		}
 	})
-	log(`Area control FLN ${fln_control} - Gov ${gov_control}`)
+	log(`Side that controls more areas.`)
+	logi(`${gov_control} Gov`)
+	logi(`${fln_control} FLN`)
 	let control_adjust = Math.floor(Math.abs(fln_control - gov_control) / 2)
 	if (control_adjust > 0) {
 		if (fln_control > gov_control) {
@@ -5423,6 +5460,8 @@ function goto_turn_interphase() {
 	log_h2("Turn Interphase")
 
 	determine_control()
+
+	log_h3("Depreciation")
 	gov_depreciation()
 	fln_depreciation()
 
@@ -5593,14 +5632,14 @@ function roll_1d6() {
 	return roll
 }
 
-function roll_nd6(n, prefix = "Rolled") {
+function roll_nd6(n, color="B", prefix="Rolled") {
 	clear_undo()
 	let result = 0
 	let summary = []
 	for (let i = 0; i < n; ++i) {
 		let roll = roll_d6()
 		result += roll
-		summary.push("B" + roll)
+		summary.push(color + roll)
 	}
 	log(prefix + " " + summary.join(" "))
 	return result
