@@ -207,8 +207,8 @@ function lower_gov_psl(amount) {
 }
 
 function raise_fln_ap(amount, reason) {
-	if (amount <= 0)
-		throw Error(`ASSERT: amount > 0, but was ${amount}`)
+	if (amount < 0)
+		throw Error(`ASSERT: amount >= 0, but was ${amount}`)
 	if (reason)
 		logp(`FLN AP +${amount} (${reason})`)
 	else
