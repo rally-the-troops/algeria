@@ -4216,12 +4216,10 @@ states.gov_flush_select_units = {
 			// The Government player rolls to contact each FLN unit that is currently in the OPS or OC boxes
 			// by rolling equal to or less than this number, moving contacted units to one side.
 			if (roll <= contact_ratings) {
-				//log("Contact.")
 				logi("Contact")
 				set_add(game.contacted, u)
 			} else {
 				logi("No contact")
-				//log("No contact.")
 			}
 			log_br()
 		})
@@ -4538,12 +4536,10 @@ states.gov_intelligence = {
 
 			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
 			if (roll <= contact_ratings) {
-				//log(`Contact.`)
 				logi("Contact")
 				set_unit_box(u, OC)
 			} else {
 				logi("No contact")
-				//log(`No contact.`)
 			}
 			log_br()
 		})
@@ -5007,33 +5003,6 @@ function fln_depreciation() {
 function unit_and_area_recovery() {
 	log_h3("Recovery of Neutralized Units")
 
-	let gov_drm = 0
-	let fln_drm = 0
-
-	if (game.gov_psl <= 30) {
-		log("Gov Modifier")
-		logi("-1 for PSL ≤ 30")
-		gov_drm -= 1
-	}
-	else if (game.gov_psl >= 70) {
-		log("Gov Modifier")
-		logi("+1 for PSL ≥ 70")
-		gov_drm += 1
-	}
-
-	if (game.fln_psl <= 30) {
-		log("FLN Modifier")
-		logi("-1 for PSL ≤ 30")
-		fln_drm -= 1
-	}
-	else if (game.fln_psl >= 70) {
-		log("FLN Modifier")
-		logi("+1 for PSL ≥ 70")
-		fln_drm += 1
-	}
-
-	log_br()
-
 	for (let loc = 0; loc < area_count; ++loc) {
 		let first = true
 		for_each_neutralized_unit_in_algeria(u => {
@@ -5048,14 +5017,28 @@ function unit_and_area_recovery() {
 			let drm = 0
 			if (is_gov_unit(u)) {
 				logi(`U${u} G${roll}`)
-				drm + gov_drm
-				if (is_elite_unit(u)) {
+				if (game.gov_psl <= 30) {
+					logii("-1 Gov PSL ≤ 30")
+					drm += 1
+				}
+				if (game.gov_psl >= 70) {
+					logii("+1 Gov PSL ≥ 70")
+					drm += 1
+				}
+				else if (is_elite_unit(u)) {
 					logii("+1 Elite")
 					drm += 1
 				}
 			} else {
 				logi(`U${u} F${roll}`)
-				drm + fln_drm
+				if (game.fln_psl <= 30) {
+					logii("-1 FLN PSL ≤ 30")
+					drm += 1
+				}
+				else if (game.fln_psl >= 70) {
+					logii("+1 FLN PSL ≥ 70")
+					drm += 1
+				}
 			}
 
 			if (roll + drm >= 5) {
