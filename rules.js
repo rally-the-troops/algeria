@@ -3799,8 +3799,10 @@ function goto_combat() {
 	//logi("G" + gov_roll + " Combat")
 	for (let u of game.combat.gov_units) {
 		if (game.combat.harass) {
-			logi(`${unit_firepower(u)/2} U${u} (half)`)
-			gov_firepower += unit_firepower(u) / 2
+			// When units fire at half Firepower Rating, round fractions up.
+			let fp = Math.ceil(unit_firepower(u)/2)
+			logi(`${fp} U${u} (half)`)
+			gov_firepower += fp
 		} else {
 			logi(`${unit_firepower(u)} U${u}`)
 			gov_firepower += unit_firepower(u)
@@ -3808,11 +3810,6 @@ function goto_combat() {
 		// move airmobile units to combat
 		if (is_unit_airmobile(u) && unit_loc(u) !== loc)
 			set_unit_loc(u, loc)
-	}
-
-	// When units fire at half Firepower Rating, round fractions up.
-	if (game.combat.harass) {
-		gov_firepower = Math.ceil(gov_firepower)
 	}
 
 	for (let i = 0; i < game.mission_air_pts; ++i) {
