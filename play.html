@@ -63,8 +63,9 @@ main { background-color: dimgray }
 
 #log .fln { background-color: #C1E1C1; }
 #log .gov { background-color: #BCDDFF; }
-#log .oas { background-color: black; color: whitesmoke }
+#log .oas { background-color: #555; color: white; }
 #log .both { background-image: linear-gradient(60deg, #C1E1C1, #BCDDFF); text-shadow: 0 0 4px white; }
+#log > .p { padding-left: 20px; text-align: right; font-style: italic; opacity: 75%; }
 #log > .i { padding-left: 20px; }
 
 #log .hr {
@@ -75,7 +76,7 @@ main { background-color: dimgray }
 	min-height: 0;
 }
 
-#log .white, #log .black {
+#log .white, #log .black, #log .die_fln, #log .die_gov {
 	display: inline-block;
 	vertical-align: -2px;
 	width: 12px;
@@ -96,6 +97,18 @@ main { background-color: dimgray }
 #log .black {
 	background-image: url(images/die_white_pips.svg);
 	background-color: #666;
+	border: 1px solid #222;
+}
+
+#log .die_gov {
+	background-image: url(images/die_white_pips.svg);
+	background-color: #001e96;
+	border: 1px solid #012;
+}
+
+#log .die_fln {
+	background-image: url(images/die_white_pips.svg);
+	background-color: #063;
 	border: 1px solid #222;
 }
 
@@ -176,7 +189,7 @@ svg .area.tip {
 	justify-content: center;
 	align-items: center;
 	flex-wrap: wrap;
-	gap: 4px;
+	gap: 2px;
 }
 
 .box {

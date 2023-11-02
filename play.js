@@ -916,6 +916,18 @@ const ICONS = {
 	W4: '<span class="white d4"></span>',
 	W5: '<span class="white d5"></span>',
 	W6: '<span class="white d6"></span>',
+	G1: '<span class="die_gov d1"></span>',
+	G2: '<span class="die_gov d2"></span>',
+	G3: '<span class="die_gov d3"></span>',
+	G4: '<span class="die_gov d4"></span>',
+	G5: '<span class="die_gov d5"></span>',
+	G6: '<span class="die_gov d6"></span>',
+	F1: '<span class="die_fln d1"></span>',
+	F2: '<span class="die_fln d2"></span>',
+	F3: '<span class="die_fln d3"></span>',
+	F4: '<span class="die_fln d4"></span>',
+	F5: '<span class="die_fln d5"></span>',
+	F6: '<span class="die_fln d6"></span>',
 }
 
 function sub_icon(match) {
@@ -966,17 +978,34 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 		p.className = "i"
 	}
 
+	if (text.match(/^\$/)) {
+		text = text.substring(1)
+		p.className = "p"
+	}
+
 	text = text.replace(/&/g, "&amp;")
 	text = text.replace(/</g, "&lt;")
 	text = text.replace(/>/g, "&gt;")
 	text = text.replace(/U(\d+)/g, sub_unit_name)
 	text = text.replace(/A(\d+)/g, sub_area_name)
 
-	text = text.replace(/\b[BW]\d\b/g, sub_icon)
+	text = text.replace(/\b[BWGF]\d\b/g, sub_icon)
 
 	if (text.match(/^\.h1/)) {
 		text = text.substring(4)
 		p.className = 'h1'
+	}
+	else if (text.match(/^\.h2g/)) {
+		text = text.substring(5)
+		p.className = 'h2 gov'
+	}
+	else if (text.match(/^\.h2f/)) {
+		text = text.substring(5)
+		p.className = 'h2 fln'
+	}
+	else if (text.match(/^\.h2o/)) {
+		text = text.substring(5)
+		p.className = 'h2 oas'
 	}
 	else if (text.match(/^\.h2/)) {
 		text = text.substring(4)
