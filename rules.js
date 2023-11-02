@@ -4838,48 +4838,82 @@ function determine_control() {
 		}
 	})
 
+	// log("Contested")
 	for_each_algerian_map_area(loc => {
-		let difference = Math.abs(fln_pts[loc] - gov_pts[loc])
-
-		// If one side has twice as many or more Control Points than the other, then it gets Control and an appropriate marker is placed in the area.
-		if (!difference || (!fln_pts[loc] && !gov_pts[loc])) {
-			// logi(`Contested`)
+		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
+		if (!diff || (!fln_pts[loc] && !gov_pts[loc])) {
+			// logi("A" + loc)
 			set_area_contested(loc)
-			return
 		}
+	})
+	// log_br()
 
-		log(`A${loc} (FLN ${fln_pts[loc]} - Gov ${gov_pts[loc]})`)
-
+	log("Gov Control")
+	for_each_algerian_map_area(loc => {
+		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
+		if (!diff || (!fln_pts[loc] && !gov_pts[loc]))
+			return
 		if (fln_pts[loc] >= 2 * gov_pts[loc]) {
-			logi(`FLN Control`)
+			logi("A" + loc)
 			set_area_fln_control(loc)
-			return
-		} else if (gov_pts[loc] >= 2 * fln_pts[loc]) {
-			logi(`Gov Control`)
-			set_area_gov_control(loc)
-			return
 		}
+	})
+	log_br()
+
+	log("FLN Control")
+	for_each_algerian_map_area(loc => {
+		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
+		if (!diff || (!fln_pts[loc] && !gov_pts[loc]))
+			return
+		if (gov_pts[loc] >= 2 * fln_pts[loc]) {
+			logi("A" + loc)
+			set_area_gov_control(loc)
+		}
+	})
+	log_br()
+
+	for_each_algerian_map_area(loc => {
+		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
+		if (!diff || (!fln_pts[loc] && !gov_pts[loc]))
+			return
+		if (gov_pts[loc] >= 2 * fln_pts[loc])
+			return
+		if (fln_pts[loc] >= 2 * gov_pts[loc])
+			return
 
 		// If one side has less than twice as many Points, take the difference of the two totals
 		// Both sides then roll 1d6 trying to get equal to or less than that number.
-		let fln_roll = roll_d6()
-		logi(`FLN rolled F${fln_roll}`)
-		let gov_roll = roll_d6()
-		logi(`Gov rolled G${gov_roll}`)
+		log(`A${loc} (${diff})`)
 
-		let fln_claim = fln_roll <= difference
-		let gov_claim = gov_roll <= difference
-		// If one side succeeds, then he gets Control. If both or neither succeed, then the area remains Contested and no marker is placed.
+		let fln_roll = roll_d6()
+		let gov_roll = roll_d6()
+
+		let fln_claim = fln_roll <= diff
+		if (fln_claim)
+			logi(`F${fln_roll} FLN`)
+		else
+			logi(`W${fln_roll} FLN`)
+
+		let gov_claim = gov_roll <= diff
+		if (gov_claim)
+			logi(`G${gov_roll} Gov`)
+		else
+			logi(`W${gov_roll} Gov`)
+
+		// If one side succeeds, then he gets Control.
+		// If both or neither succeed, then the area remains Contested and no marker is placed.
 		if (fln_claim && !gov_claim) {
-			logi(`FLN Control`)
+			log(`FLN Control.`)
 			set_area_fln_control(loc)
 		} else if (gov_claim && !fln_claim) {
-			logi(`Gov Control`)
+			log(`Gov Control.`)
 			set_area_gov_control(loc)
 		} else {
-			logi(`Contested`)
+			log(`Contested.`)
 			set_area_contested(loc)
 		}
+
+		log_br()
 	})
 }
 
