@@ -546,7 +546,7 @@ function neutralize_unit(u) {
 		set_unit_box(u, OC)
 }
 
-function remove_unit(u, to=DEPLOY) {
+function remove_unit(u, to=DEPLOY, verbose) {
 	let loc = unit_loc(u)
 	logi(`U${u} from A${loc}.`)
 	set_unit_loc(u, to)
@@ -4305,18 +4305,9 @@ states.gov_airmobilize_select_units = {
 
 		log_br()
 		log("Airmobilize")
-		for (let loc = 0; loc < area_count; ++loc) {
-			let first = true
-			for (let u of list) {
-				if (unit_loc(u) === loc) {
-					if (first) {
-						logi("A" + loc)
-						first = false
-					}
-					logii("U" + u)
-					set_unit_airmobile(u)
-				}
-			}
+		log_area_unit_list(list)
+		for (let u of list) {
+			set_unit_airmobile(u)
 		}
 		logi(`-${cost} Helo PTS`)
 		log_br()
@@ -5256,18 +5247,7 @@ states.gov_coup_attempt_free_mobilize = {
 	done() {
 		log_br()
 		log("Mobilization")
-		for (let loc = 0; loc < area_count; ++loc) {
-			let first = true
-			for (let u of game.summary) {
-				if (unit_loc(u) === loc) {
-					if (first) {
-						logi("A" + loc)
-						first = false
-					}
-					logii("U" + u)
-				}
-			}
-		}
+		log_area_unit_list(game.summary)
 		log_br()
 		game.summary = null
 
@@ -5329,10 +5309,11 @@ states.gov_coup_attempt_select_units = {
 		let list = game.selected
 		game.selected = []
 
-		// TODO: summary by region
-		log("Removed:")
+		log("Removed")
+		log_area_unit_list(list)
+
 		for (let u of list) {
-			remove_unit(u, ELIMINATED)
+			remove_unit(u, ELIMINATED, false)
 		}
 
 		log_sep()
@@ -5515,6 +5496,21 @@ function goto_next_turn() {
 // #endregion
 
 // #region LOGGING
+
+function log_area_unit_list(list) {
+	for (let loc = 0; loc < area_count; ++loc) {
+		let first = true
+		for (let u of list) {
+			if (unit_loc(u) === loc) {
+				if (first) {
+					logi("A" + loc)
+					first = false
+				}
+				logii("U" + u)
+			}
+		}
+	}
+}
 
 function log(msg) {
 	game.log.push(msg)
