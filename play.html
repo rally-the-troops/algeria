@@ -49,24 +49,39 @@ main { background-color: dimgray }
 .role_psl { float: right; }
 
 #log { background-color: whitesmoke; }
-#log .h1, #log .h2 {
+#log .h1 {
 	font-weight: bold;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	text-align: center;
+	border-top: 1px solid #333;
+	border-bottom: 1px solid #333;
+}
+#log .h2 {
 	padding-top: 2px;
 	padding-bottom: 2px;
-	text-align: center;
-	border-top: 1px solid black;
-	border-bottom: 1px solid black;
+	border-top: 1px solid #333;
+	border-bottom: 1px solid #333;
 }
-#log .h1 { background-color: silver; }
-#log .h2 { background-color: gainsboro; }
+#log .h3 {
+	padding-top: 1px;
+	padding-bottom: 1px;
+	border-top: 1px solid #333;
+	border-bottom: 1px solid #333;
+}
 
+#log .h1 { background-color: hsl(0, 100%, 80%); }
+#log .h2 { background-color: hsl(0, 100%, 85%); }
+#log .h3 { background-color: hsl(0, 0%, 85%); }
 
-#log .fln { background-color: #C1E1C1; }
-#log .gov { background-color: #BCDDFF; }
-#log .oas { background-color: #555; color: white; }
-#log .both { background-image: linear-gradient(60deg, #C1E1C1, #BCDDFF); text-shadow: 0 0 4px white; }
+#log .fln { background-color: #c1e1c1; }
+#log .gov { background-color: #bcddff; }
+
+X#log .oas { background-color: #555; color: white; }
+
 #log > .p { padding-left: 20px; text-align: right; font-style: italic; opacity: 75%; }
 #log > .i { padding-left: 20px; }
+#log > .ii { padding-left: 32px; }
 
 #log .hr {
 	background-color: darkgray;
@@ -101,14 +116,14 @@ main { background-color: dimgray }
 }
 
 #log .die_gov {
-	background-image: url(images/die_white_pips.svg);
-	background-color: #001e96;
-	border: 1px solid #012;
+	background-image: url(images/die_black_pips.svg);
+	background-color: hsl(216, 100%, 85%);
+	border: 1px solid #222;
 }
 
 #log .die_fln {
-	background-image: url(images/die_white_pips.svg);
-	background-color: #063;
+	background-image: url(images/die_black_pips.svg);
+	background-color: hsl(140, 70%, 70%);
 	border: 1px solid #222;
 }
 

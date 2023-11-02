@@ -973,6 +973,11 @@ function sub_unit_name(_match, p1, _offset, _string) {
 function on_log(text) { // eslint-disable-line no-unused-vars
 	let p = document.createElement("div")
 
+	if (text.match(/^>>/)) {
+		text = text.substring(2)
+		p.className = "ii"
+	}
+
 	if (text.match(/^>/)) {
 		text = text.substring(1)
 		p.className = "i"
@@ -995,30 +1000,28 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 		text = text.substring(4)
 		p.className = 'h1'
 	}
-	else if (text.match(/^\.h2g/)) {
-		text = text.substring(5)
-		p.className = 'h2 gov'
-	}
-	else if (text.match(/^\.h2f/)) {
-		text = text.substring(5)
-		p.className = 'h2 fln'
-	}
-	else if (text.match(/^\.h2o/)) {
-		text = text.substring(5)
-		p.className = 'h2 oas'
-	}
 	else if (text.match(/^\.h2/)) {
 		text = text.substring(4)
 		p.className = 'h2'
-		if (text.match(/^FLN /)) {
+		if (text.match(/^FLN/)) {
 			p.classList.add("fln")
-		} else if (text.match(/^Government /)) {
+		} else if (text.match(/^Gov/)) {
 			p.classList.add("gov")
-		} else if (text.match(/^OAS /)) {
+		} else if (text.match(/^OAS/)) {
 			p.classList.add("oas")
-		} else {
-			p.classList.add("both")
 		}
+	}
+	else if (text.match(/^\.h3.gov/)) {
+		text = text.substring(8)
+		p.className = 'h3 gov'
+	}
+	else if (text.match(/^\.h3.fln/)) {
+		text = text.substring(8)
+		p.className = 'h3 fln'
+	}
+	else if (text.match(/^\.h3.oas/)) {
+		text = text.substring(8)
+		p.className = 'h3 oas'
 	}
 	else if (text.match(/^\.h3/)) {
 		text = text.substring(4)

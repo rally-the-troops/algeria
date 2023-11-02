@@ -523,9 +523,12 @@ function move_unit(u, to) {
 	set_unit_box(u, OC)
 }
 
-function eliminate_unit(u) {
+function eliminate_unit(u, verbose_location=true) {
 	let loc = unit_loc(u)
-	log(`Eliminated U${u} in A${loc}.`)
+	if (verbose_location)
+		log(`U${u} eliminated in A${loc}.`)
+	else
+		log(`U${u} eliminated.`)
 	if (is_fln_unit(u)) {
 		game.distribute_gov_psl += 1
 		set_delete(game.contacted, u)
@@ -999,6 +1002,12 @@ function count_patrol_units_in_loc(loc) {
 		if (unit_loc(u) === loc && unit_box(u) === PTL && is_unit_not_neutralized(u))
 			result += 1
 	return result
+}
+
+function for_each_patrol_unit_in_loc(loc, f) {
+	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
+		if (unit_loc(u) === loc && unit_box(u) === PTL && is_unit_not_neutralized(u))
+			f(u)
 }
 
 function has_gov_react_units_for_loc(loc) {
@@ -1500,7 +1509,7 @@ function setup_scenario(scenario_name) {
 	let d2 = roll_d6()
 	game.fln_ap = d1 + d2
 
-	log(`FLN AP = F${d1} + F${d2} = ${d1+d2}`)
+	log(`FLN AP = F${d1}F${d2} = ${d1+d2}`)
 
 	log_br()
 
@@ -1514,7 +1523,7 @@ function setup_scenario(scenario_name) {
 function goto_scenario_setup() {
 	set_active_player()
 	game.state = "scenario_setup"
-	log_h2(`${game.active} Deployment`)
+	log_h2(`${game.active} Setup`)
 	game.selected = []
 }
 
@@ -1715,7 +1724,8 @@ function begin_game() {
 function goto_random_event() {
 	// current player gets to do the random event roll
 	game.state = "random_event"
-	log_h2("Random Event")
+
+	// log_h2("Random Events Phase")
 
 	if (game.events.gov_remobilize) {
 		log("Units may remobilize this turn:")
@@ -1743,10 +1753,14 @@ function goto_random_event() {
 	// Each Random Events Phase, roll 1d6; if the number rolled is less than or equal to the number of the current turn,
 	//the two countries immediately become independent.
 	if (game.more_deterministic_independence && !game.is_morocco_tunisia_independent) {
-		log("More Deterministic Independence?")
-		let roll = roll_1d6()
-		if (roll <= game.turn)
+		let roll = roll_d6()
+		log("More Deterministic Independence")
+		if (roll <= game.turn) {
+			logi("B" + roll)
 			grant_morocco_tunisia_independence()
+		} else {
+			logi("W" + roll)
+		}
 		log_sep()
 	}
 }
@@ -1758,11 +1772,11 @@ states.random_event = {
 		gen_action("roll")
 	},
 	roll() {
-		let rnd1 = roll_d6()
-		let rnd2 = roll_d6()
-		let rnd = 10 * rnd1 + rnd2
-		log(`Rolled F${rnd1} G${rnd2}`)
-		log_br()
+		let a = roll_d6()
+		let b = roll_d6()
+		let rnd = 10 * a + b
+
+		log(`Random Event G${a} F${b}`)
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -1794,7 +1808,6 @@ states.random_event = {
 
 function goto_no_event() {
 	log_event("No Event.")
-	log("Lucky you.")
 	end_random_event()
 }
 
@@ -2043,12 +2056,14 @@ states.event_gov_nato_pressure_select_units = {
 
 function goto_suez_crisis() {
 	log_event("Suez Crisis.")
+
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
-		log("No Event.")
+		log("No effect.")
 		end_random_event()
 		return
 	}
+
 	game.phasing = GOV_NAME
 	set_active_player()
 	game.events.suez_crisis = true
@@ -2927,10 +2942,11 @@ function goto_operations_phase() {
 
 	// In Algeria, the OAS marker will automatically conduct one Suppression mission in the Operations Phase, at no cost in PSP and no requirement for a Police unit.
 	if (is_area_algerian(game.oas)) {
-
-		log_h2("OAS Suppression")
 		let loc = game.oas
 
+		log_br()
+		log(".h3.oas OAS Suppression")
+		log_br()
 		log("A" + loc)
 		log_br() // no cost
 
@@ -2974,6 +2990,7 @@ states.fln_operations = {
 	prompt() {
 		view.prompt = "Operations: Perform a mission with OPS units, let Government perform a mission, or Pass."
 		view.prompt = "Operations."
+		view.prompt = "Perform a Mission."
 
 		// check if any FLN missions can actually be performed
 		view.actions.propaganda = 0
@@ -3069,9 +3086,9 @@ function reduce_unit(u, type, verbose_location=true) {
 	let n = find_free_unit_by_type(type)
 
 	if (verbose_location)
-		log(`Reduced U${u} to U${n} in A${loc}.`)
+		log(`U${u} reduced to U${n} in A${loc}.`)
 	else
-		log(`Reduced U${u} to U${n}.`)
+		log(`U${u} reduced to U${n}.`)
 
 	raise_gov_psl(2)
 	lower_fln_psl(1)
@@ -3130,16 +3147,16 @@ states.fln_propaganda = {
 		let roll = roll_d6()
 		//log(`U${unit} F${roll}`)
 		log("Mission F" + roll)
-		let patrol = count_patrol_units_in_loc(loc)
-		if (patrol) {
-			logi(`-${patrol} Patrol`)
-			roll -= patrol
-		}
 
 		if (is_area_terrorized(loc)) {
 			logi(`-1 Terrorized`)
 			roll -= 1
 		}
+
+		for_each_patrol_unit_in_loc(loc, u => {
+			logi(`-1 U${u} PTL`)
+			roll -= 1
+		})
 
 		let [result, effect] = roll_mst(roll)
 
@@ -3153,9 +3170,9 @@ states.fln_propaganda = {
 		if (effect === '+') {
 			// bad effect: eliminate Cadre or reduce Front
 			if (unit_type(unit) === CADRE) {
-				eliminate_unit(unit)
+				eliminate_unit(unit, false)
 			} else {
-				unit = reduce_unit(unit, CADRE)
+				unit = reduce_unit(unit, CADRE, false)
 			}
 		}
 
@@ -3203,7 +3220,11 @@ function goto_distribute_psp(who, psp, reason) {
 		game.phasing = FLN_NAME
 	}
 	set_active_player()
-	log(`${game.active} to Distribute ${psp} PSP.`)
+	log_br()
+	if (game.active === FLN)
+		log(`FLN to distribute ${psp} PSP.`)
+	else
+		log(`Gov to distribute ${psp} PSP.`)
 	game.state = "distribute_psp"
 }
 
@@ -3362,14 +3383,13 @@ states.fln_strike = {
 		let assist = list.length - 1
 		clear_undo()
 
-		// TODO (TOR) LOG
-
-		log(`Strike in A${loc}`)
-		if (assist) {
-			logi(`by U${front_unit} (with ${assist} Cadre)`)
-		} else {
-			logi(`by U${front_unit}`)
-		}
+		log("A" + loc)
+		for (let u of list)
+			if (unit_type(u) === FRONT)
+				logi("U" + u)
+		for (let u of list)
+			if (unit_type(u) === CADRE)
+				logi("U" + u)
 
 		// pay cost & update flags
 		pay_ap(FLN_STRIKE_COST)
@@ -3379,34 +3399,37 @@ states.fln_strike = {
 			set_add(game.contacted, u)
 		}
 
-		let roll = roll_1d6()
+		let roll = roll_d6()
+		log("Mission F" + roll)
+
 		if (assist) {
 			logi(`+${assist} Assist`)
 			roll += assist
 		}
-		let patrol = count_patrol_units_in_loc(loc)
-		if (patrol) {
-			logi(`-${patrol} Patrol`)
-			roll -= patrol
-		}
+
 		if (is_area_terrorized(loc)) {
 			logi(`-1 Terrorized`)
 			roll -= 1
 		}
+
+		for_each_patrol_unit_in_loc(loc, u => {
+			logi(`-1 U${u} PTL`)
+			roll -= 1
+		})
+
 		let [result, effect] = roll_mst(roll)
 
 		if (effect === '+') {
 			// bad effect: all FLN units involved in the mission are removed: a Cadre is eliminated; a Front is reduced to a Cadre.
 			for (let u of list) {
 				if (unit_type(u) === CADRE) {
-					eliminate_unit(u)
+					eliminate_unit(u, false)
 				} else {
-					reduce_unit(u, CADRE)
+					reduce_unit(u, CADRE, false)
 				}
 			}
 		} else if (effect === '@') {
 			// good result: all Police units neutralized
-			log(`All Police units in A${loc} neutralized.`)
 			for_each_enemy_unit_in_loc(loc, u => {
 				if (is_police_unit(u)) {
 					neutralize_unit(u)
@@ -3512,21 +3535,21 @@ states.fln_move = {
 		log("Mission F" + roll)
 
 		// Note that the die roll is modified by the number of Government units on Patrol in the area moved to, not from.
-		let patrol = count_patrol_units_in_loc(to)
-		if (patrol) {
-			logi(`-${patrol} Patrol`)
-			roll -= patrol
-		}
 
 		if (is_border_crossing(loc, to) && game.border_zone_active) {
 			logi(`${game.border_zone_drm} Border Zone`)
 			roll += game.border_zone_drm
 		}
 
+		for_each_patrol_unit_in_loc(to, u => {
+			logi(`-1 U${u} PTL`)
+			roll -= 1
+		})
+
 		let [_result, effect] = roll_mst(roll)
 
 		if (effect === '+') {
-			eliminate_unit(unit)
+			eliminate_unit(unit, false)
 		} else {
 			log("Moved.")
 			move_unit(unit, to)
@@ -3592,12 +3615,9 @@ states.fln_raid = {
 		let assist = list.length - 1
 		clear_undo()
 
-		// TODO (TOR) LOG
-
-		log(`Raid in A${loc}`)
-		if (assist) {
-			logi(`(with ${assist} assist)`)
-		}
+		log("A" + loc)
+		for (let u of list)
+			logi("U" + u)
 
 		// pay cost & update flags
 		pay_ap(FLN_RAID_COST)
@@ -3607,16 +3627,20 @@ states.fln_raid = {
 			set_add(game.contacted, u)
 		}
 
-		let roll = roll_1d6()
+		let roll = roll_d6()
+
+		log("Mission F" + roll)
+
 		if (assist) {
 			logi(`+${assist} Assist`)
 			roll += assist
 		}
-		let patrol = count_patrol_units_in_loc(loc)
-		if (patrol) {
-			logi(`-${patrol} Patrol`)
-			roll -= patrol
-		}
+
+		for_each_patrol_unit_in_loc(loc, u => {
+			logi(`-1 U${u} PTL`)
+			roll -= 1
+		})
+
 		let [result, effect] = roll_mst(roll)
 
 		if (result > 0) {
@@ -3630,8 +3654,10 @@ states.fln_raid = {
 		if (effect === '+') {
 			// bad effect: 1 Band/Failek neutralized, area is Terrorized
 			neutralize_unit(first_unit)
-			logi("Area terrorized")
-			set_area_terrorized(loc)
+			if (!is_area_terrorized(loc)) {
+				log("Terrorized.")
+				set_area_terrorized(loc)
+			}
 		} else if (effect === '@') {
 			// good result: 1 Police unit neutralized, area is Terrorized
 			let done = false
@@ -3641,8 +3667,10 @@ states.fln_raid = {
 					done = true
 				}
 			})
-			logi("Area terrorized")
-			set_area_terrorized(loc)
+			if (!is_area_terrorized(loc)) {
+				log("Terrorized.")
+				set_area_terrorized(loc)
+			}
 		}
 
 		end_fln_mission()
@@ -3651,7 +3679,7 @@ states.fln_raid = {
 
 function goto_fln_harass_mission() {
 	push_undo()
-	log_mission("Raid")
+	log_mission("Harass")
 	game.passes = 0
 	game.state = "fln_harass"
 }
@@ -3745,55 +3773,52 @@ function goto_combat() {
 
 	let loc = unit_loc(game.combat.fln_units[0])
 
-	log_br()
-
-	if (game.combat.harass) {
-		log("Harass")
-	} else {
-		log("Combat")
-	}
-
 	// Result is the number of 'hits' on enemy units.
 
 	log_br()
-	log("FLN Firepower")
+
+	let fln_roll = roll_d6()
 	let fln_firepower = 0
+	log("FLN Firepower F" + fln_roll)
+	//logi("F" + fln_roll + " Combat")
 	for (let u of game.combat.fln_units) {
 		logi(`${unit_firepower(u)} U${u}`)
 		fln_firepower += unit_firepower(u)
 	}
-	//logi(`Total ${fln_firepower}`)
-
-	game.combat.hits_on_gov = roll_crt(fln_firepower)
-	logi(`Hits on Gov ${game.combat.hits_on_gov}`)
+	game.combat.hits_on_gov = combat_result(fln_firepower, fln_roll)
+	log(`${game.combat.hits_on_gov} hits on Gov.`)
 	log_br()
 
-	log("Gov Firepower")
+	let gov_roll = roll_d6()
 	let gov_firepower = 0
+	log("Gov Firepower G" + gov_roll)
+	//logi("G" + gov_roll + " Combat")
 	for (let u of game.combat.gov_units) {
-		logi(`${unit_firepower(u)} U${u}`)
-		gov_firepower += unit_firepower(u)
+		if (game.combat.harass) {
+			logi(`${unit_firepower(u)/2} U${u} (half)`)
+			gov_firepower += unit_firepower(u) / 2
+		} else {
+			logi(`${unit_firepower(u)} U${u}`)
+			gov_firepower += unit_firepower(u)
+		}
 		// move airmobile units to combat
 		if (is_unit_airmobile(u) && unit_loc(u) !== loc)
 			set_unit_loc(u, loc)
 	}
 
-	let half_str = ''
+	// When units fire at half Firepower Rating, round fractions up.
 	if (game.combat.harass) {
-		// When units fire at half Firepower Rating, round fractions up.
-		gov_firepower = Math.ceil(gov_firepower / 2)
-		half_str = " (half)"
+		gov_firepower = Math.ceil(gov_firepower)
 	}
 
-	if (game.mission_air_pts) {
-		log(`Using ${game.mission_air_pts} Air PTS`)
-		let roll = roll_nd6(game.mission_air_pts)
+	for (let i = 0; i < game.mission_air_pts; ++i) {
+		let roll = roll_d6()
+		logi("G" + roll + " Air PTS")
 		gov_firepower += roll
 	}
 
-	logi(`Total ${gov_firepower}${half_str}`)
-	game.combat.hits_on_fln = roll_crt(gov_firepower)
-	logi(`Hits on FLN ${game.combat.hits_on_fln}`)
+	game.combat.hits_on_fln = combat_result(gov_firepower, gov_roll)
+	log(`${game.combat.hits_on_fln} hits on FLN.`)
 	log_br()
 
 	// Step 2: FLN to distribute hits on government
@@ -3829,17 +3854,18 @@ function end_combat() {
 	// Remaining involved units of the side that received the largest number of 'hits'
 	// (according to the table, whether implemented or not) are Neutralized (no one is neutralized if equal results).
 
+	log_br()
+
 	if (game.combat.hits_on_gov > game.combat.hits_on_fln) {
-		logi(`Gov units neutralized`)
 		for (let u of game.combat.gov_units) {
 			neutralize_unit(u)
 		}
 	} else if (game.combat.hits_on_gov < game.combat.hits_on_fln && game.combat.fln_units.length) {
-		logi(`FLN units neutralized`)
 		for (let u of game.combat.fln_units) {
 			neutralize_unit(u)
 		}
 	}
+
 	// After taking any combat results, all remaining involved units are placed in the OC box.
 	for (let u of game.combat.fln_units) {
 		set_unit_box(u, OC)
@@ -3866,7 +3892,6 @@ function end_combat() {
 function goto_combat_fln_losses() {
 	game.phasing = FLN_NAME
 	set_active_player()
-	log(`FLN to Distribute losses.`)
 	game.state = "fln_combat_fln_losses"
 }
 
@@ -3889,7 +3914,7 @@ function for_first_fln_combat_unit(type, fn) {
 function eliminate_fln_unit(type) {
 	push_undo()
 	for_first_fln_combat_unit(type, u =>{
-		eliminate_unit(u)
+		eliminate_unit(u, false)
 		set_delete(game.combat.fln_units, u)
 		game.combat.distribute_fln_hits -= 1
 	})
@@ -3900,7 +3925,7 @@ function eliminate_fln_unit(type) {
 function reduce_fln_unit(from_type, to_type) {
 	push_undo()
 	for_first_fln_combat_unit(from_type, u =>{
-		let n = reduce_unit(u, to_type)
+		let n = reduce_unit(u, to_type, false)
 		set_add(game.combat.fln_units, n)
 		set_delete(game.combat.fln_units, u)
 		game.combat.distribute_fln_hits -= 1
@@ -3962,7 +3987,7 @@ states.gov_operations = {
 	inactive: "to do Operations",
 	prompt() {
 		view.prompt = "Operations: Perform a mission, or Pass."
-		view.prompt = "Operations."
+		view.prompt = "Perform a Mission."
 
 		// check if any GOV missions can actually be performed
 		view.actions.flush = 0
@@ -4190,10 +4215,12 @@ states.gov_flush_select_units = {
 			// The Government player rolls to contact each FLN unit that is currently in the OPS or OC boxes
 			// by rolling equal to or less than this number, moving contacted units to one side.
 			if (roll <= contact_ratings) {
-				log("Contact.")
+				//log("Contact.")
+				logi("Contact")
 				set_add(game.contacted, u)
 			} else {
-				log("No contact.")
+				logi("No contact")
+				//log("No contact.")
 			}
 			log_br()
 		})
@@ -4277,13 +4304,21 @@ states.gov_airmobilize_select_units = {
 		game.helo_avail -= cost
 
 		log_br()
-		log("Airmobilized")
-		for (let u of list) {
-			let loc = unit_loc(u)
-			logi(`U${u} in A${loc}`)
-			set_unit_airmobile(u)
+		log("Airmobilize")
+		for (let loc = 0; loc < area_count; ++loc) {
+			let first = true
+			for (let u of list) {
+				if (unit_loc(u) === loc) {
+					if (first) {
+						logi("A" + loc)
+						first = false
+					}
+					logii("U" + u)
+					set_unit_airmobile(u)
+				}
+			}
 		}
-		logp(`-${cost} Helo PTS`)
+		logi(`-${cost} Helo PTS`)
 		log_br()
 
 		game.state = game.from_state
@@ -4383,19 +4418,23 @@ states.gov_react = {
 
 		log_mission("React")
 		log("A" + loc)
+		for (let u of list)
+			// TODO: log where from?
+			logi("U" + u)
 		log_br()
 
 		delete game.events.must_react
 
 		// FLN player has a chance to evade to the UG box.
 		// Units roll 1d6 individually, and move to the UG box if they roll equal to or less than their Evasion Rating.
-		log("Evasion:")
+		log("Evade")
 		for (let u of game.contacted) {
 			let roll = roll_d6()
-			log(`U${u} evade F${roll}`)
 			if (roll <= unit_evasion(u)) {
-				logi("Evaded to UG")
+				logi(`U${u} F${roll} to UG`)
 				evade_unit(u)
+			} else {
+				logi(`U${u} W${roll}`)
 			}
 		}
 
@@ -4498,10 +4537,12 @@ states.gov_intelligence = {
 
 			// and rolls to contact each FLN unit in the UG box of that area by rolling equal to or less than this number
 			if (roll <= contact_ratings) {
-				log(`Contact.`)
+				//log(`Contact.`)
+				logi("Contact")
 				set_unit_box(u, OC)
 			} else {
-				log(`No contact.`)
+				logi("No contact")
+				//log(`No contact.`)
 			}
 			log_br()
 		})
@@ -4727,8 +4768,11 @@ states.gov_population_resettlement = {
 			log("Terrorized.")
 		}
 
-		let fln_award = roll_nd6(3, "Penalty")
-		raise_fln_psl(fln_award)
+		let d1 = roll_d6()
+		let d2 = roll_d6()
+		let d3 = roll_d6()
+		log(`Penalty W${d1} W${d2} W${d3}`)
+		raise_fln_psl(d1+d2+d3)
 
 		for_each_enemy_unit_in_loc(loc, u => {
 			if (unit_type(u) === FRONT) {
@@ -4777,7 +4821,6 @@ function end_operations_phase() {
 
 function determine_control() {
 	log_h3("Determine Control")
-	log_br()
 
 	let fln_pts = new Array(area_count).fill(0)
 	let gov_pts = new Array(area_count).fill(0)
@@ -5411,6 +5454,10 @@ function logi(msg) {
 	game.log.push(">" + msg)
 }
 
+function logii(msg) {
+	game.log.push(">>" + msg)
+}
+
 function logp(msg) {
 	game.log.push("$" + msg)
 }
@@ -5430,6 +5477,7 @@ function log_h2(msg) {
 function log_h3(msg) {
 	log_br()
 	log(".h3 " + msg)
+	log_br()
 }
 
 function log_event(msg) {
@@ -5441,9 +5489,9 @@ function log_event(msg) {
 function log_mission(msg) {
 	log_br()
 	if (game.active === GOV_NAME)
-		log(".h2g " + msg)
+		log(".h3.gov " + msg)
 	else
-		log(".h2f " + msg)
+		log(".h3.fln " + msg)
 	log_br()
 }
 
@@ -5560,13 +5608,6 @@ function combat_result(firepower, die) {
 			break
 	}
 	return COMBAT_RESULT_TABLE[k][1][die - 1]
-}
-
-function roll_crt(firepower) {
-	let roll = roll_1d6()
-	let result = combat_result(firepower, roll)
-	log(`Combat Result ${result}`)
-	return result
 }
 
 function clamp(x, min, max) {
