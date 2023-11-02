@@ -2234,7 +2234,7 @@ function activation_cost(units) {
 	return cost
 }
 
-function mobilize_unit(u, to) {
+function mobilize_unit(u, to, verbose=true) {
 	set_unit_loc(u, to)
 
 	if (is_police_unit(u)) {
@@ -2243,7 +2243,8 @@ function mobilize_unit(u, to) {
 		set_unit_box(u, OPS)
 	}
 
-	log(`Mobilized U${u} to A${to}.`)
+	if (verbose)
+		log(`Mobilized U${u} to A${to}.`)
 }
 
 function is_slow_french_reaction() {
@@ -5191,6 +5192,7 @@ function goto_coup_attempt_free_mobilize(value) {
 	set_active_player()
 
 	game.selected = []
+	game.summary = []
 	game.events.gov_free_mobilize = value
 	game.state = "gov_coup_attempt_free_mobilize"
 }
@@ -5245,12 +5247,30 @@ states.gov_coup_attempt_free_mobilize = {
 		game.selected = []
 		push_undo()
 		for (let u of list) {
-			mobilize_unit(u, to)
+			mobilize_unit(u, to, false)
+			set_add(game.summary, u)
 		}
 		let cost = mobilization_cost(list)
 		game.events.gov_free_mobilize -= cost
 	},
 	done() {
+		log_br()
+		log("Mobilization")
+		for (let loc = 0; loc < area_count; ++loc) {
+			let first = true
+			for (let u of game.summary) {
+				if (unit_loc(u) === loc) {
+					if (first) {
+						logi("A" + loc)
+						first = false
+					}
+					logii("U" + u)
+				}
+			}
+		}
+		log_br()
+		game.summary = null
+
 		delete game.events.gov_free_mobilize
 		continue_final_psl_adjustment()
 	}
@@ -5268,7 +5288,7 @@ function goto_coup_attempt_remove_elite(num) {
 		game.events.gov_remove_num = to_remove
 		game.state = "gov_coup_attempt_select_units"
 	} else {
-		log("No French elite units to remove")
+		log("No French elite units.")
 		log_br()
 		continue_final_psl_adjustment()
 	}
@@ -5309,10 +5329,12 @@ states.gov_coup_attempt_select_units = {
 		let list = game.selected
 		game.selected = []
 
+		// TODO: summary by region
 		log("Removed:")
 		for (let u of list) {
 			remove_unit(u, ELIMINATED)
 		}
+
 		log_sep()
 		delete game.events.gov_remove_num
 		continue_final_psl_adjustment()
