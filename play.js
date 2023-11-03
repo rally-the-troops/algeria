@@ -563,7 +563,7 @@ function create_border_zone(i, label) {
 	e.style.left = (DRM_X + i * DRM_DX) + "px"
 	e.style.top = (DRM_Y + i * DRM_DY) + "px"
 	e.textContent = label
-	document.getElementById("boxes").appendChild(e)
+	document.getElementById("decor").appendChild(e)
 }
 
 const URBAN = 2
@@ -587,8 +587,19 @@ function create_area_u(i, sel) {
 	return e
 }
 
+function use_wide_marker_box(i) {
+	return (
+		i === 6 || // I-1 Barika
+		i === 9 || // I-4 Tebessa
+		i === 11 || // II-1 Setif
+		i === 18 || // IV-1 Medea
+		is_area_urban(i) ||
+		is_area_country(i)
+	)
+}
+
 function create_area_markers(i, area_id, area_name) {
-	const box_w = is_area_urban(i) || is_area_country(i) ? 150 : 100
+	const box_w = use_wide_marker_box(i) ? 150 : 100
 	const box_h = 100
 
 	let layout = LAYOUT[area_name + '-MK']
@@ -942,10 +953,14 @@ function sub_icon(match) {
 }
 
 function on_focus_area_tip(x) { // eslint-disable-line no-unused-vars
+	if (ui.areas_u[x])
+		ui.areas_u[x].classList.add("tip")
 	ui.areas[x].classList.add("tip")
 }
 
 function on_blur_area_tip(x) { // eslint-disable-line no-unused-vars
+	if (ui.areas_u[x])
+		ui.areas_u[x].classList.remove("tip")
 	ui.areas[x].classList.remove("tip")
 }
 

@@ -20,32 +20,65 @@
 @font-face { font-family: "URW Gothic"; font-style: italic; font-weight: bold; src: url(fonts/URWGothic-DemiOblique.woff2); }
 
 :root {
-	--area-highlight-color: white;
-	--urban-highlight-color: white;
-	--rural-highlight-color: green;
-	--remote-highlight-color: brown;
-	--highlight-color: yellow;
-	--selected-color: cyan;
+	--fln-base: #006633;
+	--fln-70: #61b37b;
+	--fln-75: #71c38a;
+	--fln-80: #81d49a;
+	--fln-85: #91e5aa;
 
-	--tip-color: yellow;
-	--target-color: indianred;
+	--gov-base: #002153;
+	--gov-44: #31548b;
+	--gov-70: #78a0dc;
+	--gov-75: #87b0ed;
+	--gov-80: #98c0ff;
+	--gov-85: #b2d0ff;
 
-	--counter-french-color: #BCDDFF;
-	--counter-elite-color: #FFCCCB;
-	--counter-algerian-color: #FFE7BD;
-	--counter-remote-color: #DFD9C1;
+	--red-base: #d21034;
+	--red-80: #ffa09e;
+	--red-75: #ff8484;
+	--red-67: #fe4a57;
+
+	--area-tip-color: yellow;
+	--area-target-color: gold;
+
+	--urban-action-color: white;
+	--rural-action-color: green;
+	--remote-action-color: brown;
+
+	--unit-tip-color: yellow;
+	--unit-action-color: yellow;
+	--unit-selected-color: cyan;
+	--unit-target-color: lime;
+
+	--counter-french-color: #bcddff;
+	--counter-elite-color: #ffcccb;
+	--counter-algerian-color: #ffe7bd;
 	--counter-fln-color: #51a36d;
+
+	--counter-french-border: #556373;
+	--counter-elite-border: #735c5b;
+	--counter-algerian-border: #736855;
+	--counter-fln-border: #316241;
+
+	--counter-terror-color: #666;
+	--counter-terror-border: #444;
+
+	--counter-remote-color: #dfd9c1;
+	--counter-remote-border: #645f4a;
 }
 
 main { background-color: dimgray }
 
-#role_FLN .role_name { background-color: #C1E1C1;}
-#role_Government .role_name { background-color: #BCDDFF;}
+body.FLN header.your_turn { background-color: var(--fln-80) }
+body.Government header.your_turn { background-color: var(--gov-80) }
+
+#role_FLN .role_name { background-color: var(--fln-80) }
+#role_Government .role_name { background-color: var(--gov-80) }
 
 .role.active span { text-decoration: underline; }
-.role_ap_text { color: #555; float: right; margin-right: 4px; }
+.role_ap_text { color: #0008; float: right; margin-right: 4px; }
 .role_ap { float: right; margin-right: 8px;}
-.role_psl_text { color: #555; float: right; margin-right: 4px;}
+.role_psl_text { color: #0008; float: right; margin-right: 4px;}
 .role_psl { float: right; }
 
 #log { background-color: whitesmoke; }
@@ -70,12 +103,12 @@ main { background-color: dimgray }
 	border-bottom: 1px solid #333;
 }
 
-#log .h1 { background-color: hsl(0, 100%, 80%); }
-#log .h2 { background-color: hsl(0, 100%, 85%); }
-#log .h3 { background-color: hsl(0, 0%, 85%); }
+#log .h1 { background-color: var(--red-75); }
+#log .h2 { background-color: var(--red-80); }
+#log .h3 { background-color: gainsboro; }
 
-#log .fln { background-color: #c1e1c1; }
-#log .gov { background-color: #bcddff; }
+#log .fln { background-color: var(--fln-85) }
+#log .gov { background-color: var(--gov-85) }
 
 X#log .oas { background-color: #555; color: white; }
 
@@ -110,13 +143,13 @@ X#log .oas { background-color: #555; color: white; }
 
 #log .die_gov {
 	background-image: url(images/die_black_pips.svg);
-	background-color: hsl(216, 100%, 85%);
+	background-color: var(--gov-85);
 	border: 1px solid #222;
 }
 
 #log .die_fln {
 	background-image: url(images/die_black_pips.svg);
-	background-color: hsl(140, 70%, 70%);
+	background-color: var(--fln-85);
 	border: 1px solid #222;
 }
 
@@ -142,13 +175,13 @@ X#log .oas { background-color: #555; color: white; }
 svg .urban2 {
 	fill: #614528;
 	fill-opacity: 0.4;
+	stroke-width: 3;
 }
 
 svg .urban2.action {
 	fill: #614528;
 	fill-opacity: 1;
 	stroke: white;
-	stroke-width: 3;
 }
 
 svg .urban2.target {
@@ -166,9 +199,9 @@ svg .area {
 	stroke-width: 3;
 }
 
-svg .area.urban { fill: var(--urban-highlight-color); }
-svg .area.rural { fill: var(--rural-highlight-color); }
-svg .area.remote { fill: var(--remote-highlight-color); }
+svg .area.urban { fill: var(--urban-action-color); }
+svg .area.rural { fill: var(--rural-action-color); }
+svg .area.remote { fill: var(--remote-action-color); }
 
 svg .area.action {
 	fill-opacity: 0.2;
@@ -182,11 +215,11 @@ svg .area.target {
 	stroke: var(--target-color);
 }
 
-svg .area.tip {
+svg .area.tip, svg .urban2.tip {
 	fill-opacity: 0.4;
 	stroke-opacity: 1.0;
-	fill: var(--tip-color);
-	stroke: var(--tip-color);
+	fill: var(--area-tip-color);
+	stroke: var(--area-tip-color);
 	stroke-dasharray: 12 6;
 }
 
@@ -268,37 +301,71 @@ svg .area.tip {
 	background-size: 1000%;
 	background-repeat: no-repeat;
 	border-style: solid;
-	border-color: #333;
+	border-color: #555;
 	width: 39px;
 	height: 39px;
 	border-width: 2px;
 	background-image: url(images/counters.png);
-	background-color: white;
+	background-color: whitesmoke;
 }
 
 .counter.action {
-	box-shadow: 0 0 0 2px var(--highlight-color);
+	box-shadow: 0 0 0 2px var(--unit-action-color);
 }
 
 .counter.contacted {
-	box-shadow: 0 0 0 2px var(--target-color);
+	box-shadow: 0 0 0 2px var(--unit-target-color);
 }
 
 .counter.tip {
-	box-shadow: 0 0 0 2px var(--tip-color);
+	box-shadow: 0 0 0 2px var(--unit-tip-color);
 }
 
 .counter.selected {
-	box-shadow: 0 0 0 2px var(--selected-color);
-}
-
-.counter.neutralized {
-	border-color: grey;
-	background-color: lightgray;
+	box-shadow: 0 0 0 2px var(--unit-selected-color);
 }
 
 .counter.oas_active {
 	pointer-events: none;
+}
+
+.counter.remote {
+	background-color: var(--counter-remote-color);
+	border-color: var(--counter-remote-border);
+}
+
+.counter.terror {
+	background-color: var(--counter-terror-color);
+	border-color: var(--counter-terror-border);
+}
+
+.unit[class*=' fr_x'] {
+	background-color: var(--counter-french-color);
+	border-color: var(--counter-french-border);
+}
+
+.unit[class*=' fr_elite_x_'] {
+	background-color: var(--counter-elite-color);
+	border-color: var(--counter-elite-border);
+}
+
+.unit[class*=' alg_'] {
+	background-color: var(--counter-algerian-color);
+	border-color: var(--counter-algerian-border);
+}
+
+.unit[class*=' fln_'] {
+	background-color: var(--counter-fln-color);
+	border-color: var(--counter-fln-border);
+}
+
+.unit.neutralized {
+	filter: grayscale(50%) brightness(125%);
+}
+
+.border_zone.neutralized {
+	border-color: grey;
+	background-color: silver;
 }
 
 .counter.turn_now{background-position:0% 0%;}
@@ -308,8 +375,8 @@ svg .area.tip {
 .counter.fln_control{background-position:44.44444444444444% 0%;}
 .counter.gov_control{background-position:55.55555555555556% 0%;}
 .counter.oas_active{background-position:66.66666666666666% 0%;}
-.counter.remote{background-position:77.77777777777777% 0%; background-color: var(--counter-remote-color);}
-.counter.terror{background-position:88.88888888888889% 0%}
+.counter.remote{background-position:77.77777777777777% 0%;}
+.counter.terror{background-position:88.88888888888889% 0%;}
 
 .counter.air_avail{background-position:0% 11.11111111111111%;}
 .counter.air_max{background-position:11.11111111111111% 11.11111111111111%;}
@@ -318,27 +385,6 @@ svg .area.tip {
 .counter.naval_pts{background-position:44.44444444444444% 11.11111111111111%;}
 .counter.border_zone{background-position:55.55555555555556% 11.11111111111111%;}
 .counter.border_zone_inactive{background-position:66.66666666666666% 11.11111111111111%;}
-
-.unit[class*=' fr_x'] {
-	background-color: var(--counter-french-color);
-	border-color: color-mix(in srgb, var(--counter-french-color) 35%, black);
-}
-.unit[class*=' fr_elite_x_'] {
-	background-color: var(--counter-elite-color);
-	border-color: color-mix(in srgb, var(--counter-elite-color) 35%, black);
-}
-.unit[class*=' alg_'] {
-	background-color: var(--counter-algerian-color);
-	border-color: color-mix(in srgb, var(--counter-algerian-color) 35%, black);
-}
-.unit[class*=' fln_'] {
-	background-color: var(--counter-fln-color);
-	border-color: color-mix(in srgb, var(--counter-fln-color) 45%, black);
-}
-.unit.neutralized {
-	filter: grayscale(50%) brightness(125%);
-	border-color: #555;
-}
 
 .unit.fr_xx_2{background-position:0% 22.22222222222222%}
 .unit.fr_xx_4{background-position:11.11111111111111% 22.22222222222222%}
