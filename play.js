@@ -112,12 +112,12 @@ const LAYOUT = {
 	"Orleansville-PTL": [565, 460],
 	"Orleansville-OPS": [622, 420],
 	"Orleansville-UG": [557, 381],
-	"Orleansville-MK": [570, 530],
+	"Orleansville-MK": [590, 550],
 	"Medea-OC": [752, 492],
 	"Medea-PTL": [702, 539],
 	"Medea-OPS": [769, 427],
 	"Medea-UG": [702, 432],
-	"Medea-MK": [700, 485],
+	"Medea-MK": [730, 380],
 	"Ain Qussera-OC": [698, 795],
 	"Ain Qussera-PTL": [614, 750],
 	"Ain Qussera-OPS": [700, 643],
@@ -132,12 +132,12 @@ const LAYOUT = {
 	"Bougie-PTL": [972, 402],
 	"Bougie-OPS": [1035, 345],
 	"Bougie-UG": [975, 343],
-	"Bougie-MK": [1005, 450],
+	"Bougie-MK": [995, 457],
 	"Bordj Bou Arreridj-OC": [894, 548],
 	"Bordj Bou Arreridj-PTL": [838, 549],
 	"Bordj Bou Arreridj-OPS": [895, 490],
 	"Bordj Bou Arreridj-UG": [838, 490],
-	"Bordj Bou Arreridj-MK": [952, 505],
+	"Bordj Bou Arreridj-MK": [960, 515],
 	"Tizi Ouzou-OC": [900, 412],
 	"Tizi Ouzou-PTL": [842, 412],
 	"Tizi Ouzou-OPS": [905, 354],
@@ -177,7 +177,7 @@ const LAYOUT = {
 	"Philippeville-PTL": [1253, 457],
 	"Philippeville-OPS": [1308, 403],
 	"Philippeville-UG": [1252, 345],
-	"Philippeville-MK": [1322, 316],
+	"Philippeville-MK": [1335, 316],
 	"Setif-OC": [1141, 542],
 	"Setif-PTL": [1045, 524],
 	"Setif-OPS": [1166, 377],
@@ -274,6 +274,10 @@ function is_area_terrorized(l) {
 
 function is_area_remote(l) {
 	return (view.areas[l] & AREA_REMOTE_MASK) === AREA_REMOTE_MASK
+}
+
+function is_area_urban(l) {
+	return data.areas[l].type === URBAN
 }
 
 function is_area_country(l) {
@@ -560,6 +564,7 @@ function create_border_zone(i, label) {
 	document.getElementById("boxes").appendChild(e)
 }
 
+const URBAN = 2
 const COUNTRY = 4
 
 function create_area(i, _area_id, area_name, _type) {
@@ -581,8 +586,8 @@ function create_area_u(i, sel) {
 }
 
 function create_area_markers(i, area_id, area_name) {
-	const box_w = 150
-	const box_h = 50
+	const box_w = is_area_urban(i) || is_area_country(i) ? 150 : 100
+	const box_h = 100
 
 	let layout = LAYOUT[area_name + '-MK']
 	if (!layout)
@@ -601,7 +606,7 @@ function create_area_markers(i, area_id, area_name) {
 
 	ui.area_markers[i] = {}
 
-	for (let marker of ['remote', 'fln_control', 'gov_control', 'terror', 'oas_active']) {
+	for (let marker of ['fln_control', 'gov_control', 'terror', 'remote', 'oas_active']) {
 		let em = ui.area_markers[i][marker] = document.createElement("div")
 		em.id = `area-marker-${i}-${marker}`
 		em.className = `counter ${marker} hide`
