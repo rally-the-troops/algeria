@@ -20,6 +20,24 @@
 @font-face { font-family: "URW Gothic"; font-style: italic; font-weight: bold; src: url(fonts/URWGothic-DemiOblique.woff2); }
 
 :root {
+	--fln-base: #006633;
+	--fln-70: #61b37b;
+	--fln-75: #71c38a;
+	--fln-80: #81d49a;
+	--fln-85: #91e5aa;
+
+	--gov-base: #002153;
+	--gov-44: #31548b;
+	--gov-70: #78a0dc;
+	--gov-75: #87b0ed;
+	--gov-80: #98c0ff;
+	--gov-85: #b2d0ff;
+
+	--red-base: #d21034;
+	--red-80: #ffa09e;
+	--red-75: #ff8484;
+	--red-67: #fe4a57;
+
 	--area-highlight-color: white;
 	--urban-highlight-color: white;
 	--rural-highlight-color: green;
@@ -28,7 +46,7 @@
 	--selected-color: cyan;
 
 	--tip-color: yellow;
-	--target-color: indianred;
+	--target-color: red;
 
 	--counter-french-color: #BCDDFF;
 	--counter-elite-color: #FFCCCB;
@@ -39,13 +57,16 @@
 
 main { background-color: dimgray }
 
-#role_FLN .role_name { background-color: #C1E1C1;}
-#role_Government .role_name { background-color: #BCDDFF;}
+body.FLN header.your_turn { background-color: var(--fln-80) }
+body.Government header.your_turn { background-color: var(--gov-80) }
+
+#role_FLN .role_name { background-color: var(--fln-80) }
+#role_Government .role_name { background-color: var(--gov-80) }
 
 .role.active span { text-decoration: underline; }
-.role_ap_text { color: #555; float: right; margin-right: 4px; }
+.role_ap_text { color: #0008; float: right; margin-right: 4px; }
 .role_ap { float: right; margin-right: 8px;}
-.role_psl_text { color: #555; float: right; margin-right: 4px;}
+.role_psl_text { color: #0008; float: right; margin-right: 4px;}
 .role_psl { float: right; }
 
 #log { background-color: whitesmoke; }
@@ -70,12 +91,12 @@ main { background-color: dimgray }
 	border-bottom: 1px solid #333;
 }
 
-#log .h1 { background-color: hsl(0, 100%, 80%); }
-#log .h2 { background-color: hsl(0, 100%, 85%); }
-#log .h3 { background-color: hsl(0, 0%, 85%); }
+#log .h1 { background-color: var(--red-75); }
+#log .h2 { background-color: var(--red-85); }
+#log .h3 { background-color: gainsboro; }
 
-#log .fln { background-color: #c1e1c1; }
-#log .gov { background-color: #bcddff; }
+#log .fln { background-color: var(--fln-85) }
+#log .gov { background-color: var(--gov-85) }
 
 X#log .oas { background-color: #555; color: white; }
 
@@ -110,13 +131,13 @@ X#log .oas { background-color: #555; color: white; }
 
 #log .die_gov {
 	background-image: url(images/die_black_pips.svg);
-	background-color: hsl(216, 100%, 85%);
+	background-color: var(--gov-85);
 	border: 1px solid #222;
 }
 
 #log .die_fln {
 	background-image: url(images/die_black_pips.svg);
-	background-color: hsl(140, 70%, 70%);
+	background-color: var(--fln-85);
 	border: 1px solid #222;
 }
 
