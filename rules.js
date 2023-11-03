@@ -2064,10 +2064,10 @@ states.event_gov_nato_pressure_select_units = {
 }
 
 function goto_suez_crisis() {
+	log_event("Suez Crisis.")
 
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
-		log("Suez Crisis.")
 		log("No effect.")
 		end_random_event()
 		return
@@ -2080,7 +2080,7 @@ function goto_suez_crisis() {
 	// The Government player must remove 1d6 elite units from the map, up to the number actually available
 	let roll = roll_d6()
 
-	log("Suez Crisis G" + roll)
+	log("Crisis G" + roll)
 
 	game.selected = []
 
