@@ -1027,6 +1027,10 @@ function on_log(text) { // eslint-disable-line no-unused-vars
 		text = text.substring(4)
 		p.className = 'h3'
 	}
+	else if (text.match(/^\.evt/)) {
+		text = text.substring(5)
+		p.className = 'evt'
+	}
 
 	p.innerHTML = text
 	return p

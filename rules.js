@@ -1735,12 +1735,14 @@ function goto_random_event() {
 	}
 
 	if (game.events.gov_return) {
-		log("Units returned:")
-		for (const [u, loc] of Object.entries(game.events.gov_return)) {
-			logi(`U${u} to A${loc}`)
+		let summary = []
+		map_for_each(game.events.gov_return, (u, loc) => {
 			deploy_unit(u, loc)
-		}
+			summary.push(u)
+		})
 		delete game.events.gov_return
+
+		log_area_unit_list("Units returned", summary)
 		log_br()
 	}
 
@@ -1750,12 +1752,12 @@ function goto_random_event() {
 	//the two countries immediately become independent.
 	if (game.more_deterministic_independence && !game.is_morocco_tunisia_independent) {
 		let roll = roll_d6()
-		log("More Deterministic Independence")
 		if (roll <= game.turn) {
-			logi("B" + roll)
+			log("More Deterministic Independence B" + roll)
+			log("Morocco and Tunisia Gain Independence.")
 			grant_morocco_tunisia_independence()
 		} else {
-			logi("W" + roll)
+			log("More Deterministic Independence W" + roll)
 		}
 		log_br()
 	}
@@ -1773,6 +1775,7 @@ states.random_event = {
 		let rnd = 10 * a + b
 
 		log(`Random Event G${a} F${b}`)
+		log_br()
 
 		if (rnd <= 26) {
 			goto_no_event()
@@ -1809,19 +1812,19 @@ function goto_no_event() {
 
 function goto_fln_foreign_arms_shipment() {
 	log_event("FLN Foreign arms shipment.")
+
 	// The FLN player adds 2d6 AP, minus the current number of Naval Points.
-	let roll = roll_nd6(2)
-	logi(`-${game.naval} Naval PTS`)
+	let roll = roll_nd6(2, "F", "Shipment")
+	if (game.naval)
+		logi(`-${game.naval} Naval PTS`)
 	let delta_ap = Math.max(roll - game.naval, 0)
-	if (delta_ap)
-		raise_fln_ap(delta_ap)
+	raise_fln_ap(delta_ap)
 	end_random_event()
 }
 
 function goto_jealousy_and_paranoia() {
 	log_event("Jealousy and Paranoia.")
-	log("FLN units may not Move domestically this turn only")
-	// FLN units may not Move across wilaya borders this turn only (they may move across international borders)
+	log("FLN units may not Move across wilaya borders this turn only (they may move across international borders).")
 	game.events.jealousy_and_paranoia = true
 	end_random_event()
 }
@@ -1836,8 +1839,8 @@ function goto_elections_in_france() {
 
 function goto_un_debate() {
 	log_event("UN debates Algerian Independence.")
-	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
 
+	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
 	if (game.gov_psl <= game.fln_psl) {
 		game.phasing = FLN_NAME
 	} else {
@@ -1855,12 +1858,14 @@ states.random_event_un_debate = {
 		gen_action("lower_gov_psl_1d6")
 	},
 	raise_fln_psl_1d6() {
-		let roll = roll_1d6()
+		let roll = roll_d6()
+		log("Raised FLN PSL by F" + roll)
 		raise_fln_psl(roll)
 		end_random_event()
 	},
 	lower_gov_psl_1d6() {
-		let roll = roll_1d6()
+		let roll = roll_d6()
+		log("Lowered Gov PSL by G" + roll)
 		lower_gov_psl(roll)
 		end_random_event()
 	}
@@ -1913,12 +1918,13 @@ states.event_fln_factional_purge_select_zone = {
 }
 
 function continue_fln_factional_purge() {
-	log(`in wilaya (zone) ${game.events.fln_purge_zone}`)
-
 	game.phasing = FLN_NAME
 	set_active_player()
 
-	let roll = roll_1d6()
+	let roll = roll_d6()
+
+	log(`Purge in wilaya ${game.events.fln_purge_zone} G${roll}`)
+
 	game.selected = []
 	game.events.fln_purge_num = Math.min(roll, count_friendly_units_in_zone(game.events.fln_purge_zone))
 	game.state = "event_fln_factional_purge_select_units"
@@ -1952,13 +1958,13 @@ states.event_fln_factional_purge_select_units = {
 }
 
 function grant_morocco_tunisia_independence() {
-	log_event("Morocco & Tunisia Gains Independence.")
 	log_br()
+
 	// Raise both FLN and Government PSL by 2d6;
-	let fln_roll = roll_nd6(2)
+	let fln_roll = roll_nd6(2, "F")
 	raise_fln_psl(fln_roll)
 
-	let gov_roll = roll_nd6(2)
+	let gov_roll = roll_nd6(2, "G")
 	raise_gov_psl(gov_roll)
 
 	// FLN player may now Build/Convert units in these two countries as if a Front were there
@@ -1968,12 +1974,14 @@ function grant_morocco_tunisia_independence() {
 }
 
 function goto_morocco_tunisia_independence() {
+	log_event("Morocco and Tunisia Gain Independence.")
+
 	if (game.is_morocco_tunisia_independent || game.scenario === "1958" || game.scenario === "1960") {
 		// If this event is rolled again, or if playing the 1958 or 1960 scenarios,
 		// FLN player instead rolls on the Mission Success Table (no DRM) and gets that number of AP
 		// (represents infiltration of small numbers of weapons and troops through the borders).
-		log_event("Infiltration through borders.")
-		let roll = roll_1d6()
+		let roll = roll_d6()
+		log("Infiltration F" + roll)
 		let [result, _effect] = roll_mst(roll)
 		if (result)
 			raise_fln_ap(result)
@@ -1988,12 +1996,15 @@ function goto_morocco_tunisia_independence() {
 
 function goto_nato_pressure() {
 	log_event("NATO pressures France to boost European defense.")
+
 	// The Government player rolls 1d6 and must remove that number of French Army brigades
 	// (a division counts as three brigades) from the map.
 	game.phasing = GOV_NAME
 	set_active_player()
 
-	let roll = roll_1d6()
+	let roll = roll_d6()
+	log("Remove French brigades G" + roll)
+
 	game.selected = []
 	let num_fr_x = count_friendly_units_on_map_of_type(FR_X)
 	let num_fr_xx = count_friendly_units_on_map_of_type(FR_XX)
@@ -2052,10 +2063,10 @@ states.event_gov_nato_pressure_select_units = {
 }
 
 function goto_suez_crisis() {
-	log_event("Suez Crisis.")
 
 	if (game.events.suez_crisis || game.scenario === "1958" || game.scenario === "1960") {
 		// Treat as "No Event" if rolled again, or playing 1958 or 1960 scenarios.
+		log("Suez Crisis.")
 		log("No effect.")
 		end_random_event()
 		return
@@ -2066,15 +2077,19 @@ function goto_suez_crisis() {
 	game.events.suez_crisis = true
 
 	// The Government player must remove 1d6 elite units from the map, up to the number actually available
-	let roll = roll_1d6()
+	let roll = roll_d6()
+
+	log("Suez Crisis G" + roll)
+
 	game.selected = []
+
 	let num_el_x = count_friendly_units_on_map_of_type(EL_X)
 	let to_remove = Math.min(roll, num_el_x)
 	if (to_remove) {
 		game.events.gov_remove_num = to_remove
 		game.state = "event_gov_suez_crisis_select_units"
 	} else {
-		log("No French elite units to remove")
+		log("No French elite units to remove.")
 		end_random_event()
 	}
 }
@@ -2109,12 +2124,12 @@ states.event_gov_suez_crisis_select_units = {
 		// - they do not need to be mobilized again but do need to be activated.
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_return)
-			game.events.gov_return = {}
+			game.events.gov_return = []
 		log_area_unit_list("Removed (will return)", list)
 		for (let u of list) {
 			let loc = unit_loc(u)
 			remove_unit(u, ELIMINATED)
-			game.events.gov_return[u] = loc
+			map_set(game.events.gov_return, u, loc)
 		}
 		delete game.events.gov_remove_num
 		end_random_event()
@@ -2123,7 +2138,7 @@ states.event_gov_suez_crisis_select_units = {
 
 function goto_amnesty() {
 	log_event("Amnesty.")
-	log("Government Civil Affairs & Suppression +1 DRM this turn.")
+	log("All Government Civil Affairs and Suppression missions get a +1 DRM this turn.")
 	game.events.amnesty = true
 	end_random_event()
 }
@@ -2408,6 +2423,7 @@ states.gov_reinforcement = {
 		let list = game.selected
 		game.selected = []
 		push_undo()
+		// TODO: delay to summary?
 		log_area_unit_list("Removed", list)
 		for (let u of list) {
 			remove_unit(u, DEPLOY)
@@ -2441,20 +2457,20 @@ states.gov_reinforcement = {
 	},
 	activate_border_zone() {
 		push_undo()
-		log("Border Zone Activated.")
+		log("Activated Border Zone.")
 		lower_gov_psl(COST_ACTIVATE_BORDER_ZONE)
 		game.border_zone_active = true
 	},
 	mobilize_border_zone() {
 		push_undo()
-		log("Border Zone Mobilized.")
+		log("Mobilized Border Zone.")
 		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm = 0
 		game.events.border_zone_mobilized = true
 	},
 	improve_border_zone() {
 		push_undo()
-		log("Border Zone Improved.")
+		log("Improved Border Zone.")
 		lower_gov_psl(COST_BORDER_ZONE)
 		game.border_zone_drm -= 1
 	},
@@ -2463,10 +2479,10 @@ states.gov_reinforcement = {
 		game.gov_psl = Math.floor(game.gov_psl)
 		delete game.events.gov_has_mobilized
 
-		log_area_unit_list("Mobilize", game.summary.mobilize)
+		log_area_unit_list("Mobilized", game.summary.mobilize)
 		log_lower_gov_psl(game.summary.mobilize_cost)
 
-		log_area_unit_list("Activate", game.summary.activate)
+		log_area_unit_list("Activated", game.summary.activate)
 		log_lower_gov_psl(game.summary.activate_cost)
 
 		if (game.summary.air_pts) {
@@ -2747,9 +2763,9 @@ states.fln_reinforcement = {
 		convert_fln_unit(unit, FAILEK)
 	},
 	end_reinforcement() {
-		log_area_unit_list("Build", game.summary.build)
+		log_area_unit_list("Built", game.summary.build)
 		log_pay_ap(game.summary.build_cost)
-		log_area_unit_list("Convert", game.summary.convert)
+		log_area_unit_list("Converted", game.summary.convert)
 		log_pay_ap(game.summary.convert_cost)
 
 		game.summary = null
@@ -4373,7 +4389,7 @@ states.gov_airmobilize_select_units = {
 		let cost = airmobilize_cost(list)
 		game.helo_avail -= cost
 
-		log_area_unit_list("Airmobilize", list)
+		log_area_unit_list("Airmobilized", list)
 		for (let u of list)
 			set_unit_airmobile(u)
 		logi(`-${cost} Helo PTS`)
@@ -4996,7 +5012,8 @@ function gov_depreciate_asset(title, num_max) {
 	let roll = roll_d6()
 
 	log(`${title} G${roll}`)
-	logi(`Loss ${loss} of ${num_max}`)
+	logi(`Points ${num_max}`)
+	logi(`Loss Number ${loss}`)
 
 	if (game.gov_psl <= 30) {
 		logi("-1 Gov PSL ≤ 30")
@@ -5040,7 +5057,8 @@ function fln_depreciation() {
 	let loss = depreciation_loss_number(game.fln_ap)
 
 	log("Unused FLN AP F" + roll)
-	logi(`Loss ${loss} of ${game.fln_ap}`)
+	logi(`Points ${game.fln_ap}`)
+	logi(`Loss Number ${loss}`)
 
 	if (game.fln_psl <= 30) {
 		logi("-1 FLN PSL ≤ 30")
@@ -5164,7 +5182,7 @@ function roll_coup_table(oas_drm=false) {
 	let d2 = roll_d6()
 
 	log_br()
-	log(`Coup attempt G${d1+d2}`)
+	log(`Coup attempt G${d1} G${d2}`)
 
 	let coup = d1 + d2
 	if (oas_drm) {
@@ -5312,7 +5330,7 @@ states.gov_coup_attempt_free_mobilize = {
 		game.events.gov_free_mobilize -= cost
 	},
 	done() {
-		log_area_unit_list("Mobilization", game.summary)
+		log_area_unit_list("Mobilized", game.summary)
 
 		game.summary = null
 
@@ -5618,8 +5636,7 @@ function log_h3(msg) {
 }
 
 function log_event(msg) {
-	log_br()
-	log(msg)
+	log(".evt " + msg)
 	log_br()
 }
 
