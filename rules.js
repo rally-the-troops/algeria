@@ -2469,8 +2469,6 @@ states.gov_reinforcement = {
 		log_area_unit_list("Activate", game.summary.activate)
 		log_lower_gov_psl(game.summary.activate_cost)
 
-		log_area_unit_list("Remove", game.summary.remove)
-
 		if (game.summary.air_pts) {
 			log_br()
 			log("Air PTS +" + game.summary.air_pts)
@@ -2536,11 +2534,6 @@ function give_fln_ap() {
 		}
 
 		total_ap += control_ap
-
-		if (summary) {
-			log(`A${loc}`)
-			logi(`${summary} (${control_ap})`)
-		}
 	})
 
 	raise_fln_ap(total_ap)
@@ -2781,7 +2774,7 @@ function goto_gov_deployment_phase() {
 	}
 	game.state = "gov_deployment"
 	game.selected = []
-	game.operations = []
+	game.deployed = []
 	game.mode_changed = []
 }
 
@@ -3303,7 +3296,7 @@ function goto_distribute_psp(who, psp, reason) {
 	}
 	set_active_player()
 	log_br()
-	if (game.active === FLN)
+	if (game.active === FLN_NAME)
 		log(`FLN to distribute ${psp} PSP.`)
 	else
 		log(`Gov to distribute ${psp} PSP.`)
