@@ -588,7 +588,8 @@ function roll_oas_control() {
 }
 
 function remove_oas() {
-	log("Gov PSL ≥ 70: OAS Removed")
+	log("Gov PSL ≥ 70:")
+	logi("OAS Removed")
 	game.oas = 0
 	game.oas_control = -1
 }
@@ -4858,9 +4859,9 @@ states.gov_population_resettlement = {
 
 function check_mandatory_react() {
 	if (game.events.must_react) {
-		log("Penality for not Reacting")
 		// Government must react with at least 1 unit, otherwise -1d6 PSP
-		let roll = roll_1d6()
+		let roll = roll_d6()
+		log("Penalty for No React W" + roll)
 		lower_gov_psl(roll)
 	}
 }
