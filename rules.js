@@ -226,7 +226,7 @@ function log_pay_ap(amount) {
 function pay_ap(amount, verbose=true) {
 	if (verbose)
 		log_pay_ap(amount)
-	game.fln_ap = Math.min(MAX_AP, game.fln_ap + amount)
+	game.fln_ap = Math.max(0, game.fln_ap - amount)
 	return amount
 }
 
