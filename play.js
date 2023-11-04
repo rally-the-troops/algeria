@@ -471,6 +471,7 @@ function layout_stack(loc_id, box_id) {
 	let dy = -4
 
 	if (stack === focus) {
+		z = 100
 		if (loc_id === MOROCCO) {
 			dx = 0
 			dy = -45
