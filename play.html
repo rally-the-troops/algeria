@@ -360,7 +360,35 @@ svg .area.tip, svg .urban2.tip {
 }
 
 .unit.neutralized {
-	filter: grayscale(50%) brightness(125%);
+	filter: grayscale(75%);
+}
+
+.unit.neutralized::before {
+	display: block;
+	position: absolute;
+	top: 7px;
+	width: 39px;
+	font-size: 10px;
+	height: 17px;
+	line-height: 17px;
+	text-align: center;
+	font-weight: bold;
+	content: "NEUT";
+}
+
+.unit.fln.neutralized::before {
+	background-color: var(--fln-base);
+	color: white;
+}
+
+.unit.gov.neutralized::before {
+	background-color: var(--gov-44);
+	color: white;
+}
+
+.unit.neutralized:hover::before {
+	opacity: 0.5;
+	content: "";
 }
 
 .border_zone.neutralized {
