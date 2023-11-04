@@ -3134,8 +3134,7 @@ states.fln_operations = {
 
 		// Only allow to Government to take a mission if they didn't just pass.
 		view.actions.gov_mission = !game.passes
-		gen_action("auto_pass")
-		gen_action("pass")
+		view.actions.pass = 1
 	},
 	propaganda() {
 		goto_fln_propaganda_mission()
@@ -3158,20 +3157,13 @@ states.fln_operations = {
 		goto_gov_operations_phase()
 	},
 	pass() {
-		fln_pass()
-	},
-	auto_pass() {
 		game.fln_auto_pass = true
 		fln_pass()
 	}
 }
 
 function fln_pass() {
-	if (game.fln_auto_pass) {
-		log_mission("Pass (automatic)")
-	} else {
-		log_mission("Pass")
-	}
+	log_mission("Pass")
 	game.passes += 1
 	if (game.passes >= 2) {
 		end_operations_phase()
@@ -4144,11 +4136,7 @@ states.gov_operations = {
 }
 
 function gov_pass() {
-	if (game.gov_auto_pass) {
-		log_mission("Pass (automatic)")
-	} else {
-		log_mission("Pass")
-	}
+	log_mission("Pass")
 	game.passes += 1
 	if (game.passes >= 2) {
 		end_operations_phase()
