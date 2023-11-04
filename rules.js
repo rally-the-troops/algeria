@@ -2933,10 +2933,7 @@ function goto_fln_deployment_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
 	log_h2(`${game.active} Deployment`)
-	game.summary = {
-		underground: [],
-		operations: []
-	}
+	game.summary = []
 	game.state = "fln_deployment"
 	game.selected = []
 
@@ -2946,96 +2943,106 @@ function goto_fln_deployment_phase() {
 	})
 }
 
+function has_cadre_and_front_in_any_loc_in_algeria() {
+	// each algerian area
+	for (let loc = 3; loc < area_count; ++loc)
+		// TODO: not neutralized? must be UG?
+		if (has_unit_type_in_loc(CADRE, loc) && has_unit_type_in_loc(FRONT, loc))
+			return true
+	return false
+}
+
+function can_deploy_cadre_to_france() {
+	return (
+		!game.deploy_cadre_france &&
+		!has_friendly_unit_in_loc(FRANCE) &&
+		has_cadre_and_front_in_any_loc_in_algeria()
+	)
+}
+
 states.fln_deployment = {
 	inactive: "to do Deployment",
 	prompt() {
-		view.prompt = "Deploy units to OPS in same area."
-		if (!game.selected.length) {
-			for_each_friendly_unit_on_map_box(UG, u => {
-				let loc = unit_loc(u)
-				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
-					gen_action_unit(u)
-			})
+		view.prompt = "Deploy units to OPS."
 
-			gen_action("end_deployment")
-		} else {
-			let first_unit = game.selected[0]
-			let first_unit_loc = unit_loc(first_unit)
-			let first_unit_type = unit_type(first_unit)
+		if (can_deploy_cadre_to_france())
+			view.actions.deploy_cadre_to_france = 1
 
-			view.actions.undo = 1
+		for_each_friendly_unit_on_map_box(UG, u => {
+			let loc = unit_loc(u)
+			if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
+				gen_action_unit(u)
+		})
 
-			// Allow deselect && more units in same box
-			for_each_friendly_unit_in_loc_box(first_unit_loc, UG, u => {
-				if (is_unit_not_neutralized(u)) {
-					gen_action_unit(u)
-				}
-			})
-
-			if (is_area_algerian(first_unit_loc)) {
-				gen_action_loc(first_unit_loc)
-			} else if (is_area_france(first_unit_loc) && !game.deploy_cadre_france) {
-				// The Cadre unit in France may be deployed to any Area where there is a Front unit.
-				// you either send 1 Cadre there, in the Deployment Phase, or remove it. Not Both
-				let has_front = false
-				for_each_friendly_unit_on_map_of_type(FRONT, u => {
-					gen_action_loc(unit_loc(u))
-					has_front = true
-				})
-				if (has_front) {
-					view.prompt = "Deploy Cadre to Area with Front."
-				}
-			}
-
-			if (!game.deploy_cadre_france && first_unit_type == CADRE && game.selected.length === 1 && !has_friendly_unit_in_loc(FRANCE) && !is_area_urban(first_unit_loc)) {
-				view.prompt = "Deploy units to OPS in same area (or Cadre to France)."
-				// deploy single Cadre to France
-				gen_action_loc(FRANCE)
-			}
-		}
+		view.actions.end_deployment = 1
 	},
-	undo() {
-		if (game.selected.length > 0)
-			set_clear(game.selected)
-		else
-			pop_undo()
+	deploy_cadre_to_france() {
+		push_undo()
+		game.state = "fln_deploy_cadre_to_france"
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
-	},
-	loc(to) {
-		let list = game.selected
-		game.selected = []
 		push_undo()
-		if (is_area_france(to))
-			game.deploy_cadre_france = true
-		for (let u of list) {
-			let loc = unit_loc(u)
-			if (loc === to) {
-				if (unit_box(u) === UG) {
-					set_add(game.summary.operations, u)
-					set_unit_box(u, OPS)
-				} else {
-					set_add(game.summary.underground, u)
-					set_unit_box(u, UG)
-				}
-			} else {
-				set_add(game.summary.underground, u)
-				set_unit_loc(u, to)
-				set_unit_box(u, UG)
-			}
-			if (is_area_france(loc))
-				game.deploy_cadre_france = true
+		let loc = unit_loc(u)
+		if (is_area_france(loc)) {
+			game.state = "fln_deploy_cadre_from_france"
+			game.selected = u
+			return
 		}
+		set_add(game.summary, u)
+		set_unit_box(u, OPS)
 	},
 	end_deployment() {
-		log_area_unit_list("Underground", game.summary.underground)
-		log_area_unit_list("Operations", game.summary.operations)
+		log_area_unit_list("Deployed", game.summary)
 
 		game.summary = null
 
 		end_deployment()
-	}
+	},
+}
+
+states.fln_deploy_cadre_to_france = {
+	inactive: "to do Deployment",
+	prompt() {
+		view.prompt = "Deploy Cadre to France."
+		for_each_friendly_unit_on_map_box(UG, u => {
+			let loc = unit_loc(u)
+			if (unit_type(u) === CADRE)
+				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !is_area_france(loc))
+					if (has_unit_type_in_loc(FRONT, loc))
+						gen_action_unit(u)
+		})
+	},
+	unit(u) {
+		log(`Deployed U${u} to A${FRANCE}.`)
+
+		game.deploy_cadre_france = true
+		set_unit_loc(u, FRANCE)
+		set_unit_box(u, UG) // TODO: UG in france?
+		set_add(game.summary, u) // WHICH?
+
+		game.state = "fln_deployment"
+	},
+}
+
+states.fln_deploy_cadre_from_france = {
+	inactive: "to do Deployment",
+	prompt() {
+		view.prompt = "Deploy Cadre to Area with Front."
+		for_each_friendly_unit_on_map_of_type(FRONT, u => {
+			gen_action_loc(unit_loc(u))
+		})
+	},
+	loc(to) {
+		let u = game.selected
+		game.selected = null
+
+		game.deploy_cadre_france = true
+		set_unit_loc(u, to)
+		set_unit_box(u, OPS) // to UG or OPS?
+		set_add(game.summary, u)
+
+		game.state = "fln_deployment"
+	},
 }
 
 function end_deployment() {
