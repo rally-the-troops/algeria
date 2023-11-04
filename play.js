@@ -29,7 +29,7 @@ var ORAN = data.locations["ORAN"]
 var ALGIERS = data.locations["ALGIERS"]
 var CONSTANTINE = data.locations["CONSTANTINE"]
 
-const OUT_OF_PLAY = 0
+const UNUSED = 0
 const DEPLOY = 1
 const ELIMINATED = 2
 
@@ -236,6 +236,7 @@ let ui = {
 	fln_supply: document.getElementById("fln_supply"),
 	gov_supply: document.getElementById("gov_supply"),
 	eliminated: document.getElementById("eliminated"),
+	unused: document.getElementById("unused"),
 }
 
 const LAYOUT_BOX = []
@@ -767,8 +768,8 @@ function update_map() {
 		let e = ui.units[u]
 		let loc = unit_loc(u)
 		switch (loc) {
-			case OUT_OF_PLAY:
-				e.remove()
+			case UNUSED:
+				ui.unused.appendChild(e)
 				break
 			case DEPLOY:
 				if (is_gov_unit(u))
