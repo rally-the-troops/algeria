@@ -965,7 +965,10 @@ function on_blur_area_tip(x) { // eslint-disable-line no-unused-vars
 }
 
 function on_click_area_tip(x) { // eslint-disable-line no-unused-vars
-	scroll_into_view(ui.areas[x])
+	if (ui.areas_u[x])
+		scroll_into_view(ui.areas_u[x])
+	else
+		scroll_into_view(ui.areas[x])
 }
 
 function sub_area_name(_match, p1, _offset, _string) {
