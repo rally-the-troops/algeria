@@ -2703,24 +2703,35 @@ states.fln_reinforcement = {
 				// The FLN player may build new Cadres or Bands by spending the AP cost and placing them in the UG box of any area which contains a non-Neutralized Front
 				// (note that this requires the presence of a Front)
 				if (has_free_unit_by_type(CADRE) && game.fln_ap >= build_cost(first_unit_loc))
-					gen_action("build_cadre")
+					view.actions.build_cadre = 1
+				else
+					view.actions.build_cadre = 0
 				if (has_free_unit_by_type(BAND) && game.fln_ap >= build_cost(first_unit_loc))
-					gen_action("build_band")
+					view.actions.build_band = 1
+				else
+					view.actions.build_band = 0
 				if (has_free_unit_by_type(CADRE) && !is_area_morocco_or_tunisia(first_unit_loc))
-					gen_action("convert_front_to_cadre")
+					view.actions.convert_front_to_cadre = 1
+				else
+					view.actions.convert_front_to_cadre = 0
 
 			} else if (first_unit_type === CADRE) {
 				view.prompt = "Reinforcement: Convert Cadre."
 				// Fronts may not be created in Remote areas (not enough people) and there may be only one Front per area.
-				if (!(has_unit_type_in_loc(FRONT, first_unit_loc) || is_area_remote(first_unit_loc)) && has_free_unit_by_type(FRONT) && game.fln_ap >= convert_cost(FRONT)) {
-					gen_action("convert_cadre_to_front")
-				}
+				if (!(has_unit_type_in_loc(FRONT, first_unit_loc) || is_area_remote(first_unit_loc)) && has_free_unit_by_type(FRONT) && game.fln_ap >= convert_cost(FRONT))
+					view.actions.convert_cadre_to_front = 1
+				else
+					view.actions.convert_cadre_to_front = 0
 				if (has_free_unit_by_type(BAND) && game.fln_ap >= convert_cost(BAND))
-					gen_action("convert_cadre_to_band")
+					view.actions.convert_cadre_to_band = 1
+				else
+					view.actions.convert_cadre_to_band = 0
 			} else if (first_unit_type === BAND) {
 				view.prompt = "Reinforcement: Convert Band."
 				if (has_free_unit_by_type(FAILEK) && game.fln_ap >= convert_cost(FAILEK))
-					gen_action("convert_band_to_failek")
+					view.actions.convert_band_to_failek = 1
+				else
+					view.actions.convert_band_to_failek = 0
 			}
 		}
 	},
