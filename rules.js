@@ -2933,10 +2933,7 @@ function goto_fln_deployment_phase() {
 	game.phasing = FLN_NAME
 	set_active_player()
 	log_h2(`${game.active} Deployment`)
-	game.summary = {
-		underground: [],
-		operations: []
-	}
+	game.summary = []
 	game.state = "fln_deployment"
 	game.selected = []
 
@@ -2991,12 +2988,11 @@ states.fln_deployment = {
 			game.selected = u
 			return
 		}
-		set_add(game.summary.operations, u)
+		set_add(game.summary, u)
 		set_unit_box(u, OPS)
 	},
 	end_deployment() {
-		log_area_unit_list("Underground", game.summary.underground)
-		log_area_unit_list("Operations", game.summary.operations)
+		log_area_unit_list("Deployed", game.summary)
 
 		game.summary = null
 
@@ -3022,7 +3018,7 @@ states.fln_deploy_cadre_to_france = {
 		game.deploy_cadre_france = true
 		set_unit_loc(u, FRANCE)
 		set_unit_box(u, UG) // TODO: UG in france?
-		set_add(game.summary.operations, u) // WHICH?
+		set_add(game.summary, u) // WHICH?
 
 		game.state = "fln_deployment"
 	},
@@ -3043,7 +3039,7 @@ states.fln_deploy_cadre_from_france = {
 		game.deploy_cadre_france = true
 		set_unit_loc(u, to)
 		set_unit_box(u, OPS) // to UG or OPS?
-		set_add(game.summary.operations, u) // WHICH?
+		set_add(game.summary, u)
 
 		game.state = "fln_deployment"
 	},
