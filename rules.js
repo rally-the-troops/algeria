@@ -2662,41 +2662,42 @@ function convert_fln_unit(u, type) {
 	free_unit(u)
 	let cost = convert_cost(type)
 	game.summary.convert_cost += pay_ap(cost, false)
+	return n
 }
 
 states.fln_reinforcement = {
 	inactive: "to do Reinforcement",
 	prompt() {
-		if (!game.selected.length) {
-			view.prompt = "Reinforcement: Build & Augment units."
+		view.prompt = "Reinforcement: Build & Augment units."
 
-			// Front can build Cadres and Bands, or be converted to Cadre
-			for_each_friendly_unit_on_map_of_type(FRONT, u => {
-				if (is_unit_not_neutralized(u))
-					gen_action_unit(u)
-			})
+		// Front can build Cadres and Bands, or be converted to Cadre
+		for_each_friendly_unit_on_map_of_type(FRONT, u => {
+			if (is_unit_not_neutralized(u))
+				gen_action_unit(u)
+		})
 
-			// Cadre can be converted to Front or Band
-			for_each_friendly_unit_on_map_of_type(CADRE, u => {
-				if (is_unit_not_neutralized(u) && !is_area_france(unit_loc(u)))
-					gen_action_unit(u)
-			})
+		// Cadre can be converted to Front or Band
+		for_each_friendly_unit_on_map_of_type(CADRE, u => {
+			if (is_unit_not_neutralized(u) && !is_area_france(unit_loc(u)))
+				gen_action_unit(u)
+		})
 
-			// Band can be converted to Failek in Morocco / Tunisia
-			for_each_friendly_unit_on_map_of_type(BAND, u => {
-				if (is_area_country(unit_loc(u)))
-					gen_action_unit(u)
-			})
+		// Band can be converted to Failek in Morocco / Tunisia
+		for_each_friendly_unit_on_map_of_type(BAND, u => {
+			if (is_area_country(unit_loc(u)))
+				gen_action_unit(u)
+		})
 
-			gen_action("end_reinforcement")
-		} else {
+		gen_action("end_reinforcement")
+
+		if (game.selected.length > 0) {
 			let first_unit = game.selected[0]
 			let first_unit_loc = unit_loc(first_unit)
 			let first_unit_type = unit_type(first_unit)
 
 			// Allow deselect
 			gen_action_unit(first_unit)
-			view.actions.undo = 1
+			// view.actions.undo = 1
 
 			if (first_unit_type === FRONT) {
 				view.prompt = "Reinforcement: Front can build Cadre or Band."
@@ -2735,52 +2736,60 @@ states.fln_reinforcement = {
 			}
 		}
 	},
-	undo() {
+	Xundo() {
 		if (game.selected.length > 0)
 			set_clear(game.selected)
 		else
 			pop_undo()
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
+		if (game.selected.length > 0) {
+			if (game.selected[0] === u)
+				game.selected.length = 0
+			else
+				game.selected[0] = u
+		} else {
+			game.selected[0] = u
+		}
 	},
 	build_cadre() {
-		let unit = pop_selected()
+		let unit = game.selected[0]
 		let loc = unit_loc(unit)
 		push_undo()
 		build_fln_unit(CADRE, loc)
 	},
 	build_band() {
-		let unit = pop_selected()
+		let unit = game.selected[0]
 		let loc = unit_loc(unit)
 		push_undo()
 		build_fln_unit(BAND, loc)
 	},
 	convert_front_to_cadre() {
-		let unit = pop_selected()
 		push_undo()
-		convert_fln_unit(unit, CADRE)
+		let unit = pop_selected()
+		game.selected[0] = convert_fln_unit(unit, CADRE)
 	},
 	convert_cadre_to_front() {
-		let unit = pop_selected()
 		push_undo()
-		convert_fln_unit(unit, FRONT)
+		let unit = pop_selected()
+		game.selected[0] = convert_fln_unit(unit, FRONT)
 	},
 	convert_cadre_to_band() {
-		let unit = pop_selected()
 		push_undo()
+		let unit = pop_selected()
 		convert_fln_unit(unit, BAND)
 	},
 	convert_band_to_failek() {
-		let unit = pop_selected()
 		push_undo()
+		let unit = pop_selected()
 		convert_fln_unit(unit, FAILEK)
 	},
 	end_reinforcement() {
-		log_area_unit_list("Built", game.summary.build)
-		log_pay_ap(game.summary.build_cost)
 		log_area_unit_list("Converted", game.summary.convert)
 		log_pay_ap(game.summary.convert_cost)
+
+		log_area_unit_list("Built", game.summary.build)
+		log_pay_ap(game.summary.build_cost)
 
 		game.summary = null
 
