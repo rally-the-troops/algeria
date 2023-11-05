@@ -1291,11 +1291,11 @@ exports.setup = function (seed, scenario, options) {
 	if (scenario === "1954") {
 		if (options.slow_french_reaction) {
 			log("Slow French Reaction.")
-			game.slow_french_reaction = true
+			game.events.slow_french_reaction = true
 		}
 		if (options.more_deterministic_independence) {
 			log("More Deterministic Independence.")
-			game.more_deterministic_independence = true
+			game.events.more_deterministic_independence = true
 		}
 	}
 	if (options.shorter_game) {
@@ -1751,9 +1751,10 @@ function goto_random_event() {
 	// assume that this will happen some time in the first 6 turns of the 1954 scenario.
 	// Each Random Events Phase, roll 1d6; if the number rolled is less than or equal to the number of the current turn,
 	//the two countries immediately become independent.
-	if (game.more_deterministic_independence && !game.is_morocco_tunisia_independent) {
+	if (game.events.more_deterministic_independence && !game.is_morocco_tunisia_independent) {
 		let roll = roll_d6()
 		if (roll <= game.turn) {
+			delete game.events.more_deterministic_independence
 			log("More Deterministic Independence B" + roll)
 			log("Morocco and Tunisia Gain Independence.")
 			grant_morocco_tunisia_independence()
@@ -2200,9 +2201,10 @@ function goto_gov_reinforcement_phase() {
 	})
 
 	if (is_slow_french_reaction() && game.fln_psl > game.gov_psl) {
-		log("French Reaction: FLN PSL > Gov PSL.")
+		log("French Reaction:")
+		logi("FLN PSL > Gov PSL")
 		log_br()
-		game.events.french_reaction = true
+		delete game.events.slow_french_reaction
 	}
 
 	//  In the Reinforcement Phase, the controlling player places the OAS marker in any urban area of Algeria or in France.
@@ -2264,7 +2266,7 @@ function mobilize_unit(u, to) {
 }
 
 function is_slow_french_reaction() {
-	return game.slow_french_reaction && !game.events.french_reaction
+	return game.events.slow_french_reaction
 }
 
 states.gov_reinforcement = {
