@@ -416,11 +416,24 @@ function on_blur(_evt) {
 let LAYOUT_TRACK = []
 let track_count = Array(100).fill(0)
 
-
-function layout_track(track, e) {
+function layout_track(track_frac, e) {
+	let track = track_frac | 0
 	let n = track_count[track]
 	let x = LAYOUT_TRACK[track][0] - 20
 	let y = LAYOUT_TRACK[track][1] - 20
+	let z = n
+
+	if (track_frac > track) {
+		let x2 = LAYOUT_TRACK[track+1][0] - 20
+		let y2 = LAYOUT_TRACK[track+1][1] - 20
+		x = (x + x2) >> 1
+		y = (y + y2) >> 1
+		if (track_count[track] > 0 || track_count[track+1] > 0)
+			n = 0.5
+		else
+			n = 0
+		z = 10
+	}
 
 	let dx = 0
 	let dy = 41
@@ -445,9 +458,10 @@ function layout_track(track, e) {
 
 	e.style.left = x + (dx * n) + "px"
 	e.style.top = y + (dy * n) + "px"
-	e.style.zIndex = n
+	e.style.zIndex = z
 
-	track_count[track] = n + 1
+	if (track_frac === track)
+		track_count[track] = n + 1
 }
 
 function layout_stack(loc_id, box_id) {
@@ -753,16 +767,20 @@ function update_map() {
 	ui.psl[GOV].textContent = view.gov_psl
 	
 	track_count.fill(0)
+
 	layout_track(view.turn % 100, ui.markers.turn)
 	layout_track(view.fln_ap, ui.markers.fln_ap)
 	layout_track(view.fln_psl, ui.markers.fln_psl)
 	layout_track(view.gov_psl, ui.markers.gov_psl)
+
+	layout_track(view.air_max, ui.markers.air_max)
 	if (view.air_max)
 		layout_track(view.air_avail, ui.markers.air_avail)
-	layout_track(view.air_max, ui.markers.air_max)
+
+	layout_track(view.helo_max, ui.markers.helo_max)
 	if (view.helo_max)
 		layout_track(view.helo_avail, ui.markers.helo_avail)
-	layout_track(view.helo_max, ui.markers.helo_max)
+
 	layout_track(view.naval, ui.markers.naval)
 
 	// Hide avail markers when no Air / Helo at all

@@ -1122,7 +1122,7 @@ exports.view = function(state, player) {
 		turn: game.turn,
 		fln_ap: game.fln_ap,
 		fln_psl: game.fln_psl,
-		gov_psl: Math.floor(game.gov_psl), // activation cost can be fraction
+		gov_psl: game.gov_psl, // activation cost can be fraction
 		air_avail: game.air_avail,
 		air_max: game.air_max,
 		helo_avail: game.helo_avail,
