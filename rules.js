@@ -1725,26 +1725,29 @@ function goto_random_event() {
 	// log_h2("Random Events Phase")
 
 	if (game.events.gov_remobilize) {
-		log("Units may remobilize this turn:")
+
+		let n = [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
 		for (let u of game.events.gov_remobilize) {
-			// TODO: summarize by type
-			logi(`U${u}`)
+			n[unit_type(u)] += 1
 			set_unit_loc(u, DEPLOY)
 		}
+
+		log("May re-mobilize this turn:")
+		for (let i = 0; i < n.length; ++i)
+			if (n[i] > 0)
+				logi(`${n[i]} ${unit_type_name[i]}`)
+
 		delete game.events.gov_remobilize
 		log_br()
 	}
 
 	if (game.events.gov_return) {
-		let summary = []
+		log_unit_summary("Units returned", game.events.gov_return)
+		log_br()
 		map_for_each(game.events.gov_return, (u, loc) => {
 			deploy_unit(u, loc)
-			summary.push(u)
 		})
 		delete game.events.gov_return
-
-		log_area_unit_list("Units returned", summary)
-		log_br()
 	}
 
 	// Instead of waiting for a random event to make Morocco and Tunisia independent,
@@ -2054,10 +2057,10 @@ states.event_gov_nato_pressure_select_units = {
 		if (!game.events.gov_remobilize)
 			game.events.gov_remobilize = []
 
-		log_area_unit_list("Removed (can re-mobilize)", list)
+		log_unit_list("Removed (can re-mobilize)", list)
 		for (let u of list) {
 			remove_unit(u, ELIMINATED)
-			game.events.gov_remobilize.push(u)
+			set_add(game.events.gov_remobilize, u)
 		}
 		delete game.events.gov_remove_num
 		end_random_event()
@@ -2127,7 +2130,7 @@ states.event_gov_suez_crisis_select_units = {
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_return)
 			game.events.gov_return = []
-		log_area_unit_list("Removed (will return)", list)
+		log_unit_list("Removed (will return)", list)
 		for (let u of list) {
 			let loc = unit_loc(u)
 			remove_unit(u, ELIMINATED)
@@ -2176,6 +2179,7 @@ function goto_gov_reinforcement_phase() {
 		mobilize_cost: 0,
 		activate: [],
 		activate_cost: 0,
+		removed: [],
 		air_pts: 0,
 		helo_pts: 0,
 		naval_pts: 0,
@@ -2392,8 +2396,8 @@ states.gov_reinforcement = {
 		game.selected = []
 		push_undo()
 		for (let u of list) {
-			set_add(game.summary.mobilize, u)
 			mobilize_unit(u, to)
+			add_unit_summary(game.summary.mobilize, u)
 		}
 		let cost = mobilization_cost(list)
 		game.summary.mobilize_cost += cost
@@ -2412,8 +2416,8 @@ states.gov_reinforcement = {
 		game.selected = []
 		push_undo()
 		for (let u of list) {
-			set_add(game.summary.activate, u)
 			set_unit_box(u, OPS)
+			add_unit_summary(game.summary.activate, u)
 		}
 		// cost can be fraction
 		let cost = activation_cost(list)
@@ -2426,9 +2430,8 @@ states.gov_reinforcement = {
 		let list = game.selected
 		game.selected = []
 		push_undo()
-		// TODO: delay to summary?
-		log_area_unit_list("Removed", list)
 		for (let u of list) {
+			add_unit_summary(game.summary.removed, u)
 			remove_unit(u, DEPLOY)
 		}
 	},
@@ -2482,10 +2485,12 @@ states.gov_reinforcement = {
 		game.gov_psl = Math.floor(game.gov_psl)
 		delete game.events.gov_has_mobilized
 
-		log_area_unit_list("Mobilized", game.summary.mobilize)
+		log_unit_summary("Removed", game.summary.removed)
+
+		log_unit_summary("Mobilized", game.summary.mobilize)
 		log_lower_gov_psl(game.summary.mobilize_cost)
 
-		log_area_unit_list("Activated", game.summary.activate)
+		log_unit_summary("Activated", game.summary.activate)
 		log_lower_gov_psl(game.summary.activate_cost)
 
 		if (game.summary.air_pts) {
@@ -2646,9 +2651,9 @@ function convert_cost(type) {
 
 function build_fln_unit(type, where) {
 	let u = find_free_unit_by_type(type)
-	set_add(game.summary.build, u)
 	set_unit_loc(u, where)
 	set_unit_box(u, UG)
+	add_unit_summary(game.summary.build, u)
 	let cost = build_cost(where)
 	game.summary.build_cost += pay_ap(cost, false)
 }
@@ -2656,10 +2661,10 @@ function build_fln_unit(type, where) {
 function convert_fln_unit(u, type) {
 	let loc = unit_loc(u)
 	let n = find_free_unit_by_type(type)
-	set_add(game.summary.convert, n)
 	set_unit_loc(n, loc)
 	set_unit_box(n, UG)
 	free_unit(u)
+	add_unit_summary(game.summary.convert, n)
 	let cost = convert_cost(type)
 	game.summary.convert_cost += pay_ap(cost, false)
 	return n
@@ -2785,10 +2790,10 @@ states.fln_reinforcement = {
 		convert_fln_unit(unit, FAILEK)
 	},
 	end_reinforcement() {
-		log_area_unit_list("Converted", game.summary.convert)
+		log_unit_summary("Converted", game.summary.convert)
 		log_pay_ap(game.summary.convert_cost)
 
-		log_area_unit_list("Built", game.summary.build)
+		log_unit_summary("Built", game.summary.build)
 		log_pay_ap(game.summary.build_cost)
 
 		game.summary = null
@@ -2891,12 +2896,12 @@ states.gov_deployment = {
 		for (let u of list) {
 			let loc = unit_loc(u)
 			if (loc === to) {
-				set_add(game.summary.patrol, u)
 				set_unit_box(u, PTL)
+				add_unit_summary(game.summary.patrol, u)
 			} else {
-				set_add(game.summary.operations, u)
 				set_unit_loc(u, to)
 				set_unit_box(u, OPS)
+				add_unit_summary(game.summary.operations, u)
 			}
 			set_add(game.deployed, u)
 		}
@@ -2906,11 +2911,11 @@ states.gov_deployment = {
 		let loc = unit_loc(u)
 		push_undo()
 		if (is_unit_dispersed(u)) {
-			set_add(game.summary.concentrated, u)
 			clear_unit_dispersed(u)
+			add_unit_summary(game.summary.concentrated, u)
 		} else {
-			set_add(game.summary.dispersed, u)
 			set_unit_dispersed(u)
+			add_unit_summary(game.summary.dispersed, u)
 		}
 		set_add(game.mode_changed, u)
 	},
@@ -2918,10 +2923,10 @@ states.gov_deployment = {
 		delete game.deployed
 		delete game.mode_changed
 
-		log_area_unit_list("Patrol", game.summary.patrol)
-		log_area_unit_list("Operations", game.summary.operations)
-		log_area_unit_list("Concentrated", game.summary.concentrated)
-		log_area_unit_list("Dispersed", game.summary.dispersed)
+		log_unit_summary("Patrol", game.summary.patrol)
+		log_unit_summary("Operations", game.summary.operations)
+		log_unit_summary("Concentrated", game.summary.concentrated)
+		log_unit_summary("Dispersed", game.summary.dispersed)
 
 		game.summary = null
 
@@ -2988,11 +2993,11 @@ states.fln_deployment = {
 			game.selected = u
 			return
 		}
-		set_add(game.summary, u)
 		set_unit_box(u, OPS)
+		add_unit_summary(game.summary, u)
 	},
 	end_deployment() {
-		log_area_unit_list("Deployed", game.summary)
+		log_unit_summary("Deployed", game.summary)
 
 		game.summary = null
 
@@ -3013,12 +3018,13 @@ states.fln_deploy_cadre_to_france = {
 		})
 	},
 	unit(u) {
-		log(`Deployed U${u} to A${FRANCE}.`)
+		log(`U${u} to A${FRANCE} from A${unit_loc(u)}.`)
 
 		game.deploy_cadre_france = true
 		set_unit_loc(u, FRANCE)
 		set_unit_box(u, UG) // TODO: UG in france?
-		set_add(game.summary, u) // WHICH?
+
+		// add_unit_summary(game.summary, u)
 
 		game.state = "fln_deployment"
 	},
@@ -3036,10 +3042,13 @@ states.fln_deploy_cadre_from_france = {
 		let u = game.selected
 		game.selected = null
 
+		log(`U${u} from A${FRANCE} to ${to}.`)
+
 		game.deploy_cadre_france = true
 		set_unit_loc(u, to)
 		set_unit_box(u, OPS) // to UG or OPS?
-		set_add(game.summary, u)
+
+		// add_unit_summary(game.summary, u)
 
 		game.state = "fln_deployment"
 	},
@@ -4437,7 +4446,7 @@ states.gov_airmobilize_select_units = {
 		let cost = airmobilize_cost(list)
 		game.helo_avail -= cost
 
-		log_area_unit_list("Airmobilized", list)
+		log_unit_list("Airmobilized", list)
 		for (let u of list)
 			set_unit_airmobile(u)
 		logi(`-${cost} Helo PTS`)
@@ -5370,13 +5379,13 @@ states.gov_coup_attempt_free_mobilize = {
 		push_undo()
 		for (let u of list) {
 			mobilize_unit(u, to)
-			set_add(game.summary, u)
+			add_unit_summary(game.summary, u)
 		}
 		let cost = mobilization_cost(list)
 		game.events.gov_free_mobilize -= cost
 	},
 	done() {
-		log_area_unit_list("Mobilized", game.summary)
+		log_unit_summary("Mobilized", game.summary)
 
 		game.summary = null
 
@@ -5438,7 +5447,7 @@ states.gov_coup_attempt_select_units = {
 		let list = game.selected
 		game.selected = []
 
-		log_area_unit_list("Removed", list)
+		log_unit_list("Removed", list)
 		for (let u of list) {
 			remove_unit(u, ELIMINATED)
 		}
@@ -5623,7 +5632,58 @@ function goto_next_turn() {
 
 // #region LOGGING
 
-function log_area_unit_list(verb, list) {
+function add_unit_summary(list, u) {
+	map_set(list, u, unit_loc(u))
+}
+
+function log_unit_summary(verb, list) {
+	if (list.length === 0)
+		return
+	log_br()
+	log(verb)
+
+	if (0) {
+	/* log units individually */
+
+	for (let loc = 0; loc < area_count; ++loc) {
+		let first = true
+		map_for_each(list, (u, u_loc) => {
+			if (u_loc === loc) {
+				if (first) {
+					logi("A" + loc)
+					first = false
+				}
+				logii("U" + u)
+			}
+		})
+	}
+
+	} else {
+	/* log by count + type */
+
+	let n = [ 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+	for (let loc = 0; loc < area_count; ++loc) {
+		n.fill(0)
+		map_for_each(list, (u, u_loc) => {
+			if (u_loc === loc)
+				n[units[u].type] += 1
+		})
+		let i
+		for (i = 0; i < n.length; ++i)
+			if (n[i] > 0)
+				break
+		if (i < n.length) {
+			logi("A" + loc)
+			for (i = 0; i < n.length; ++i)
+				if (n[i] > 0)
+					logii(`${n[i]} ${unit_type_name[i]}`)
+		}
+	}
+
+	}
+}
+
+function log_unit_list(verb, list) {
 	if (list.length === 0)
 		return
 	log_br()
