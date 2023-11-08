@@ -5290,12 +5290,12 @@ function coup_attempt() {
 		continue_final_psl_adjustment()
 		break
 	case 'failure':
-		log("Remove 1 elite unit from the game.")
+		log(`Remove 1 elite unit from the game.`)
 		goto_coup_attempt_remove_elite(1)
 		break
 	case 'abject_failure':
 		d1 = roll_d6()
-		log("Remove G${d1} elite units from the game.")
+		log(`Remove G${d1} elite units.`)
 		goto_coup_attempt_remove_elite(d1)
 		break
 	default:
@@ -5387,7 +5387,7 @@ function goto_coup_attempt_remove_elite(num) {
 	let to_remove = Math.min(num, num_el_x)
 
 	if (to_remove) {
-		game.selected = []
+		game.summary = []
 		game.events.gov_remove_num = to_remove
 		game.state = "gov_coup_attempt_select_units"
 	} else {
@@ -5400,43 +5400,26 @@ function goto_coup_attempt_remove_elite(num) {
 states.gov_coup_attempt_select_units = {
 	inactive: "to do Coup Attempt",
 	prompt() {
-		view.prompt = `Coup Attempt: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map.`
-
-		let target = 0
-		for (let u of game.selected) {
-			if (unit_type(u) === EL_X) target += 1
-		}
-
-		for_each_friendly_unit_on_map(u => {
-			if (unit_type(u) === EL_X && (target < game.events.gov_remove_num || set_has(game.selected, u)))
-				gen_action_unit(u)
-		})
-
-		if (target >= game.events.gov_remove_num) {
+		if (game.events.gov_remove_num > 0) {
+			view.prompt = `Coup Attempt: Remove ${game.events.gov_remove_num} French elite unit(s).`
+			for_each_friendly_unit_on_map(u => {
+				if (unit_type(u) === EL_X)
+					gen_action_unit(u)
+			})
+		} else {
+			view.prompt = `Coup Attempt: Done.`
 			gen_action("done")
 		}
-
-		if (game.selected.length > 0)
-			view.actions.undo = 1
-	},
-	undo() {
-		if (game.selected.length > 0)
-			set_clear(game.selected)
-		else
-			pop_undo()
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
+		push_undo()
+		add_unit_summary(game.summary, u)
+		remove_unit(u, ELIMINATED)
+		game.events.gov_remove_num -= 1
 	},
 	done() {
-		let list = game.selected
-		game.selected = []
-
-		log_unit_list("Removed", list)
-		for (let u of list) {
-			remove_unit(u, ELIMINATED)
-		}
-
+		log_unit_summary("Removed", game.summary)
+		game.summary = null
 		delete game.events.gov_remove_num
 		continue_final_psl_adjustment()
 	}
