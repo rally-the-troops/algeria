@@ -2000,12 +2000,12 @@ function goto_nato_pressure() {
 	let roll = roll_d6()
 	log("Remove French brigades G" + roll)
 
-	game.selected = []
 	let num_fr_x = count_friendly_units_on_map_of_type(FR_X)
 	let num_fr_xx = count_friendly_units_on_map_of_type(FR_XX)
 	let to_remove = Math.min(roll, num_fr_x + 3 * num_fr_xx)
 	if (to_remove) {
 		game.events.gov_remove_num = to_remove
+		game.summary = []
 		game.state = "event_gov_nato_pressure_select_units"
 	} else {
 		log("No French Army brigades to remove")
@@ -2016,42 +2016,38 @@ function goto_nato_pressure() {
 states.event_gov_nato_pressure_select_units = {
 	inactive: "to do NATO Pressure",
 	prompt() {
-		view.prompt = `NATO Pressure: Select ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3) to remove from the map.`
-
-		let target = 0
-		for (let u of game.selected) {
-			if (unit_type(u) === FR_X) {
-				target += 1
-			} else if (unit_type(u) === FR_XX) {
-				target += 3
-			}
-		}
-
-		for_each_friendly_unit_on_map(u => {
-			if ((unit_type(u) === FR_X || unit_type(u) === FR_XX) && (target < game.events.gov_remove_num || set_has(game.selected, u)))
-				gen_action_unit(u)
-		})
-
-		if (target >= game.events.gov_remove_num) {
+		if (game.events.gov_remove_num > 0) {
+			view.prompt = `NATO Pressure: Remove ${game.events.gov_remove_num} French Army brigade(s) (division counts as 3).`
+			for_each_friendly_unit_on_map(u => {
+				if (unit_type(u) === FR_X || unit_type(u) === FR_XX)
+					gen_action_unit(u)
+			})
+		} else {
+			view.prompt = `NATO Pressure: Done.`
 			gen_action("done")
 		}
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
-	},
-	done() {
-		let list = game.selected
-		game.selected = []
+		push_undo()
+
+		add_unit_summary(game.summary, u)
+
+		if (unit_type(u) === FR_XX)
+			game.events.gov_remove_num -= 3
+		else
+			game.events.gov_remove_num -= 1
+		game.events.gov_remove_num = Math.max(0, game.events.gov_remove_num)
 
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_remobilize)
 			game.events.gov_remobilize = []
+		set_add(game.events.gov_remobilize, u)
 
-		log_unit_list("Removed (can re-mobilize)", list)
-		for (let u of list) {
-			remove_unit(u, ELIMINATED)
-			set_add(game.events.gov_remobilize, u)
-		}
+		remove_unit(u, ELIMINATED)
+	},
+	done() {
+		log_unit_summary("Removed (can re-mobilize)", game.summary)
+		game.summary = null
 		delete game.events.gov_remove_num
 		end_random_event()
 	}
