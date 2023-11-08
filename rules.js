@@ -116,19 +116,16 @@ function player_name(player) {
 }
 
 function set_next_player() {
-	if (game.phasing === GOV_NAME)
-		game.phasing = FLN_NAME
+	if (game.active === GOV_NAME)
+		set_active_player(FLN_NAME)
 	else
-		game.phasing = GOV_NAME
-	set_active_player()
+		set_active_player(GOV_NAME)
 }
 
-function set_active_player() {
+function set_active_player(new_active) {
 	clear_undo()
-	if (game.active !== game.phasing) {
-		game.active = game.phasing
-		update_aliases()
-	}
+	game.active = new_active
+	update_aliases()
 }
 
 function is_gov_player() {
@@ -1066,7 +1063,6 @@ exports.VIEW_SCHEMA = {
 		prompt: {type: "string"},
 		scenario: {type: "string"},
 		active: {type: "string"},
-		phasing: {type: "string"},
 
 		turn: {type: "integer", minimum: 0},
 		fln_ap: {type: "integer", minimum: 0, maximum: MAX_AP},
@@ -1092,7 +1088,7 @@ exports.VIEW_SCHEMA = {
 		selected_loc: {type: ["array", "integer"]}
     },
     required: [
-		"log", "prompt", "scenario", "active", "phasing",
+		"log", "prompt", "scenario", "active",
 		"turn", "fln_ap", "fln_psl", "gov_psl", "air_avail", "air_max", "helo_avail", "helo_max", "naval", "oas",
 		"is_morocco_tunisia_independent", "border_zone_active", "border_zone_drm",
 		"units", "areas", "contacted"
@@ -1108,7 +1104,6 @@ exports.view = function(state, player) {
 		prompt: null,
 		scenario: game.scenario,
 		active: game.active,
-		phasing: game.phasing,
 
 		turn: game.turn,
 		fln_ap: game.fln_ap,
@@ -1130,9 +1125,10 @@ exports.view = function(state, player) {
 		contacted: game.contacted,
 	}
 
-	if (player === game.active)
+	if (player === game.active) {
 		view.selected = game.selected
 		view.selected_loc = game.selected_loc
+	}
 
 	if (game.state === "game_over") {
 		view.prompt = game.victory
@@ -1237,8 +1233,7 @@ exports.setup = function (seed, scenario, options) {
 		state: null,
 		selected: -1,
 		selected_loc: -1,
-		phasing: GOV_NAME,
-		active: GOV_NAME,
+		active: null,
 
 		scenario: null,
 		turn: 0,
@@ -1293,6 +1288,8 @@ exports.setup = function (seed, scenario, options) {
 		log("Shorter Game.")
 		game.shorter_game = true
 	}
+
+	set_active_player(GOV_NAME)
 
 	goto_scenario_setup()
 
@@ -1517,11 +1514,10 @@ function setup_scenario(scenario_name) {
 	setup_units(deployment.fln)
 	setup_units(deployment.gov)
 
-	game.phasing = GOV_NAME
+	set_active_player(GOV_NAME)
 }
 
 function goto_scenario_setup() {
-	set_active_player()
 	game.state = "scenario_setup"
 	log_h2(`${game.active} Setup`)
 	game.selected = []
@@ -1838,11 +1834,10 @@ function goto_un_debate() {
 
 	// Player with higher PSL raises FLN or lowers Government PSL by 1d6.
 	if (game.gov_psl <= game.fln_psl) {
-		game.phasing = FLN_NAME
+		set_active_player(FLN_NAME)
 	} else {
-		game.phasing = GOV_NAME
+		set_active_player(GOV_NAME)
 	}
-	set_active_player()
 	game.state = "random_event_un_debate"
 }
 
@@ -1871,8 +1866,7 @@ function goto_fln_factional_purge() {
 	log_event("FLN Factional Purge.")
 	// The Government player chooses one wilaya and rolls 1d6, neutralizing
 	// that number of FLN units there (the FLN player's choice which ones).
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	game.state = "event_fln_factional_purge_select_zone"
 }
 
@@ -1914,8 +1908,7 @@ states.event_fln_factional_purge_select_zone = {
 }
 
 function continue_fln_factional_purge() {
-	game.phasing = FLN_NAME
-	set_active_player()
+	set_active_player(FLN_NAME)
 
 	let roll = roll_d6()
 
@@ -2001,8 +1994,7 @@ function goto_nato_pressure() {
 
 	// The Government player rolls 1d6 and must remove that number of French Army brigades
 	// (a division counts as three brigades) from the map.
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 
 	let roll = roll_d6()
 	log("Remove French brigades G" + roll)
@@ -2070,8 +2062,7 @@ function goto_suez_crisis() {
 		return
 	}
 
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	game.events.suez_crisis = true
 
 	// The Government player must remove 1d6 elite units from the map, up to the number actually available
@@ -2155,8 +2146,7 @@ function end_random_event() {
 }
 
 function goto_gov_reinforcement_phase() {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	log_h2(`${game.active} Reinforcement`)
 	game.selected = []
 
@@ -2583,8 +2573,7 @@ function ensure_front_in_independent_morocco_tunisia() {
 }
 
 function goto_fln_reinforcement_phase() {
-	game.phasing = FLN_NAME
-	set_active_player()
+	set_active_player(FLN_NAME)
 	log_h2(`${game.active} Reinforcement`)
 	game.selected = []
 
@@ -2793,8 +2782,7 @@ function end_reinforcement() {
 }
 
 function goto_gov_deployment_phase() {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	log_h2(`${game.active} Deployment`)
 	game.summary = {
 		operations: [],
@@ -2920,8 +2908,7 @@ states.gov_deployment = {
 }
 
 function goto_fln_deployment_phase() {
-	game.phasing = FLN_NAME
-	set_active_player()
+	set_active_player(FLN_NAME)
 	log_h2(`${game.active} Deployment`)
 	game.summary = []
 	game.state = "fln_deployment"
@@ -3082,8 +3069,7 @@ function goto_operations_phase() {
 }
 
 function goto_fln_operations_phase() {
-	game.phasing = FLN_NAME
-	set_active_player()
+	set_active_player(FLN_NAME)
 
 	clear_combat()
 
@@ -3317,11 +3303,10 @@ function goto_distribute_psp(who, psp, reason) {
 		who, psp, reason
 	}
 	if (who == GOV) {
-		game.phasing = GOV_NAME
+		set_active_player(GOV_NAME)
 	} else {
-		game.phasing = FLN_NAME
+		set_active_player(FLN_NAME)
 	}
-	set_active_player()
 	log_br()
 	if (game.active === FLN_NAME)
 		log(`FLN to distribute ${psp} PSP.`)
@@ -3989,8 +3974,7 @@ function end_combat() {
 }
 
 function goto_combat_fln_losses() {
-	game.phasing = FLN_NAME
-	set_active_player()
+	set_active_player(FLN_NAME)
 	game.state = "fln_combat_fln_losses"
 }
 
@@ -4101,8 +4085,7 @@ states.fln_combat_fln_losses = {
 }
 
 function goto_gov_operations_phase() {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	clear_combat()
 
 	if (game.gov_auto_pass) {
@@ -4443,8 +4426,7 @@ states.gov_airmobilize_select_units = {
 }
 
 function goto_gov_react_mission() {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 	game.state = "gov_react"
 }
 
@@ -5304,8 +5286,7 @@ function coup_attempt() {
 }
 
 function goto_coup_attempt_free_mobilize(value) {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 
 	game.selected = []
 	game.summary = []
@@ -5380,8 +5361,7 @@ states.gov_coup_attempt_free_mobilize = {
 }
 
 function goto_coup_attempt_remove_elite(num) {
-	game.phasing = GOV_NAME
-	set_active_player()
+	set_active_player(GOV_NAME)
 
 	let num_el_x = count_friendly_units_on_map_of_type(EL_X)
 	let to_remove = Math.min(num, num_el_x)
