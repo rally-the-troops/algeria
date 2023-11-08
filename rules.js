@@ -2079,12 +2079,11 @@ function goto_suez_crisis() {
 
 	log("Crisis G" + roll)
 
-	game.selected = []
-
 	let num_el_x = count_friendly_units_on_map_of_type(EL_X)
 	let to_remove = Math.min(roll, num_el_x)
 	if (to_remove) {
 		game.events.gov_remove_num = to_remove
+		game.summary = []
 		game.state = "event_gov_suez_crisis_select_units"
 	} else {
 		log("No French elite units to remove.")
@@ -2095,40 +2094,34 @@ function goto_suez_crisis() {
 states.event_gov_suez_crisis_select_units = {
 	inactive: "to do Suez Crisis",
 	prompt() {
-		view.prompt = `Suez Crisis: Select ${game.events.gov_remove_num} French elite unit(s) to remove from the map.`
-
-		let target = 0
-		for (let u of game.selected) {
-			if (unit_type(u) === EL_X) target += 1
-		}
-
-		for_each_friendly_unit_on_map(u => {
-			if (unit_type(u) === EL_X && (target < game.events.gov_remove_num || set_has(game.selected, u)))
-				gen_action_unit(u)
-		})
-
-		if (target >= game.events.gov_remove_num) {
+		if (game.events.gov_remove_num > 0) {
+			view.prompt = `Suez Crisis: Remove ${game.events.gov_remove_num} French elite unit(s).`
+			for_each_friendly_unit_on_map(u => {
+				if (unit_type(u) === EL_X)
+					gen_action_unit(u)
+			})
+		} else {
+			view.prompt = `Suez Crisis: Done.`
 			gen_action("done")
 		}
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
-	},
-	done() {
-		let list = game.selected
-		game.selected = []
+		push_undo()
 
 		// they will return in the Random Event Phase of the next turn automatically
 		// - they do not need to be mobilized again but do need to be activated.
 		// The units may be re-mobilized at least one turn later.
 		if (!game.events.gov_return)
 			game.events.gov_return = []
-		log_unit_list("Removed (will return)", list)
-		for (let u of list) {
-			let loc = unit_loc(u)
-			remove_unit(u, ELIMINATED)
-			map_set(game.events.gov_return, u, loc)
-		}
+		map_set(game.events.gov_return, u, unit_loc(u))
+
+		add_unit_summary(game.summary, u)
+		game.events.gov_remove_num -= 1
+		remove_unit(u, ELIMINATED)
+	},
+	done() {
+		log_unit_summary("Removed (will return)", game.summary)
+		game.summary = null
 		delete game.events.gov_remove_num
 		end_random_event()
 	}
