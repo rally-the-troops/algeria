@@ -544,8 +544,9 @@ function eliminate_unit(u) {
 	clear_unit_neutralized(u)
 }
 
-function neutralize_unit(u) {
-	log(`Neutralized U${u}.`)
+function neutralize_unit(u, verbose=true) {
+	if (verbose)
+		log(`Neutralized U${u}.`)
 	set_unit_neutralized(u)
 	if (!is_police_unit(u))
 		set_unit_box(u, OC)
@@ -1920,32 +1921,38 @@ function continue_fln_factional_purge() {
 
 	log(`Purge in wilaya ${game.events.fln_purge_zone} G${roll}`)
 
-	game.selected = []
 	game.events.fln_purge_num = Math.min(roll, count_friendly_units_in_zone(game.events.fln_purge_zone))
-	game.state = "event_fln_factional_purge_select_units"
+	if (game.events.fln_purge_num > 0) {
+		game.summary = []
+		game.state = "event_fln_factional_purge_select_units"
+	} else {
+		log("No FLN units to purge.")
+		end_random_event()
+	}
 }
 
 states.event_fln_factional_purge_select_units = {
 	inactive: "to do FLN Factional Purge",
 	prompt() {
-		view.prompt = `FLN Factional Purge: Select ${game.events.fln_purge_num} unit(s) in wilaya (zone) ${game.events.fln_purge_zone} to neutralize.`
-
-		for_each_friendly_unit_in_zone(game.events.fln_purge_zone, u => {
-			gen_action_unit(u)
-		})
-
-		if (game.selected.length === game.events.fln_purge_num) {
+		if (game.events.fln_purge_num > 0) {
+			view.prompt = `FLN Factional Purge: Neutralize ${game.events.fln_purge_num} unit(s) in wilaya ${game.events.fln_purge_zone}.`
+			for_each_friendly_unit_in_zone(game.events.fln_purge_zone, u => {
+				gen_action_unit(u)
+			})
+		} else {
+			view.prompt = `FLN Factional Purge: Done.`
 			gen_action("done")
 		}
 	},
 	unit(u) {
-		set_toggle(game.selected, u)
+		push_undo()
+		game.events.fln_purge_num -= 1
+		add_unit_summary(game.summary, u)
+		neutralize_unit(u, false)
 	},
 	done() {
-		for (let u of game.selected) {
-			neutralize_unit(u)
-		}
-
+		log_unit_summary("Neutralized", game.summary)
+		game.summary = null
 		delete game.events.fln_purge_zone
 		delete game.events.fln_purge_num
 		end_random_event()
