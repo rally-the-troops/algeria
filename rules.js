@@ -4131,7 +4131,8 @@ states.gov_operations = {
 			}
 		})
 
-		gen_action("auto_pass")
+		if (!game.fln_auto_pass)
+			gen_action("auto_pass")
 		gen_action("pass")
 	},
 	flush() {
