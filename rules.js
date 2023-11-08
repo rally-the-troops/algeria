@@ -533,7 +533,6 @@ function move_unit(u, to) {
 }
 
 function eliminate_unit(u) {
-	let loc = unit_loc(u)
 	log(`Eliminated U${u}.`)
 	if (is_fln_unit(u)) {
 		game.distribute_gov_psl += 1
@@ -553,7 +552,6 @@ function neutralize_unit(u) {
 }
 
 function remove_unit(u, to) {
-	let loc = unit_loc(u)
 	set_unit_loc(u, to)
 	set_unit_box(u, OC)
 	clear_unit_neutralized(u)
@@ -1003,14 +1001,6 @@ function for_each_not_neutralized_unit_type_in_loc(t, x, f) {
 	for (let u = 0; u <= unit_count; ++u)
 		if (unit_loc(u) === x && unit_type(u) === t && is_unit_not_neutralized(u))
 			f(u)
-}
-
-function count_patrol_units_in_loc(loc) {
-	let result = 0
-	for (let u = first_gov_unit; u <= last_gov_unit; ++u)
-		if (unit_loc(u) === loc && unit_box(u) === PTL && is_unit_not_neutralized(u))
-			result += 1
-	return result
 }
 
 function for_each_patrol_unit_in_loc(loc, f) {
@@ -2525,7 +2515,6 @@ function give_fln_ap() {
 	let total_ap = 0
 	for_each_algerian_map_area(loc => {
 		let control_ap = 0
-		let summary = null
 		if (is_area_urban(loc)) {
 			// He gets 5 AP for each Urban area he controls, or 2 AP if the area is contested but he has non-neutralized units there.
 			if (is_area_fln_control(loc)) {
@@ -2549,6 +2538,7 @@ function give_fln_ap() {
 				control_ap += 1
 			}
 		}
+
 		// If an area is Terrorized, he gets 1 fewer AP than he normally would.
 		if (is_area_terrorized(loc)) {
 			if (control_ap > 0) {
@@ -2908,7 +2898,6 @@ states.gov_deployment = {
 	},
 	change_division_mode() {
 		let u = pop_selected()
-		let loc = unit_loc(u)
 		push_undo()
 		if (is_unit_dispersed(u)) {
 			clear_unit_dispersed(u)
@@ -5281,7 +5270,7 @@ function roll_coup_table(oas_drm=false) {
 }
 
 function coup_attempt() {
-	let d1, d2, roll
+	let d1, d2
 
 	let result = roll_coup_table(is_area_france(game.oas))
 	if (check_victory())
@@ -5809,12 +5798,6 @@ function roll_d6() {
 	return random(6) + 1
 }
 
-function roll_1d6() {
-	let roll = roll_d6()
-	log("Rolled B" + roll)
-	return roll
-}
-
 function roll_nd6(n, color="B", prefix="Rolled") {
 	clear_undo()
 	let result = 0
@@ -5892,13 +5875,6 @@ function array_insert(array, index, item) {
 		array[i] = array[i - 1]
 	array[index] = item
 	return array
-}
-
-function array_remove_pair(array, index) {
-	let n = array.length
-	for (let i = index + 2; i < n; ++i)
-		array[i - 2] = array[i]
-	array.length = n - 2
 }
 
 function array_insert_pair(array, index, key, value) {
@@ -5985,42 +5961,6 @@ function is_subset_with_multiplicity(multiset, subset) {
 	return !subset.some(val => (occurrences(subset, val) > occurrences(multiset, val)))
 }
 
-function map_clear(map) {
-	map.length = 0
-}
-
-function map_has(map, key) {
-	let a = 0
-	let b = (map.length >> 1) - 1
-	while (a <= b) {
-		let m = (a + b) >> 1
-		let x = map[m<<1]
-		if (key < x)
-			b = m - 1
-		else if (key > x)
-			a = m + 1
-		else
-			return true
-	}
-	return false
-}
-
-function map_get(map, key, missing) {
-	let a = 0
-	let b = (map.length >> 1) - 1
-	while (a <= b) {
-		let m = (a + b) >> 1
-		let x = map[m<<1]
-		if (key < x)
-			b = m - 1
-		else if (key > x)
-			a = m + 1
-		else
-			return map[(m<<1)+1]
-	}
-	return missing
-}
-
 function map_set(map, key, value) {
 	let a = 0
 	let b = (map.length >> 1) - 1
@@ -6037,23 +5977,6 @@ function map_set(map, key, value) {
 		}
 	}
 	array_insert_pair(map, a<<1, key, value)
-}
-
-function map_delete(map, item) {
-	let a = 0
-	let b = (map.length >> 1) - 1
-	while (a <= b) {
-		let m = (a + b) >> 1
-		let x = map[m<<1]
-		if (item < x)
-			b = m - 1
-		else if (item > x)
-			a = m + 1
-		else {
-			array_remove_pair(map, m<<1)
-			return
-		}
-	}
 }
 
 function map_for_each(map, f) {
