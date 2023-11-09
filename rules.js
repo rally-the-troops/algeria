@@ -2923,7 +2923,6 @@ function goto_fln_deployment_phase() {
 function has_cadre_and_front_in_any_loc_in_algeria() {
 	// each algerian area
 	for (let loc = 3; loc < area_count; ++loc)
-		// TODO: not neutralized? must be UG?
 		if (has_unit_type_in_loc(CADRE, loc) && has_unit_type_in_loc(FRONT, loc))
 			return true
 	return false
@@ -2994,9 +2993,7 @@ states.fln_deploy_cadre_to_france = {
 
 		game.deploy_cadre_france = true
 		set_unit_loc(u, FRANCE)
-		set_unit_box(u, UG) // TODO: UG in france?
-
-		// add_unit_summary(game.summary, u)
+		set_unit_box(u, UG)
 
 		game.state = "fln_deployment"
 	},
@@ -3014,13 +3011,11 @@ states.fln_deploy_cadre_from_france = {
 		let u = game.selected
 		game.selected = []
 
-		log(`U${u} from A${FRANCE} to ${to}.`)
+		log(`U${u} from A${FRANCE} to A${to}.`)
 
 		game.deploy_cadre_france = true
 		set_unit_loc(u, to)
-		set_unit_box(u, OPS) // to UG or OPS?
-
-		// add_unit_summary(game.summary, u)
+		set_unit_box(u, UG)
 
 		game.state = "fln_deployment"
 	},
