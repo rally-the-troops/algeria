@@ -5200,7 +5200,7 @@ function roll_coup_table(oas_drm=false) {
 	let d2 = roll_d6()
 
 	log_br()
-	log(`Coup attempt G${d1} G${d2}`)
+	log(`Result G${d1} G${d2}`)
 
 	let coup = d1 + d2
 	if (oas_drm) {
