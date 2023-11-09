@@ -1067,7 +1067,7 @@ exports.VIEW_SCHEMA = {
 		turn: {type: "integer", minimum: 0},
 		fln_ap: {type: "integer", minimum: 0, maximum: MAX_AP},
 		fln_psl: {type: "integer", minimum: 0, maximum: MAX_PSL},
-		gov_psl: {type: "integer", minimum: 0, maximum: MAX_PSL},
+		gov_psl: {type: "number", minimum: 0, maximum: MAX_PSL, multipleOf: 0.5},
 		air_avail: {type: "integer", minimum: 0, maximum: MAX_AIR_POINT},
 		air_max: {type: "integer", minimum: 0, maximum: MAX_AIR_POINT},
 		helo_avail: {type: "integer", minimum: 0, maximum: MAX_HELO_POINT},
@@ -3012,7 +3012,7 @@ states.fln_deploy_cadre_from_france = {
 	},
 	loc(to) {
 		let u = game.selected
-		game.selected = null
+		game.selected = []
 
 		log(`U${u} from A${FRANCE} to ${to}.`)
 
