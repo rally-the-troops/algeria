@@ -4943,7 +4943,7 @@ function determine_control() {
 	})
 	// log_br()
 
-	log("Gov Control")
+	log("FLN Control")
 	for_each_algerian_map_area(loc => {
 		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
 		if (!diff || (!fln_pts[loc] && !gov_pts[loc]))
@@ -4955,7 +4955,7 @@ function determine_control() {
 	})
 	log_br()
 
-	log("FLN Control")
+	log("Gov Control")
 	for_each_algerian_map_area(loc => {
 		let diff = Math.abs(fln_pts[loc] - gov_pts[loc])
 		if (!diff || (!fln_pts[loc] && !gov_pts[loc]))
