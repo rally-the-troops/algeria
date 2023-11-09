@@ -2,7 +2,7 @@
 
 /* global action_button, data, scroll_into_view, send_action, view */
 
-function toggle_pieces() {
+function toggle_pieces() { // eslint-disable-line no-unused-vars
 	document.getElementById("pieces").classList.toggle("hide")
 }
 
@@ -17,16 +17,6 @@ const MAP_X1 = 53 + 2
 const MAP_X2 = 1503 - 53 - 47
 const MAP_Y1 = 53 + 2
 const MAP_Y2 = 1103 - 53 - 47
-
-const FR_XX = 0
-const FR_X = 1
-const EL_X = 2
-const AL_X = 3
-const POL = 4
-const FAILEK = 5
-const BAND = 6
-const CADRE = 7
-const FRONT = 8
 
 var FRANCE = data.locations["FRANCE"]
 var MOROCCO = data.locations["MOROCCO"]
@@ -317,10 +307,6 @@ const UNIT_LOC_MASK = 255 << UNIT_LOC_SHIFT
 
 function is_unit_neutralized(u) {
 	return (view.units[u] & UNIT_NEUTRALIZED_MASK) === UNIT_NEUTRALIZED_MASK
-}
-
-function unit_type(u) {
-	return data.units[u].type
 }
 
 function unit_loc(u) {
@@ -772,23 +758,6 @@ function update_unit(e, u) {
 	e.classList.toggle("eliminated", is_unit_eliminated(u))
 }
 
-function animate(e, x0, y0, x1, y1) {
-	const dx = x0 - x1
-	const dy = y0 - y1
-	if (!dx && !dy)
-		return
-
-	const transformFrom = `translate3d(${dx}px, ${dy}px, 0)`
-	const transformTo = `translate3d(0, 0, 0)`
-	e.animate([
-		{ transform: transformFrom },
-		{ transform: transformTo },
-	], {
-		duration: 750,
-		easing: 'ease',
-	})
-}
-
 function update_map() {
 	ui.player[FLN].classList.toggle("active", view.active === "FLN")
 	ui.player[GOV].classList.toggle("active", view.active === "Government")
@@ -796,7 +765,7 @@ function update_map() {
 	ui.ap.textContent = view.fln_ap
 	ui.psl[FLN].textContent = view.fln_psl
 	ui.psl[GOV].textContent = view.gov_psl
-	
+
 	track_count.fill(0)
 
 	layout_track(view.turn % 100, ui.markers.turn)
