@@ -6,10 +6,17 @@ function toggle_pieces() {
 	document.getElementById("pieces").classList.toggle("hide")
 }
 
-const SCALE = 1.8
+function clamp(x, a, b) {
+	return Math.max(a, Math.min(b, x))
+}
 
 const FLN = 0
 const GOV = 1
+
+const MAP_X1 = 53 + 2
+const MAP_X2 = 1503 - 53 - 47
+const MAP_Y1 = 53 + 2
+const MAP_Y2 = 1103 - 53 - 47
 
 const FR_XX = 0
 const FR_X = 1
@@ -478,6 +485,9 @@ function layout_stack(loc_id, box_id) {
 			stack.push(ui.units[u])
 	}
 
+	if (stack.length === 0)
+		return
+
 	let z = 1
 	let x = LAYOUT_BOX[loc_id * 4 + box_id][0] - 22
 	let y = LAYOUT_BOX[loc_id * 4 + box_id][1] - 22
@@ -519,7 +529,28 @@ function layout_stack(loc_id, box_id) {
 		}
 	}
 
-	// TODO: clamp x,y to fit on map
+	// Clamp dx,dy to fit on map
+
+	let w = (stack.length-1) * dx
+	let h = (stack.length-1) * dy
+
+	if (w > 1350) dx = 1350 / (stack.length-1)
+	if (w < -1450) dx = -1450 / (stack.length-1)
+	if (h > 950) dy = 950 / (stack.length-1)
+	if (h < -950) dy = -950 / (stack.length-1)
+
+	w = (stack.length-1) * dx
+	h = (stack.length-1) * dy
+
+	if (dx < 0)
+		x = clamp(x, MAP_X1 - w, MAP_X2)
+	else
+		x = clamp(x, MAP_X1, MAP_X2 - w)
+
+	if (dy < 0)
+		y = clamp(y, MAP_Y1 - h, MAP_Y2)
+	else
+		y = clamp(y, MAP_Y1, MAP_Y2 - h)
 
 	for (let e of stack) {
 		e.my_stack = stack
