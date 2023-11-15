@@ -820,6 +820,12 @@ function for_each_friendly_unit_on_map_box(box, fn) {
 			fn(u)
 }
 
+function for_each_friendly_not_neutralized_unit_on_map_box(box, fn) {
+	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
+		if (unit_loc(u) > 2 && unit_box(u) === box && is_unit_not_neutralized(u))
+			fn(u)
+}
+
 function for_each_friendly_unit_on_map_boxes(boxes, fn) {
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
 		if (unit_loc(u) > 2 && boxes.includes(unit_box(u)))
@@ -2270,7 +2276,7 @@ states.gov_reinforcement = {
 
 			// activate french mobile units
 			let has_inactive = false
-			for_each_friendly_unit_on_map_box(OC, u => {
+			for_each_friendly_not_neutralized_unit_on_map_box(OC, u => {
 				has_inactive = true
 				gen_action_unit(u)
 			})
@@ -2347,7 +2353,7 @@ states.gov_reinforcement = {
 				let cost = activation_cost(game.selected)
 				view.prompt = `Reinforcement: Activate units (cost ${cost} PSP).`
 
-				for_each_friendly_unit_on_map_box(OC, u => {
+				for_each_friendly_not_neutralized_unit_on_map_box(OC, u => {
 					gen_action_unit(u)
 				})
 
@@ -2383,7 +2389,7 @@ states.gov_reinforcement = {
 	},
 	select_all_inactive() {
 		push_undo()
-		for_each_friendly_unit_on_map_box(OC, u => {
+		for_each_friendly_not_neutralized_unit_on_map_box(OC, u => {
 			set_toggle(game.selected, u)
 		})
 	},
@@ -2944,9 +2950,9 @@ states.fln_deployment = {
 		if (can_deploy_cadre_to_france())
 			view.actions.deploy_cadre_to_france = 1
 
-		for_each_friendly_unit_on_map_box(UG, u => {
+			for_each_friendly_not_neutralized_unit_on_map_box(UG, u => {
 			let loc = unit_loc(u)
-			if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
+			if (!is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
 				gen_action_unit(u)
 		})
 
@@ -2980,10 +2986,10 @@ states.fln_deploy_cadre_to_france = {
 	inactive: "to do Deployment",
 	prompt() {
 		view.prompt = "Deploy Cadre to France."
-		for_each_friendly_unit_on_map_box(UG, u => {
+		for_each_friendly_not_neutralized_unit_on_map_box(UG, u => {
 			let loc = unit_loc(u)
 			if (unit_type(u) === CADRE)
-				if (is_unit_not_neutralized(u) && !is_area_morocco_or_tunisia(loc) && !is_area_france(loc))
+				if (!is_area_morocco_or_tunisia(loc) && !is_area_france(loc))
 					if (has_unit_type_in_loc(FRONT, loc))
 						gen_action_unit(u)
 		})
@@ -3093,7 +3099,7 @@ states.fln_operations = {
 		view.actions.raid = 0
 		view.actions.harass = 0
 
-		for_each_friendly_unit_on_map_box(OPS, u => {
+		for_each_friendly_not_neutralized_unit_on_map_box(OPS, u => {
 			if (game.fln_ap >= FLN_PROPAGANDA_COST && is_propaganda_unit(u)) {
 				view.actions.propaganda = 1
 			}
