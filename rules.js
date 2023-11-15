@@ -770,7 +770,7 @@ function unit_firepower(u) {
 function unit_contact(u) {
 	// only for Government
 	let contact = units[u].evasion_contact
-	if (is_unit_airmobile(u)) {
+	if (is_unit_airmobile(u) || is_unit_dispersed(u)) {
 		contact += 1
 	}
 	return contact
