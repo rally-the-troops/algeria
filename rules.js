@@ -862,6 +862,12 @@ function for_each_enemy_unit_in_loc(loc, fn) {
 			fn(u)
 }
 
+function for_each_non_neutralized_fln_unit_in_loc(loc, fn) {
+	for (let u = first_fln_unit; u <= last_fln_unit; ++u)
+		if (is_unit_not_neutralized(u) && unit_loc(u) === loc)
+			fn(u)
+}
+
 function count_friendly_units_on_map_of_type(type) {
 	let count = 0
 	for (let u = first_friendly_unit; u <= last_friendly_unit; ++u)
@@ -4745,7 +4751,7 @@ function do_suppression(loc, add_elite=false) {
 	// no matter what box they are in (FLN player chooses which exact units are neutralized).
 
 	let targets = []
-	for_each_enemy_unit_in_loc(loc, u => {
+	for_each_non_neutralized_fln_unit_in_loc(loc, u => {
 		let type = unit_type(u)
 		if (type === BAND || type === FAILEK) {
 			targets.push(u)
