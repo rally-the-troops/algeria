@@ -598,12 +598,17 @@ function find_free_unit_by_type(type) {
 	for (let u = 0; u < unit_count; ++u)
 		if (!game.units[u] && units[u].type === type)
 			return u
+	// FLN units can be rebuild, so on second pass get one from the ELIMINATED pile.
+	if ([FRONT, CADRE, BAND, FAILEK].includes(type))
+		for (let u = 0; u < unit_count; ++u)
+			if (unit_loc(u) === ELIMINATED && units[u].type === type)
+				return u
 	throw new Error("cannot find free unit of type: " + type)
 }
 
 function has_free_unit_by_type(type) {
 	for (let u = 0; u < unit_count; ++u)
-		if (!game.units[u] && units[u].type === type)
+		if (units[u].type === type && (!game.units[u] || ([FRONT, CADRE, BAND, FAILEK].includes(type) && unit_loc(u) === ELIMINATED)))
 			return true
 	return false
 }
@@ -3179,6 +3184,20 @@ function goto_fln_propaganda_mission() {
 }
 
 function reduce_unit(u, type) {
+	// Running out of FLN counters should rarely happen, but we don't want to crash the game if we do
+	if (!has_free_unit_by_type(type)) {
+		log(`No counter to reduce U${u} to ${unit_type_name[type]}. Eliminated U${u}.`)
+		raise_gov_psl(2)
+		lower_fln_psl(1)
+		set_delete(game.contacted, u)
+
+		game.units[u] = 0
+		set_unit_loc(u, ELIMINATED)
+		set_unit_box(u, OC)
+		clear_unit_neutralized(u)
+		return -1
+	}
+
 	let loc = unit_loc(u)
 	let box = unit_box(u)
 	let n = find_free_unit_by_type(type)
@@ -3267,7 +3286,7 @@ states.fln_propaganda = {
 			if (unit_type(unit) === CADRE) {
 				eliminate_unit(unit)
 			} else {
-				unit = reduce_unit(unit, CADRE)
+				reduce_unit(unit, CADRE)
 			}
 		}
 
@@ -3985,46 +4004,7 @@ function goto_combat_fln_losses() {
 	game.state = "fln_combat_fln_losses"
 }
 
-function has_fln_combat_unit(type) {
-	for (let u of game.combat.fln_units) {
-		if (unit_type(u) === type) return true
-	}
-	return false
-}
-
-function for_first_fln_combat_unit(type, fn) {
-	for (let u of game.combat.fln_units) {
-		if (unit_type(u) === type) {
-			fn(u)
-			return
-		}
-	}
-}
-
-function eliminate_fln_unit(type) {
-	push_undo()
-	for_first_fln_combat_unit(type, u =>{
-		eliminate_unit(u)
-		set_delete(game.combat.fln_units, u)
-		game.combat.distribute_fln_hits -= 1
-	})
-	if (!game.combat.distribute_fln_hits || !game.combat.fln_units.length)
-		continue_combat_after_fln_losses()
-}
-
-function reduce_fln_unit(from_type, to_type) {
-	push_undo()
-	for_first_fln_combat_unit(from_type, u =>{
-		let n = reduce_unit(u, to_type)
-		set_add(game.combat.fln_units, n)
-		set_delete(game.combat.fln_units, u)
-		game.combat.distribute_fln_hits -= 1
-	})
-	if (!game.combat.distribute_fln_hits || !game.combat.fln_units.length)
-		continue_combat_after_fln_losses()
-}
-
-function eliminate_fln_unit_2(u) {
+function eliminate_fln_unit(u) {
 	push_undo()
 	eliminate_unit(u)
 	set_delete(game.combat.fln_units, u)
@@ -4033,10 +4013,11 @@ function eliminate_fln_unit_2(u) {
 		continue_combat_after_fln_losses()
 }
 
-function reduce_fln_unit_2(u, to_type) {
+function reduce_fln_unit(u, to_type) {
 	push_undo()
 	let n = reduce_unit(u, to_type)
-	set_add(game.combat.fln_units, n)
+	if (n !== -1)
+		set_add(game.combat.fln_units, n)
 	set_delete(game.combat.fln_units, u)
 	game.combat.distribute_fln_hits -= 1
 	if (!game.combat.distribute_fln_hits || !game.combat.fln_units.length)
@@ -4049,45 +4030,22 @@ states.fln_combat_fln_losses = {
 		view.prompt = `Distribute ${game.combat.distribute_fln_hits} hit(s) as losses.`
 
 		// each 'hit' on FLN units eliminates one Cadre or Band, or reduces a Front to a Cadre, or reduces a Failek to a Band (FLN player chooses how to distribute his losses).
-		if (0) {
-			if (has_fln_combat_unit(CADRE))
-				gen_action("eliminate_cadre")
-			if (has_fln_combat_unit(BAND))
-				gen_action("eliminate_band")
-			if (has_fln_combat_unit(FRONT))
-				gen_action("reduce_front")
-			if (has_fln_combat_unit(FAILEK))
-				gen_action("reduce_failek")
-		} else {
-			for (let u of game.combat.fln_units)
-				gen_action_unit(u)
-		}
+		for (let u of game.combat.fln_units)
+			gen_action_unit(u)
 	},
 	unit(u) {
 		switch (unit_type(u)) {
 			case FRONT:
-				reduce_fln_unit_2(u, CADRE)
+				reduce_fln_unit(u, CADRE)
 				break
 			case FAILEK:
-				reduce_fln_unit_2(u, BAND)
+				reduce_fln_unit(u, BAND)
 				break
 			case BAND:
 			case CADRE:
-				eliminate_fln_unit_2(u)
+				eliminate_fln_unit(u)
 				break
 		}
-	},
-	eliminate_cadre() {
-		eliminate_fln_unit(CADRE)
-	},
-	eliminate_band() {
-		eliminate_fln_unit(BAND)
-	},
-	reduce_front() {
-		reduce_fln_unit(FRONT, CADRE)
-	},
-	reduce_failek() {
-		reduce_fln_unit(FAILEK, BAND)
 	}
 }
 
