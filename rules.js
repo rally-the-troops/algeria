@@ -2961,7 +2961,7 @@ states.fln_deployment = {
 		if (can_deploy_cadre_to_france())
 			view.actions.deploy_cadre_to_france = 1
 
-			for_each_friendly_not_neutralized_unit_on_map_box(UG, u => {
+		for_each_friendly_not_neutralized_unit_on_map_box(UG, u => {
 			let loc = unit_loc(u)
 			if (!is_area_morocco_or_tunisia(loc) && !(is_area_france(loc) && game.deploy_cadre_france))
 				gen_action_unit(u)
