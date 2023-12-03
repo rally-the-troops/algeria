@@ -594,12 +594,16 @@ function remove_oas() {
 
 // #region UNIT DATA
 
+function is_fln_unit_type(type) {
+	return type === FRONT || type === CADRE || type === BAND || type === FAILEK
+}
+
 function find_free_unit_by_type(type) {
 	for (let u = 0; u < unit_count; ++u)
 		if (!game.units[u] && units[u].type === type)
 			return u
 	// FLN units can be rebuild, so on second pass get one from the ELIMINATED pile.
-	if ([FRONT, CADRE, BAND, FAILEK].includes(type))
+	if (is_fln_unit_type(type))
 		for (let u = 0; u < unit_count; ++u)
 			if (unit_loc(u) === ELIMINATED && units[u].type === type)
 				return u
@@ -608,7 +612,7 @@ function find_free_unit_by_type(type) {
 
 function has_free_unit_by_type(type) {
 	for (let u = 0; u < unit_count; ++u)
-		if (units[u].type === type && (!game.units[u] || ([FRONT, CADRE, BAND, FAILEK].includes(type) && unit_loc(u) === ELIMINATED)))
+		if (units[u].type === type && (!game.units[u] || (is_fln_unit_type(type) && unit_loc(u) === ELIMINATED)))
 			return true
 	return false
 }
@@ -638,8 +642,12 @@ function has_any_airmobile_target(u) {
 	return has_target
 }
 
+function is_airmobilizable_unit_type(type) {
+	return type === FR_X || type === EL_X || type === AL_X
+}
+
 function can_airmobilize_unit(u) {
-	return !is_unit_airmobile(u) && ([FR_X, EL_X, AL_X].includes(unit_type(u))) && [OPS, PTL].includes(unit_box(u))
+	return !is_unit_airmobile(u) && (is_airmobilizable_unit_type(unit_type(u))) && (unit_box(u) === OPS || unit_box(u) === PTL)
 }
 
 function is_division_unit(u) {
