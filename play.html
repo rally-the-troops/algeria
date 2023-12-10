@@ -68,8 +68,8 @@ main { background-color: dimgray }
 body.FLN header.your_turn { background-color: var(--fln-80) }
 body.Government header.your_turn { background-color: var(--gov-80) }
 
-#role_FLN .role_name { background-color: var(--fln-80) }
-#role_Government .role_name { background-color: var(--gov-80) }
+#role_FLN { background-color: var(--fln-80) }
+#role_Government { background-color: var(--gov-80) }
 
 .role.active span { text-decoration: underline; }
 .role_ap_text { color: #0008; float: right; margin-right: 4px; }
@@ -506,20 +506,22 @@ svg .area.tip, svg .urban2.tip {
 <aside>
 	<div id="roles">
 		<div class="role" id="role_FLN">
-			<div class="role_name"><span>FLN</span>
+			<div class="role_name"><span>FLN</span></div>
+			<div class="role_info">
 				<div class="role_psl"></div>
 				<div class="role_psl_text">PSL</div>
 				<div class="role_ap"></div>
 				<div class="role_ap_text">AP</div>
-				<div class="role_user">-</div>
 			</div>
+			<div class="role_user"></div>
 		</div>
 		<div class="role" id="role_Government">
-			<div class="role_name"><span>Government</span>
+			<div class="role_name"><span>Government</span></div>
+			<div class="role_info">
 				<div class="role_psl"></div>
 				<div class="role_psl_text">PSL</div>
-				<div class="role_user">-</div>
 			</div>
+			<div class="role_user"></div>
 		</div>
 	</div>
 	<div id="log"></div>
