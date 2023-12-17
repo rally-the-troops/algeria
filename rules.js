@@ -2566,14 +2566,20 @@ function give_fln_ap() {
 	log_br()
 
 	// The FLN PSL
-	// He gets AP equal to 10% (round fractions up) of his current PSL, minus the number of French Naval Points.
-	let psl_percentage = Math.ceil(0.10 * game.fln_psl)
-	let psl_ap = Math.max(psl_percentage - game.naval, 0)
+	// FLN AP gain of 10% of PSL (round fractions up) reduced by BOTH the number of Naval Points AND the Border Zone DRM if it's Activated.
+	// (addendum about the Border Zone DRM: https://boardgamegeek.com/thread/3201531)
+	let psl_ap = Math.ceil(0.10 * game.fln_psl)
 	log_br()
-	if (game.naval)
-		log(`10% of ${game.fln_psl} PSL (- ${game.naval} Naval PTS)`)
-	else
-		log(`10% of ${game.fln_psl} PSL`)
+	log(`10% of ${game.fln_psl} PSL`)
+	if (game.naval) {
+		psl_ap = Math.max(psl_ap - game.naval, 0)
+		logi(`- ${game.naval} Naval PTS`)
+	}
+	if (game.border_zone_active && game.border_zone_drm) {
+		// border_zone_drm is negative
+		psl_ap = Math.max(psl_ap + game.border_zone_drm, 0)
+		logi(`- ${Math.abs(game.border_zone_drm)} Border Zone DRM`)
+	}
 	if (psl_ap) {
 		raise_fln_ap(psl_ap)
 	}
