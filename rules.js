@@ -1172,17 +1172,6 @@ exports.view = function(state, player) {
 	return view
 }
 
-exports.resign = function (state, player) {
-	load_state(state)
-	if (game.state !== 'game_over') {
-		if (player === FLN_NAME)
-			goto_game_over(GOV_NAME, "FLN resigned.")
-		if (player === GOV_NAME)
-			goto_game_over(FLN_NAME, "Government resigned.")
-	}
-	return game
-}
-
 function victory_scale() {
 	let psl_diff = Math.abs(game.gov_psl - game.fln_psl)
 	if (psl_diff <= 25) {
